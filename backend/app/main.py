@@ -27,8 +27,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Datadog Pricing Calculator API",
-    description="API for calculating Datadog pricing and managing quotes",
+    title="PriceHound API",
+    description="PriceHound forecasts your Datadog usage and builds an accurate quote before you commit.",
     version="1.0.0",
     lifespan=lifespan
 )

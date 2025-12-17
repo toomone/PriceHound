@@ -453,7 +453,7 @@
 			<!DOCTYPE html>
 			<html>
 			<head>
-				<title>Datadog Pricing Quote${quoteName ? ` - ${quoteName}` : ''}</title>
+				<title>PriceHound Quote${quoteName ? ` - ${quoteName}` : ''}</title>
 				<style>
 					body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; color: #333; }
 					h1 { color: #632ca6; margin-bottom: 8px; }
@@ -476,7 +476,7 @@
 				</style>
 			</head>
 			<body>
-				<h1>Datadog Pricing Quote${quoteName ? `: ${quoteName}` : ''}</h1>
+				<h1>PriceHound Quote${quoteName ? `: ${quoteName}` : ''}</h1>
 				<p class="date">Generated on ${date}</p>
 				
 				<table>
@@ -701,7 +701,7 @@
 </script>
 
 <svelte:head>
-	<title>Datadog Pricing Calculator</title>
+	<title>PriceHound - Datadog Usage Forecaster</title>
 </svelte:head>
 
 <svelte:window on:click={handleClickOutside} />
@@ -718,8 +718,11 @@
 						</svg>
 					</div>
 					<h1 class="text-4xl font-bold tracking-tight">
-						<span class="text-datadog-purple">Datadog</span> Pricing Calculator
+						<span class="text-datadog-purple">Price</span>Hound
 					</h1>
+					<p class="text-sm text-muted-foreground mt-1">
+						Forecasts your Datadog usage and builds an accurate quote before you commit.
+					</p>
 				</div>
 			</div>
 

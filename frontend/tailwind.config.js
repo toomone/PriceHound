@@ -51,8 +51,8 @@ export default {
 				sm: 'calc(var(--radius) - 4px)'
 			},
 			fontFamily: {
-				sans: ['DM Sans', 'system-ui', 'sans-serif'],
-				mono: ['JetBrains Mono', 'monospace']
+				sans: ['JetBrains Mono', 'Fira Code', 'monospace'],
+				mono: ['JetBrains Mono', 'Fira Code', 'monospace']
 			}
 		}
 	},
