@@ -216,7 +216,7 @@ def ensure_allotments_data() -> tuple[bool, str, int]:
 # Manual allotments data based on the Datadog documentation
 # This serves as a fallback if scraping fails
 MANUAL_ALLOTMENTS = [
-    # Infrastructure Monitoring
+    # Infrastructure Monitoring - Pro
     {
         "parent_product": "Infrastructure Pro",
         "allotted_product": "Custom Metrics",
@@ -234,6 +234,23 @@ MANUAL_ALLOTMENTS = [
         "frequency": "month"
     },
     {
+        "parent_product": "Infrastructure Pro",
+        "allotted_product": "Containers",
+        "quantity_per_parent": 5,
+        "allotted_unit": "containers",
+        "per_parent_unit": "host",
+        "frequency": "hour"
+    },
+    {
+        "parent_product": "Infrastructure Pro",
+        "allotted_product": "Custom Events",
+        "quantity_per_parent": 500,
+        "allotted_unit": "custom events",
+        "per_parent_unit": "host",
+        "frequency": "month"
+    },
+    # Infrastructure Monitoring - Enterprise
+    {
         "parent_product": "Infrastructure Enterprise",
         "allotted_product": "Custom Metrics",
         "quantity_per_parent": 200,
@@ -246,6 +263,22 @@ MANUAL_ALLOTMENTS = [
         "allotted_product": "Ingested Custom Metrics",
         "quantity_per_parent": 200,
         "allotted_unit": "ingested custom metrics",
+        "per_parent_unit": "host",
+        "frequency": "month"
+    },
+    {
+        "parent_product": "Infrastructure Enterprise",
+        "allotted_product": "Containers",
+        "quantity_per_parent": 10,
+        "allotted_unit": "containers",
+        "per_parent_unit": "host",
+        "frequency": "hour"
+    },
+    {
+        "parent_product": "Infrastructure Enterprise",
+        "allotted_product": "Custom Events",
+        "quantity_per_parent": 1000,
+        "allotted_unit": "custom events",
         "per_parent_unit": "host",
         "frequency": "month"
     },
