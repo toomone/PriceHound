@@ -3,7 +3,7 @@
 	import ProductSearch from './ProductSearch.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
-	import { formatCurrency, parsePrice } from '$lib/utils';
+	import { formatCurrency, parsePrice, formatNumber } from '$lib/utils';
 	import type { Product, Allotment } from '$lib/api';
 
 	export let products: Product[] = [];
@@ -77,7 +77,7 @@
 
 			<!-- Included Quantity -->
 			<div class="text-xs text-muted-foreground shrink-0">
-				{includedQuantity} {allotmentInfo?.allotted_unit || 'units'}
+				{formatNumber(includedQuantity)} {allotmentInfo?.allotted_unit || 'units'}
 			</div>
 		</div>
 	</div>
@@ -111,7 +111,7 @@
 				/>
 				{#if totalAllottedForProduct > 0}
 					<div class="mt-1 text-[10px] text-center text-datadog-green">
-						+ {totalAllottedForProduct} included
+						+ {formatNumber(totalAllottedForProduct)} included
 					</div>
 				{/if}
 			</div>
@@ -125,11 +125,6 @@
 							<div class="font-mono text-sm font-semibold text-datadog-green truncate">
 								{selectedProduct ? formatCurrency(annualTotal) : '-'}
 							</div>
-							{#if selectedProduct && annualPrice > 0}
-								<div class="text-[10px] text-muted-foreground mt-0.5 truncate">
-									{formatCurrency(annualPrice)}/ea
-								</div>
-							{/if}
 						</div>
 					</div>
 				{/if}
@@ -141,11 +136,6 @@
 							<div class="font-mono text-sm font-semibold text-datadog-purple truncate">
 								{selectedProduct ? formatCurrency(monthlyTotal) : '-'}
 							</div>
-							{#if selectedProduct && monthlyPrice > 0}
-								<div class="text-[10px] text-muted-foreground mt-0.5 truncate">
-									{formatCurrency(monthlyPrice)}/ea
-								</div>
-							{/if}
 						</div>
 					</div>
 				{/if}
@@ -157,11 +147,6 @@
 							<div class="font-mono text-sm font-semibold text-datadog-orange truncate">
 								{selectedProduct ? formatCurrency(onDemandTotal) : '-'}
 							</div>
-							{#if selectedProduct && onDemandPrice > 0}
-								<div class="text-[10px] text-muted-foreground mt-0.5 truncate">
-									{formatCurrency(onDemandPrice)}/ea
-								</div>
-							{/if}
 						</div>
 					</div>
 				{/if}

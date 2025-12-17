@@ -6,7 +6,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { fetchQuote, type Quote } from '$lib/api';
-	import { formatCurrency } from '$lib/utils';
+	import { formatCurrency, formatNumber } from '$lib/utils';
 
 	let quote: Quote | null = null;
 	let loading = true;
@@ -139,7 +139,7 @@
 										<div class="font-medium">{item.product}</div>
 										<div class="text-xs text-muted-foreground">{item.billing_unit}</div>
 									</td>
-									<td class="py-4 text-center font-mono">{item.quantity}</td>
+									<td class="py-4 text-center font-mono">{formatNumber(item.quantity)}</td>
 									<td class="py-4 text-right font-mono">{formatCurrency(item.unit_price)}</td>
 									<td class="py-4 text-right font-mono font-semibold text-datadog-purple">
 										{formatCurrency(item.total_price)}
