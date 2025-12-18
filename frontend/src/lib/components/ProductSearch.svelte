@@ -84,6 +84,7 @@
 	}
 
 	function handleFocus() {
+		isTyping = true;
 		isOpen = true;
 	}
 
