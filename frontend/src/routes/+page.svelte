@@ -302,24 +302,25 @@
 		// Check if product changed (using ID for reliable comparison)
 		const productChanged = product?.id !== previousProductId;
 		
-		// Update the line
-		lines = lines.map((l) => (l.id === id ? { ...l, product, quantity } : l));
+		// Build the new lines array in one go to avoid reactivity issues
+		let newLines: LineItem[] = [];
 		
-		// If product changed, handle allotments
 		if (product && productChanged) {
-			// Remove old allotment lines for this parent
-			lines = lines.filter(l => l.parentLineId !== id);
+			// Product changed: update line, remove old allotments, add new allotments
 			
-			// Find allotments for this product
+			// 1. Keep all lines except: the current line and its old allotments
+			newLines = lines.filter(l => l.id !== id && l.parentLineId !== id);
+			
+			// 2. Add the updated line
+			newLines.push({ ...existingLine!, product, quantity });
+			
+			// 3. Find and add new allotments for this product
 			const productAllotments = allotments.filter(a => 
 				a.parent_product.toLowerCase().includes(product.product.toLowerCase()) ||
 				product.product.toLowerCase().includes(a.parent_product.toLowerCase())
 			);
 			
-			// Add all allotment lines at once
-			const newAllotmentLines: LineItem[] = [];
 			for (const allotment of productAllotments) {
-				// Find the allotted product in our products list
 				const allottedProduct = products.find(p => 
 					p.product.toLowerCase().includes(allotment.allotted_product.toLowerCase()) ||
 					allotment.allotted_product.toLowerCase().includes(p.product.toLowerCase())
@@ -327,7 +328,7 @@
 				
 				if (allottedProduct) {
 					const includedQty = allotment.quantity_per_parent * quantity;
-					newAllotmentLines.push({
+					newLines.push({
 						id: crypto.randomUUID(),
 						product: allottedProduct,
 						quantity: includedQty,
@@ -338,23 +339,25 @@
 					});
 				}
 			}
-			
-			// Add all allotments at once
-			if (newAllotmentLines.length > 0) {
-				lines = [...lines, ...newAllotmentLines];
-			}
-		}
-		
-		// If quantity changed on a parent (and product didn't change), update allotment included quantities
-		if (!productChanged && quantity !== existingLine?.quantity) {
-			lines = lines.map(l => {
+		} else if (!productChanged && quantity !== existingLine?.quantity) {
+			// Only quantity changed: update line and recalculate allotment quantities
+			newLines = lines.map(l => {
+				if (l.id === id) {
+					return { ...l, product, quantity };
+				}
 				if (l.parentLineId === id && l.allotmentInfo) {
 					const newIncluded = l.allotmentInfo.quantity_per_parent * quantity;
 					return { ...l, includedQuantity: newIncluded };
 				}
 				return l;
 			});
+		} else {
+			// Just update the line (no product change, no quantity change worth recalculating)
+			newLines = lines.map((l) => (l.id === id ? { ...l, product, quantity } : l));
 		}
+		
+		// Single assignment to trigger reactivity once
+		lines = newLines;
 	}
 
 	async function handleShare() {
