@@ -9,10 +9,15 @@
 
 	let searchQuery = selectedProduct?.product || '';
 	let isOpen = false;
+	let isTyping = false; // Track if user is actively typing
 
-	// Sync searchQuery when selectedProduct changes externally
-	$: if (selectedProduct && searchQuery !== selectedProduct.product) {
+	// Sync searchQuery when selectedProduct changes externally (but not while typing)
+	$: if (selectedProduct && !isTyping) {
 		searchQuery = selectedProduct.product;
+	}
+	// Clear search when selectedProduct is set to null externally
+	$: if (!selectedProduct && !isTyping && searchQuery) {
+		searchQuery = '';
 	}
 	let highlightedIndex = 0;
 	let inputElement: HTMLInputElement;
@@ -30,6 +35,7 @@
 	}
 
 	function handleSelect(product: Product) {
+		isTyping = false;
 		selectedProduct = product;
 		searchQuery = product.product;
 		isOpen = false;
@@ -67,6 +73,8 @@
 	}
 
 	function handleInput() {
+		// User is actively typing
+		isTyping = true;
 		// Reopen dropdown when user types
 		isOpen = true;
 		// Clear selected product if search query doesn't match
@@ -83,6 +91,7 @@
 		// Delay to allow click on option
 		setTimeout(() => {
 			isOpen = false;
+			isTyping = false;
 		}, 150);
 	}
 </script>

@@ -286,13 +286,13 @@
 	}
 
 	function removeLine(id: string) {
-		// Don't allow removing the last non-allotment line
-		const nonAllotmentLines = lines.filter(l => !l.isAllotment);
-		if (nonAllotmentLines.length <= 1 && !lines.find(l => l.id === id)?.isAllotment) {
-			return;
-		}
 		// Remove the line and any associated allotment lines
 		lines = lines.filter((l) => l.id !== id && l.parentLineId !== id);
+		
+		// If all lines were removed, add an empty one
+		if (lines.length === 0) {
+			lines = [{ id: crypto.randomUUID(), product: null, quantity: 1 }];
+		}
 	}
 
 	function updateLine(id: string, product: Product | null, quantity: number) {
@@ -885,59 +885,52 @@
 	</header>
 
 	<!-- Sync Button & Status -->
-	<div class="mb-6 flex flex-wrap items-start justify-between gap-4">
-		<div class="flex items-start gap-3">
+	<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+		<div class="flex items-center gap-3">
 			<!-- Region Selector -->
-			<div>
-				<select
-					bind:value={selectedRegion}
-					on:change={handleRegionChange}
-					class="h-10 rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-datadog-purple focus:ring-offset-2 cursor-pointer"
-				>
-					{#each Object.entries(regions) as [id, region]}
-						<option value={id}>{region.name}</option>
-					{/each}
-				</select>
-				<div class="mt-2 text-xs text-muted-foreground">
-					{#if metadata?.site}
-						<span>{metadata.site}</span>
-					{/if}
-				</div>
-			</div>
+			<select
+				bind:value={selectedRegion}
+				on:change={handleRegionChange}
+				class="h-10 rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-datadog-purple focus:ring-offset-2 cursor-pointer"
+			>
+				{#each Object.entries(regions) as [id, region]}
+					<option value={id}>{region.name}</option>
+				{/each}
+			</select>
 
 			<!-- Sync Button -->
-			<div>
-				<Button
-					variant="outline"
-					on:click={handleSync}
-					disabled={syncing}
-					class="gap-2"
-				>
-					{#if syncing}
-						<svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<path d="M21 12a9 9 0 11-6.219-8.56" />
-						</svg>
-						Syncing...
-					{:else}
-						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
-						</svg>
-						Sync Pricing
+			<Button
+				variant="outline"
+				on:click={handleSync}
+				disabled={syncing}
+				class="gap-2"
+			>
+				{#if syncing}
+					<svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M21 12a9 9 0 11-6.219-8.56" />
+					</svg>
+					Syncing...
+				{:else}
+					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+					</svg>
+					Sync
+				{/if}
+			</Button>
+
+			<!-- Sync Info -->
+			<div class="text-xs text-muted-foreground">
+				{#if loading}
+					<span class="text-muted-foreground/50">Loading...</span>
+				{:else if products.length > 0}
+					<span>{products.length} products</span>
+					{#if lastSyncFormatted}
+						<span class="mx-1">·</span>
+						<span>Last synced: {lastSyncFormatted}</span>
 					{/if}
-				</Button>
-				<div class="mt-2 text-xs text-muted-foreground">
-					{#if loading}
-						<span class="text-muted-foreground/50">Loading...</span>
-					{:else if products.length > 0}
-						<span>{products.length} products</span>
-						{#if lastSyncFormatted}
-							<span class="mx-1">·</span>
-							<span>Last synced: {lastSyncFormatted}</span>
-						{/if}
-					{:else if !lastSyncFormatted}
-						<span class="text-datadog-orange">Not synced yet</span>
-					{/if}
-				</div>
+				{:else if !lastSyncFormatted}
+					<span class="text-datadog-orange">Not synced yet</span>
+				{/if}
 			</div>
 		</div>
 
