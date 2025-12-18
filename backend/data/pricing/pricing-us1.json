@@ -1,5 +1,6 @@
 [
   {
+    "id": "a2feb43e353a",
     "region": "us1",
     "product": "Infrastructure Pro",
     "billing_unit": "Per infra host, per month",
@@ -8,6 +9,7 @@
     "on_demand": "$18"
   },
   {
+    "id": "3ba3107a08f0",
     "region": "us1",
     "product": "Infrastructure Enterprise",
     "billing_unit": "Per infra host, per month",
@@ -16,6 +18,7 @@
     "on_demand": "$27"
   },
   {
+    "id": "c3ac091b3b12",
     "region": "us1",
     "product": "Infrastructure DevSecOps Pro",
     "billing_unit": "Per infra host, per month",
@@ -24,6 +27,7 @@
     "on_demand": "$27"
   },
   {
+    "id": "41721fa9e184",
     "region": "us1",
     "product": "Infrastructure DevSecOps Enterprise",
     "billing_unit": "Per infra host, per month",
@@ -32,6 +36,7 @@
     "on_demand": "$41"
   },
   {
+    "id": "d59028c5f403",
     "region": "us1",
     "product": "Container Monitoring*",
     "billing_unit": "Per container, per month",
@@ -40,6 +45,7 @@
     "on_demand": null
   },
   {
+    "id": "fed3e314168e",
     "region": "us1",
     "product": "Container Monitoring*",
     "billing_unit": "Per container hour, per hour",
@@ -48,6 +54,7 @@
     "on_demand": "$0.002"
   },
   {
+    "id": "fab30a2db493",
     "region": "us1",
     "product": "Custom Metrics* **",
     "billing_unit": "Per 100 custom metrics, per month",
@@ -56,6 +63,7 @@
     "on_demand": "$5"
   },
   {
+    "id": "22c539185ec8",
     "region": "us1",
     "product": "Ingested Custom Metrics*",
     "billing_unit": "Per 100 ingested custom metrics, per month",
@@ -64,6 +72,7 @@
     "on_demand": "$0.10"
   },
   {
+    "id": "e54044a25400",
     "region": "us1",
     "product": "Custom Events*",
     "billing_unit": "Per 100K custom events, per month",
@@ -72,6 +81,7 @@
     "on_demand": "$3"
   },
   {
+    "id": "2e3d98c5f057",
     "region": "us1",
     "product": "Fargate (Infra)",
     "billing_unit": "Per Fargate task, per month",
@@ -80,6 +90,7 @@
     "on_demand": "$1.40"
   },
   {
+    "id": "7f0be2199ae2",
     "region": "us1",
     "product": "IoT",
     "billing_unit": "Per IoT device, per month",
@@ -88,6 +99,7 @@
     "on_demand": "$7.20"
   },
   {
+    "id": "034897b3e125",
     "region": "us1",
     "product": "Cloud Network Monitoring",
     "billing_unit": "Per network host, per month",
@@ -96,6 +108,7 @@
     "on_demand": "$7.20"
   },
   {
+    "id": "9dc70e7997d5",
     "region": "us1",
     "product": "Network Device Monitoring",
     "billing_unit": "Per network device, per month",
@@ -104,6 +117,7 @@
     "on_demand": "$10.20"
   },
   {
+    "id": "339d4002fee8",
     "region": "us1",
     "product": "Wireless Access Point Monitoring",
     "billing_unit": "Per device, per month",
@@ -112,6 +126,7 @@
     "on_demand": "$5.76"
   },
   {
+    "id": "f8b4f446e2ec",
     "region": "us1",
     "product": "NetFlow Monitoring",
     "billing_unit": "Per million aggregated NetFlow records (15-day retention), per month",
@@ -120,6 +135,7 @@
     "on_demand": "$0.86"
   },
   {
+    "id": "1f1de38ce8c5",
     "region": "us1",
     "product": "NetFlow Monitoring",
     "billing_unit": "Per million aggregated NetFlow records (30-day retention), per month",
@@ -128,6 +144,7 @@
     "on_demand": "$0.94"
   },
   {
+    "id": "88bbbffa4c39",
     "region": "us1",
     "product": "NetFlow Monitoring",
     "billing_unit": "Per million aggregated NetFlow records 60-day retention), per month",
@@ -136,6 +153,7 @@
     "on_demand": "$1.08"
   },
   {
+    "id": "6ee0fc08c5fd",
     "region": "us1",
     "product": "NetFlow Monitoring",
     "billing_unit": "Per million aggregated NetFlow records (90-day retention), per month",
@@ -144,6 +162,7 @@
     "on_demand": "$1.22"
   },
   {
+    "id": "7dc8a69b5717",
     "region": "us1",
     "product": "Serverless Workload Monitoring - Apps",
     "billing_unit": "Per active application instance, per month",
@@ -152,6 +171,7 @@
     "on_demand": "$4.32"
   },
   {
+    "id": "093155fe74fa",
     "region": "us1",
     "product": "Serverless Workload Monitoring - Functions",
     "billing_unit": "Per active function, per month",
@@ -160,6 +180,7 @@
     "on_demand": "$7.20"
   },
   {
+    "id": "dc64666edb45",
     "region": "us1",
     "product": "Serverless Application APM",
     "billing_unit": "Per actively traced application instance",
@@ -168,6 +189,7 @@
     "on_demand": "$9"
   },
   {
+    "id": "a2168f317bd3",
     "region": "us1",
     "product": "Serverless Functions APM",
     "billing_unit": "Per 1M traced invocations, per month",
@@ -176,6 +198,7 @@
     "on_demand": "$15"
   },
   {
+    "id": "34d42dbe76ae",
     "region": "us1",
     "product": "Cloud Cost Management",
     "billing_unit": "Per host, per month",
@@ -184,6 +207,7 @@
     "on_demand": "$10.80"
   },
   {
+    "id": "ff76468b12e5",
     "region": "us1",
     "product": "Logs - Ingestion",
     "billing_unit": "Per ingested logs (1GB), per month",
@@ -192,6 +216,7 @@
     "on_demand": "$0.10"
   },
   {
+    "id": "ca2fde8ab46f",
     "region": "us1",
     "product": "Logs - Indexed Log Events",
     "billing_unit": "Per 1M indexed logs (3-day retention), per month",
@@ -200,6 +225,7 @@
     "on_demand": "$1.59"
   },
   {
+    "id": "d636203d6f2b",
     "region": "us1",
     "product": "Logs - Indexed Log Events",
     "billing_unit": "Per 1M indexed logs (7-day retention), per month",
@@ -208,6 +234,7 @@
     "on_demand": "$1.91"
   },
   {
+    "id": "db4c605bbc95",
     "region": "us1",
     "product": "Logs - Indexed Log Events",
     "billing_unit": "Per 1M indexed logs (15-day retention), per month",
@@ -216,6 +243,7 @@
     "on_demand": "$2.55"
   },
   {
+    "id": "2ba9369bc570",
     "region": "us1",
     "product": "Logs - Indexed Log Events",
     "billing_unit": "Per 1M indexed logs (30-day retention), per month",
@@ -224,6 +252,7 @@
     "on_demand": "$3.75"
   },
   {
+    "id": "69063597e52c",
     "region": "us1",
     "product": "Flex Logs Storage",
     "billing_unit": "Per 1 M events stored, per month",
@@ -232,6 +261,7 @@
     "on_demand": "$0.075"
   },
   {
+    "id": "4629fda87c66",
     "region": "us1",
     "product": "Flex Logs Starter",
     "billing_unit": "Per 1 M events stored (6, 12 or 15 months retention), per month",
@@ -240,6 +270,7 @@
     "on_demand": "$0.90"
   },
   {
+    "id": "b9be186aec2c",
     "region": "us1",
     "product": "Logs - Forwarding to Custom Destinations",
     "billing_unit": "Per GB outbound, per destination, per month",
@@ -248,6 +279,7 @@
     "on_demand": "$0.25"
   },
   {
+    "id": "9560f10d5aab",
     "region": "us1",
     "product": "Sensitive Data Scanner",
     "billing_unit": "Per scanned GB, per month",
@@ -256,6 +288,7 @@
     "on_demand": "$0.45"
   },
   {
+    "id": "0faddceec17f",
     "region": "us1",
     "product": "Audit Trail",
     "billing_unit": "Per % of spend, per month",
@@ -264,6 +297,7 @@
     "on_demand": "3%"
   },
   {
+    "id": "06f729d5c599",
     "region": "us1",
     "product": "Observability Pipelines",
     "billing_unit": "Per ingested GB, per month",
@@ -272,6 +306,7 @@
     "on_demand": "$0.12"
   },
   {
+    "id": "88a18f747afb",
     "region": "us1",
     "product": "Observability Pipelines Plus",
     "billing_unit": "Per vCPU, per month",
@@ -280,6 +315,7 @@
     "on_demand": "$2808"
   },
   {
+    "id": "cdf4c8acc0ec",
     "region": "us1",
     "product": "APM",
     "billing_unit": "Per APM host, per month",
@@ -288,6 +324,7 @@
     "on_demand": "$36"
   },
   {
+    "id": "eeb9a9267f82",
     "region": "us1",
     "product": "APM Ingestion*",
     "billing_unit": "Per ingested GB, per month",
@@ -296,6 +333,7 @@
     "on_demand": "$0.10"
   },
   {
+    "id": "fc5301430d98",
     "region": "us1",
     "product": "APM - Indexed Spans*",
     "billing_unit": "Per 1M indexed spans (7-day retention), per month",
@@ -304,6 +342,7 @@
     "on_demand": "$1.91"
   },
   {
+    "id": "1d11af43a354",
     "region": "us1",
     "product": "APM - Indexed Spans*",
     "billing_unit": "Per 1M indexed spans (15-day retention), per month",
@@ -312,6 +351,7 @@
     "on_demand": "$2.55"
   },
   {
+    "id": "61ec68ceb9e3",
     "region": "us1",
     "product": "APM - Indexed Spans*",
     "billing_unit": "Per 1M indexed spans (30-day retention), per month",
@@ -320,6 +360,7 @@
     "on_demand": "$3.75"
   },
   {
+    "id": "a09bbb722b5c",
     "region": "us1",
     "product": "Fargate (APM)",
     "billing_unit": "Per Fargate task, per month",
@@ -328,6 +369,7 @@
     "on_demand": "$2.90"
   },
   {
+    "id": "b56961fb7fec",
     "region": "us1",
     "product": "APM Pro (APM and Data Streams Monitoring)",
     "billing_unit": "Per APM host, per month",
@@ -336,6 +378,7 @@
     "on_demand": "$42"
   },
   {
+    "id": "ee5e36f94333",
     "region": "us1",
     "product": "APM Enterprise (APM, Data Streams Monitoring, Continuous Profiler)",
     "billing_unit": "Per APM host, per month",
@@ -344,6 +387,7 @@
     "on_demand": "$48"
   },
   {
+    "id": "bb034997b6af",
     "region": "us1",
     "product": "Fargate (APM Enterprise)",
     "billing_unit": "Per Fargate task, per month",
@@ -352,6 +396,7 @@
     "on_demand": "$3.70"
   },
   {
+    "id": "49da745ec651",
     "region": "us1",
     "product": "Universal Service Monitoring",
     "billing_unit": "Per infra host, per month",
@@ -360,6 +405,7 @@
     "on_demand": "$13"
   },
   {
+    "id": "4335a2769d9e",
     "region": "us1",
     "product": "Data Streams Monitoring",
     "billing_unit": "Per host, per month",
@@ -368,6 +414,7 @@
     "on_demand": "$18"
   },
   {
+    "id": "d491c490c08e",
     "region": "us1",
     "product": "Continuous Profiler",
     "billing_unit": "Per profiled host, per month",
@@ -376,6 +423,7 @@
     "on_demand": "$23"
   },
   {
+    "id": "7f558815879a",
     "region": "us1",
     "product": "Fargate (Continuous Profiler)",
     "billing_unit": "Per Fargate task, per month",
@@ -384,6 +432,7 @@
     "on_demand": "$1.70"
   },
   {
+    "id": "23974d9b3d46",
     "region": "us1",
     "product": "Continuous Profiler - Containers*",
     "billing_unit": "Per profiled container, per month",
@@ -392,6 +441,7 @@
     "on_demand": null
   },
   {
+    "id": "1f045fa6ddc1",
     "region": "us1",
     "product": "Continuous Profiler - Containers*",
     "billing_unit": "Per profiled container, per hour",
@@ -400,6 +450,7 @@
     "on_demand": "$0.004"
   },
   {
+    "id": "27edcf50c1e4",
     "region": "us1",
     "product": "Database Monitoring",
     "billing_unit": "Per database host, per month",
@@ -408,6 +459,7 @@
     "on_demand": "$84"
   },
   {
+    "id": "0fc237bb2388",
     "region": "us1",
     "product": "Data Jobs Monitoring",
     "billing_unit": "Per host, per hour",
@@ -416,6 +468,7 @@
     "on_demand": "$0.072"
   },
   {
+    "id": "f0a73b6bcff2",
     "region": "us1",
     "product": "Pipeline Visibility",
     "billing_unit": "Per active Git committer (3 times per month), per month",
@@ -424,6 +477,7 @@
     "on_demand": "$12"
   },
   {
+    "id": "bde3657ac280",
     "region": "us1",
     "product": "Test Optimization",
     "billing_unit": "Per active Git committer (3 times per month), per month",
@@ -432,6 +486,7 @@
     "on_demand": "$29"
   },
   {
+    "id": "6eec176f9f8a",
     "region": "us1",
     "product": "Cloud Security Management (CSM) Pro",
     "billing_unit": "Per CSM host, per month",
@@ -440,6 +495,7 @@
     "on_demand": "$12"
   },
   {
+    "id": "f722587f5597",
     "region": "us1",
     "product": "Cloud Security Management (CSM) Pro Containers*",
     "billing_unit": "Per container, per month",
@@ -448,6 +504,7 @@
     "on_demand": null
   },
   {
+    "id": "c97083d3c291",
     "region": "us1",
     "product": "Cloud Security Management (CSM) Pro Containers*",
     "billing_unit": "Per container hour, per hour",
@@ -456,6 +513,7 @@
     "on_demand": "$0.001"
   },
   {
+    "id": "98770a518711",
     "region": "us1",
     "product": "Cloud Security Management (CSM) Enterprise",
     "billing_unit": "Per CSM host, per month",
@@ -464,6 +522,7 @@
     "on_demand": "$30"
   },
   {
+    "id": "2e96de282116",
     "region": "us1",
     "product": "Cloud Security Management (CSM) Enterprise Containers*",
     "billing_unit": "Per container, per month",
@@ -472,6 +531,7 @@
     "on_demand": null
   },
   {
+    "id": "5c4c56f95795",
     "region": "us1",
     "product": "Cloud Security Management (CSM) Enterprise Containers*",
     "billing_unit": "Per container hour, per hour",
@@ -480,6 +540,7 @@
     "on_demand": "$0.002"
   },
   {
+    "id": "1623b6920f5a",
     "region": "us1",
     "product": "Workload Protection",
     "billing_unit": "Per Workload Protection host, per month",
@@ -488,6 +549,7 @@
     "on_demand": "$18"
   },
   {
+    "id": "700d78de752c",
     "region": "us1",
     "product": "Workload Protection Containers*",
     "billing_unit": "Per container, per month",
@@ -496,6 +558,7 @@
     "on_demand": null
   },
   {
+    "id": "56f5583b0bfd",
     "region": "us1",
     "product": "Workload Protection Containers*",
     "billing_unit": "Per container hour, per hour",
@@ -504,6 +567,7 @@
     "on_demand": "$0.002"
   },
   {
+    "id": "62fb81c594c1",
     "region": "us1",
     "product": "Fargate (Workload Protection)",
     "billing_unit": "Per Fargate task, per month",
@@ -512,6 +576,7 @@
     "on_demand": "$3.70"
   },
   {
+    "id": "3abee8ce9654",
     "region": "us1",
     "product": "Application Security - Threat Management",
     "billing_unit": "Per ASM host, per month",
@@ -520,6 +585,7 @@
     "on_demand": "$36"
   },
   {
+    "id": "15e90ee2827b",
     "region": "us1",
     "product": "Fargate (Application Security - Threat Management)",
     "billing_unit": "Per Fargate task, per month",
@@ -528,6 +594,7 @@
     "on_demand": "$2.90"
   },
   {
+    "id": "db3bbcbacb5e",
     "region": "us1",
     "product": "Serverless Application Security (Threat Management)",
     "billing_unit": "Per 1M traced invocations, per month",
@@ -536,6 +603,7 @@
     "on_demand": "$15"
   },
   {
+    "id": "7de43bcd6a13",
     "region": "us1",
     "product": "Cloud SIEM",
     "billing_unit": "Per 1M analyzed events, per month",
@@ -544,6 +612,7 @@
     "on_demand": "$7.50"
   },
   {
+    "id": "34abe0dfc504",
     "region": "us1",
     "product": "Runtime Software Composition Analysis",
     "billing_unit": "Per host, per month",
@@ -552,6 +621,7 @@
     "on_demand": "$15"
   },
   {
+    "id": "2073fa3364a8",
     "region": "us1",
     "product": "Static Software Composition Analysis",
     "billing_unit": "Per committer, per month",
@@ -560,6 +630,7 @@
     "on_demand": "$36"
   },
   {
+    "id": "b2e9445274a4",
     "region": "us1",
     "product": "Runtime Code Analysis (IAST)",
     "billing_unit": "Per host, per month",
@@ -568,6 +639,7 @@
     "on_demand": "$29"
   },
   {
+    "id": "398a616e4a0a",
     "region": "us1",
     "product": "Static Code Analysis (SAST)",
     "billing_unit": "Per committer, per month",
@@ -576,6 +648,7 @@
     "on_demand": "$36"
   },
   {
+    "id": "c9aadfcd6597",
     "region": "us1",
     "product": "Code Security Bundle",
     "billing_unit": "Per committer, per month",
@@ -584,6 +657,7 @@
     "on_demand": "$57.60"
   },
   {
+    "id": "adf592d6b28a",
     "region": "us1",
     "product": "Product Analytics",
     "billing_unit": "Per 1,000 sessions, per month on full traffic",
@@ -592,6 +666,7 @@
     "on_demand": "$1.20"
   },
   {
+    "id": "764a630a6b8a",
     "region": "us1",
     "product": "Real User Monitoring (RUM) - Measure",
     "billing_unit": "Per 1,000 sessions, per month on full traffic",
@@ -600,6 +675,7 @@
     "on_demand": "$0.22"
   },
   {
+    "id": "5b0397603963",
     "region": "us1",
     "product": "Real User Investigate (RUM) - Investigate",
     "billing_unit": "Per 1,000 sessions, per month on filtered sessions",
@@ -608,6 +684,7 @@
     "on_demand": "$4.50"
   },
   {
+    "id": "3eeaecfce691",
     "region": "us1",
     "product": "Session Replay (Add-On for RUM and Prodct Analytics)",
     "billing_unit": "Per 1,000 sessions, per month",
@@ -616,6 +693,7 @@
     "on_demand": "$3.60"
   },
   {
+    "id": "3d5058e44b98",
     "region": "us1",
     "product": "Synthetic API Tests",
     "billing_unit": "per 10K API test runs, per month",
@@ -624,6 +702,7 @@
     "on_demand": "$7.20"
   },
   {
+    "id": "0dcd1bfb220d",
     "region": "us1",
     "product": "Synthetic Browser Tests",
     "billing_unit": "per 1K browser test runs, per month",
@@ -632,6 +711,7 @@
     "on_demand": "$18"
   },
   {
+    "id": "f542d3c09315",
     "region": "us1",
     "product": "Mobile App Testing",
     "billing_unit": "Per 100 test runs, per month",
@@ -640,6 +720,7 @@
     "on_demand": "$72"
   },
   {
+    "id": "e836d0c8b81b",
     "region": "us1",
     "product": "Parallel Testing",
     "billing_unit": "Per additional parallelizations, per month",
@@ -648,6 +729,7 @@
     "on_demand": "$114"
   },
   {
+    "id": "ece671e9539e",
     "region": "us1",
     "product": "On-Call",
     "billing_unit": "Per seat, per month",
@@ -656,6 +738,7 @@
     "on_demand": "$29"
   },
   {
+    "id": "63894d3a39fc",
     "region": "us1",
     "product": "Incident Management",
     "billing_unit": "Per seat, per month",
@@ -664,6 +747,7 @@
     "on_demand": "$43.20"
   },
   {
+    "id": "1a79bfcb8100",
     "region": "us1",
     "product": "Incident Response",
     "billing_unit": "Per seat, per month",
@@ -672,6 +756,7 @@
     "on_demand": "$58"
   },
   {
+    "id": "926569c9fa91",
     "region": "us1",
     "product": "Event Management",
     "billing_unit": "Per event evaluated by a correlation pattern, per month",
@@ -680,6 +765,7 @@
     "on_demand": "$0.14"
   },
   {
+    "id": "184eb0df7ab4",
     "region": "us1",
     "product": "Workflow Automation",
     "billing_unit": "Per 100 Workflow Executions, per month",
@@ -688,6 +774,7 @@
     "on_demand": "$14"
   },
   {
+    "id": "9a49346976de",
     "region": "us1",
     "product": "Error Tracking (1-50K)",
     "billing_unit": "For the first 50k errors, per month",
@@ -696,6 +783,7 @@
     "on_demand": "$36"
   },
   {
+    "id": "19bbf896760c",
     "region": "us1",
     "product": "Error Tracking (50-100K)",
     "billing_unit": "Per 1k errors at 50-100k, per month",
@@ -704,6 +792,7 @@
     "on_demand": "$0.38"
   },
   {
+    "id": "a7a83ce49b70",
     "region": "us1",
     "product": "Error Tracking (100-500K)",
     "billing_unit": "Per 1k errors at 100-500k, per month",
@@ -712,6 +801,7 @@
     "on_demand": "$0.32"
   },
   {
+    "id": "44dc726aff1d",
     "region": "us1",
     "product": "Error Tracking (500K-10M)",
     "billing_unit": "Per 1k errors at 500k-10m, per month",
@@ -720,6 +810,7 @@
     "on_demand": "$0.26"
   },
   {
+    "id": "5f4b0f42fc27",
     "region": "us1",
     "product": "Error Tracking (10M-20M)",
     "billing_unit": "Per 1k errors at 10m-20m, per month",
@@ -728,6 +819,7 @@
     "on_demand": "$0.22"
   },
   {
+    "id": "9a206e5b74ee",
     "region": "us1",
     "product": "Error Tracking (20M+)",
     "billing_unit": "Per 1k errors at 20m+, per month",
@@ -736,6 +828,7 @@
     "on_demand": "$0.18"
   },
   {
+    "id": "e18e685855f7",
     "region": "us1",
     "product": "App Builder",
     "billing_unit": "Per published app, per month",
@@ -744,6 +837,7 @@
     "on_demand": "$51"
   },
   {
+    "id": "176d30c07677",
     "region": "us1",
     "product": "Bits AI SRE Investigations",
     "billing_unit": "Per 20 investigations, per month",

@@ -94,6 +94,7 @@ async def get_products(region: str = Query(default=DEFAULT_REGION, description="
     data = load_pricing_data(region)
     products = [
         {
+            "id": item.get("id", ""),
             "product": item["product"],
             "billing_unit": item["billing_unit"],
             "billed_annually": item.get("billed_annually"),
