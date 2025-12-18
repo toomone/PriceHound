@@ -71,7 +71,7 @@
 					{selectedProduct?.product || 'Unknown product'}
 				</span>
 				<Badge variant="outline" class="text-[9px] px-1.5 py-0 bg-datadog-green/10 text-datadog-green border-datadog-green/30 shrink-0">
-					Included
+					Allotment
 				</Badge>
 			</div>
 
