@@ -884,39 +884,42 @@
 		</div>
 	</header>
 
-	<!-- Sync Button & Status -->
+	<!-- Pricing Region & Sync -->
 	<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
-		<div class="flex items-center gap-3">
-			<!-- Region Selector -->
-			<select
-				bind:value={selectedRegion}
-				on:change={handleRegionChange}
-				class="h-10 rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-datadog-purple focus:ring-offset-2 cursor-pointer"
-			>
-				{#each Object.entries(regions) as [id, region]}
-					<option value={id}>{region.name}</option>
-				{/each}
-			</select>
-
-			<!-- Sync Button -->
-			<Button
-				variant="outline"
-				on:click={handleSync}
-				disabled={syncing}
-				class="gap-2"
-			>
-				{#if syncing}
-					<svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M21 12a9 9 0 11-6.219-8.56" />
-					</svg>
-					Syncing...
-				{:else}
-					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
-					</svg>
-					Sync
-				{/if}
-			</Button>
+		<div class="flex items-center gap-4">
+			<!-- Region Selector Group -->
+			<div class="flex items-center gap-2">
+				<label class="text-sm text-muted-foreground whitespace-nowrap">Pricing region:</label>
+				<div class="flex items-center rounded-lg border border-input bg-background">
+					<select
+						bind:value={selectedRegion}
+						on:change={handleRegionChange}
+						class="h-9 rounded-l-lg border-0 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-0 cursor-pointer"
+					>
+						{#each Object.entries(regions) as [id, region]}
+							<option value={id}>{region.name}</option>
+						{/each}
+					</select>
+					<Button
+						variant="ghost"
+						size="sm"
+						on:click={handleSync}
+						disabled={syncing}
+						class="h-9 rounded-l-none border-l border-input gap-1.5 px-3"
+					>
+						{#if syncing}
+							<svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M21 12a9 9 0 11-6.219-8.56" />
+							</svg>
+						{:else}
+							<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+							</svg>
+						{/if}
+						Sync
+					</Button>
+				</div>
+			</div>
 
 			<!-- Sync Info -->
 			<div class="text-xs text-muted-foreground">
