@@ -1,8 +1,8 @@
 {
   "region": "eu1",
-  "region_name": "EU1 (Frankfurt)",
-  "site": "datadoghq.eu",
-  "last_sync": "2025-12-18T08:43:09.876350",
+  "region_name": "EU1",
+  "site": "eu1",
+  "last_sync": "2025-12-18T09:02:16.666442",
   "products_count": 94,
-  "source_url": "https://www.datadoghq.com/pricing/list/"
+  "source_url": "https://www.datadoghq.com/pricing/list/?site=eu1"
 }

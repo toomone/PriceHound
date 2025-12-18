@@ -20,41 +20,35 @@ def generate_product_id(product_name: str, billing_unit: str) -> str:
 DATA_DIR = Path(__file__).parent.parent / "data"
 PRICING_DIR = DATA_DIR / "pricing"
 
-# Datadog regions with their pricing page URLs
+# Datadog regions/sites matching the pricing page selector
+# Site values match the dropdown on https://www.datadoghq.com/pricing/list/
 REGIONS = {
-    "us1": {
-        "name": "US1 (Virginia)",
-        "url": "https://www.datadoghq.com/pricing/list/",
-        "site": "datadoghq.com"
+    "us": {
+        "name": "US (US1, US3, US5)",
+        "site": "us"
     },
-    "us3": {
-        "name": "US3 (Virginia)", 
-        "url": "https://www.datadoghq.com/pricing/list/",
-        "site": "us3.datadoghq.com"
-    },
-    "us5": {
-        "name": "US5 (Oregon)",
-        "url": "https://www.datadoghq.com/pricing/list/",
-        "site": "us5.datadoghq.com"
+    "us1-fed": {
+        "name": "US1-FED",
+        "site": "us1-fed"
     },
     "eu1": {
-        "name": "EU1 (Frankfurt)",
-        "url": "https://www.datadoghq.com/pricing/list/",
-        "site": "datadoghq.eu"
+        "name": "EU1",
+        "site": "eu1"
     },
     "ap1": {
-        "name": "AP1 (Tokyo)",
-        "url": "https://www.datadoghq.com/pricing/list/",
-        "site": "ap1.datadoghq.com"
+        "name": "AP1",
+        "site": "ap1"
     },
-    "gov": {
-        "name": "US1-FED (GovCloud)",
-        "url": "https://www.datadoghq.com/pricing/list/",
-        "site": "ddog-gov.com"
+    "ap2": {
+        "name": "AP2",
+        "site": "ap2"
     }
 }
 
-DEFAULT_REGION = "us1"
+# Base URL for pricing page - site is selected via cookie/JS on the page
+PRICING_BASE_URL = "https://www.datadoghq.com/pricing/list/"
+
+DEFAULT_REGION = "us"
 
 
 def get_pricing_file(region: str) -> Path:
@@ -82,12 +76,16 @@ def parse_price(price_str: str) -> float:
 def scrape_pricing_data(region: str = DEFAULT_REGION) -> list[dict]:
     """Scrape pricing data from Datadog pricing page."""
     region_info = REGIONS.get(region, REGIONS[DEFAULT_REGION])
+    site = region_info["site"]
+    
+    # Build URL with site parameter
+    pricing_url = f"{PRICING_BASE_URL}?site={site}"
     
     headers = {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     }
     
-    response = requests.get(region_info["url"], headers=headers, timeout=30)
+    response = requests.get(pricing_url, headers=headers, timeout=30)
     response.raise_for_status()
     
     soup = BeautifulSoup(response.content, 'lxml')
@@ -164,13 +162,14 @@ def save_pricing_data(data: list[dict], region: str = DEFAULT_REGION) -> None:
     
     # Save metadata with last sync timestamp
     region_info = REGIONS.get(region, REGIONS[DEFAULT_REGION])
+    site = region_info["site"]
     metadata = {
         "region": region,
         "region_name": region_info["name"],
-        "site": region_info["site"],
+        "site": site,
         "last_sync": datetime.utcnow().isoformat(),
         "products_count": len(data),
-        "source_url": region_info["url"]
+        "source_url": f"{PRICING_BASE_URL}?site={site}"
     }
     metadata_file = get_metadata_file(region)
     with open(metadata_file, 'w') as f:

@@ -80,13 +80,13 @@ export async function fetchRegionsStatus(): Promise<RegionStatus[]> {
 	return response.json();
 }
 
-export async function fetchProducts(region: string = 'us1'): Promise<Product[]> {
+export async function fetchProducts(region: string = 'us'): Promise<Product[]> {
 	const response = await fetch(`${API_BASE}/products?region=${region}`);
 	if (!response.ok) throw new Error('Failed to fetch products');
 	return response.json();
 }
 
-export async function fetchMetadata(region: string = 'us1'): Promise<PricingMetadata | null> {
+export async function fetchMetadata(region: string = 'us'): Promise<PricingMetadata | null> {
 	try {
 		const response = await fetch(`${API_BASE}/pricing/metadata?region=${region}`);
 		if (!response.ok) return null;
@@ -96,7 +96,7 @@ export async function fetchMetadata(region: string = 'us1'): Promise<PricingMeta
 	}
 }
 
-export async function syncPricing(region: string = 'us1'): Promise<SyncResponse> {
+export async function syncPricing(region: string = 'us'): Promise<SyncResponse> {
 	const response = await fetch(`${API_BASE}/pricing/sync?region=${region}`, { method: 'POST' });
 	if (!response.ok) throw new Error('Failed to sync pricing');
 	return response.json();

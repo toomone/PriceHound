@@ -23,7 +23,7 @@
 	let metadata: PricingMetadata | null = null;
 	let regions: Record<string, Region> = {};
 	let allotments: Allotment[] = [];
-	let selectedRegion = 'us1';
+	let selectedRegion = 'us';
 	let lines: LineItem[] = [{ id: crypto.randomUUID(), product: null, quantity: 1 }];
 	let quoteName = '';
 	let loading = false;
@@ -678,7 +678,7 @@
 			}
 
 			// Set region if present and valid
-			if (data.region && ['us1', 'us3', 'us5', 'eu1', 'ap1', 'us1-fed'].includes(data.region)) {
+			if (data.region && ['us', 'us1-fed', 'eu1', 'ap1', 'ap2'].includes(data.region)) {
 				if (data.region !== selectedRegion) {
 					selectedRegion = data.region;
 					await loadProducts();
