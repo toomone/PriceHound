@@ -161,13 +161,21 @@
 		}
 	}
 
-	async function loadClonedQuote(cloneData: { name: string; items: { product: string; quantity: number }[] }) {
+	async function loadClonedQuote(cloneData: { name: string; items: { id?: string; product: string; quantity: number }[] }) {
 		quoteName = cloneData.name ? `${cloneData.name} (Copy)` : '';
 		
-		// Map cloned items to lines
+		// Map cloned items to lines - match by ID first, then by name
 		const newLines: LineItem[] = [];
 		for (const item of cloneData.items) {
-			const matchedProduct = products.find(p => p.product === item.product);
+			let matchedProduct = item.id 
+				? products.find(p => p.id === item.id)
+				: null;
+			
+			// Fallback to name matching if ID not found
+			if (!matchedProduct) {
+				matchedProduct = products.find(p => p.product === item.product);
+			}
+			
 			if (matchedProduct) {
 				newLines.push({
 					id: crypto.randomUUID(),
@@ -234,25 +242,41 @@
 		// Reset metadata to show loading state
 		metadata = null;
 		
-		// Store current line selections (product names and quantities)
+		// Store current line selections (product IDs and quantities)
 		const previousSelections = lines.map(line => ({
 			id: line.id,
+			productId: line.product?.id || null,
 			productName: line.product?.product || null,
-			quantity: line.quantity
+			quantity: line.quantity,
+			isAllotment: line.isAllotment,
+			parentLineId: line.parentLineId,
+			allotmentInfo: line.allotmentInfo,
+			includedQuantity: line.includedQuantity
 		}));
 		
 		// Load new region's products
 		await loadProducts();
 		
-		// Restore line selections by matching product names to new region's products
+		// Restore line selections by matching product IDs to new region's products
 		lines = previousSelections.map(selection => {
-			const matchedProduct = selection.productName 
-				? products.find(p => p.product === selection.productName) || null
+			// Match by ID first (IDs are consistent across regions)
+			let matchedProduct = selection.productId 
+				? products.find(p => p.id === selection.productId) || null
 				: null;
+			
+			// Fallback to name matching
+			if (!matchedProduct && selection.productName) {
+				matchedProduct = products.find(p => p.product === selection.productName) || null;
+			}
+			
 			return {
 				id: selection.id,
 				product: matchedProduct,
-				quantity: selection.quantity
+				quantity: selection.quantity,
+				isAllotment: selection.isAllotment,
+				parentLineId: selection.parentLineId,
+				allotmentInfo: selection.allotmentInfo,
+				includedQuantity: selection.includedQuantity
 			};
 		});
 	}
@@ -334,7 +358,7 @@
 		error = '';
 
 		try {
-			// Build items with allotment info
+			// Build items with allotment info and product IDs
 			const items = validLines
 				.filter(l => !l.isAllotment) // Only parent products
 				.map((l) => {
@@ -342,12 +366,14 @@
 					const lineAllotments = lines
 						.filter(al => al.isAllotment && al.parentLineId === l.id)
 						.map(al => ({
+							id: al.product!.id,
 							allotted_product: al.product!.product,
 							quantity_included: al.includedQuantity || 0,
 							allotted_unit: al.allotmentInfo?.allotted_unit || 'units'
 						}));
 					
 					return {
+						id: l.product!.id,
 						product: l.product!.product,
 						quantity: l.quantity,
 						allotments: lineAllotments

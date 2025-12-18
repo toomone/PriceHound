@@ -17,8 +17,8 @@ def get_quote_file(quote_id: str) -> Path:
     return QUOTES_DIR / f"quote-{quote_id}.json"
 
 
-def get_price_for_product(product: str, billing_type: str) -> tuple[float, str]:
-    """Get price for a product based on billing type."""
+def get_price_for_product(product_id: str, product_name: str, billing_type: str) -> tuple[float, str, str]:
+    """Get price for a product based on billing type. Returns (price, billing_unit, product_id)."""
     pricing_data = load_pricing_data()
     
     billing_map = {
@@ -29,12 +29,20 @@ def get_price_for_product(product: str, billing_type: str) -> tuple[float, str]:
     
     price_field = billing_map.get(billing_type, 'billed_annually')
     
-    for item in pricing_data:
-        if item['product'] == product:
-            price_str = item.get(price_field) or item.get('billed_annually') or '0'
-            return parse_price(price_str), item.get('billing_unit', 'per unit')
+    # Try to find by ID first
+    if product_id:
+        for item in pricing_data:
+            if item.get('id') == product_id:
+                price_str = item.get(price_field) or item.get('billed_annually') or '0'
+                return parse_price(price_str), item.get('billing_unit', 'per unit'), item.get('id', '')
     
-    return 0.0, 'per unit'
+    # Fallback to name matching
+    for item in pricing_data:
+        if item['product'] == product_name:
+            price_str = item.get(price_field) or item.get('billed_annually') or '0'
+            return parse_price(price_str), item.get('billing_unit', 'per unit'), item.get('id', '')
+    
+    return 0.0, 'per unit', ''
 
 
 def save_quote_file(quote: Quote) -> None:
@@ -63,19 +71,33 @@ def create_quote(name: Optional[str], billing_type: str, items: list[dict]) -> Q
     total = 0.0
     
     for item in items:
+        product_id = item.get('id', '')
         product = item.get('product', '')
         quantity = int(item.get('quantity', 0))
         
-        unit_price, billing_unit = get_price_for_product(product, billing_type)
+        unit_price, billing_unit, resolved_id = get_price_for_product(product_id, product, billing_type)
         item_total = unit_price * quantity
         total += item_total
         
+        # Process allotments with IDs
+        allotments = []
+        for allot in item.get('allotments', []):
+            from .models import AllotmentInfo
+            allotments.append(AllotmentInfo(
+                id=allot.get('id', ''),
+                allotted_product=allot.get('allotted_product', ''),
+                quantity_included=allot.get('quantity_included', 0),
+                allotted_unit=allot.get('allotted_unit', 'units')
+            ))
+        
         quote_items.append(QuoteLineItem(
+            id=resolved_id or product_id,
             product=product,
             billing_unit=billing_unit,
             quantity=quantity,
             unit_price=unit_price,
-            total_price=item_total
+            total_price=item_total,
+            allotments=allotments
         ))
     
     quote = Quote(
@@ -115,19 +137,33 @@ def update_quote(quote_id: str, name: Optional[str], billing_type: str, items: l
     total = 0.0
     
     for item in items:
+        product_id = item.get('id', '')
         product = item.get('product', '')
         quantity = int(item.get('quantity', 0))
         
-        unit_price, billing_unit = get_price_for_product(product, billing_type)
+        unit_price, billing_unit, resolved_id = get_price_for_product(product_id, product, billing_type)
         item_total = unit_price * quantity
         total += item_total
         
+        # Process allotments with IDs
+        allotments = []
+        for allot in item.get('allotments', []):
+            from .models import AllotmentInfo
+            allotments.append(AllotmentInfo(
+                id=allot.get('id', ''),
+                allotted_product=allot.get('allotted_product', ''),
+                quantity_included=allot.get('quantity_included', 0),
+                allotted_unit=allot.get('allotted_unit', 'units')
+            ))
+        
         quote_items.append(QuoteLineItem(
+            id=resolved_id or product_id,
             product=product,
             billing_unit=billing_unit,
             quantity=quantity,
             unit_price=unit_price,
-            total_price=item_total
+            total_price=item_total,
+            allotments=allotments
         ))
     
     quote = Quote(

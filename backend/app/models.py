@@ -4,6 +4,7 @@ from datetime import datetime
 
 
 class PricingItem(BaseModel):
+    id: Optional[str] = None
     region: str
     product: str
     billing_unit: str
@@ -13,12 +14,14 @@ class PricingItem(BaseModel):
 
 
 class AllotmentInfo(BaseModel):
+    id: Optional[str] = None
     allotted_product: str
     quantity_included: int
     allotted_unit: str
 
 
 class QuoteLineItem(BaseModel):
+    id: Optional[str] = None
     product: str
     billing_unit: str
     quantity: int

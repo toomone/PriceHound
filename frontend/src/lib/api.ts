@@ -34,11 +34,13 @@ export interface PricingMetadata {
 }
 
 export interface QuoteLineItem {
+	id?: string;
 	product: string;
 	billing_unit: string;
 	quantity: number;
 	unit_price: number;
 	total_price: number;
+	allotments?: { id?: string; allotted_product: string; quantity_included: number; allotted_unit: string }[];
 }
 
 export interface Quote {
@@ -103,7 +105,7 @@ export async function syncPricing(region: string = 'us1'): Promise<SyncResponse>
 export async function createQuote(
 	name: string | null,
 	billing_type: string,
-	items: { product: string; quantity: number }[]
+	items: { id?: string; product: string; quantity: number; allotments?: { id?: string; allotted_product: string; quantity_included: number; allotted_unit: string }[] }[]
 ): Promise<Quote> {
 	const response = await fetch(`${API_BASE}/quotes`, {
 		method: 'POST',
@@ -124,7 +126,7 @@ export async function updateQuote(
 	quoteId: string,
 	name: string | null,
 	billing_type: string,
-	items: { product: string; quantity: number }[]
+	items: { id?: string; product: string; quantity: number; allotments?: { id?: string; allotted_product: string; quantity_included: number; allotted_unit: string }[] }[]
 ): Promise<Quote> {
 	const response = await fetch(`${API_BASE}/quotes/${quoteId}`, {
 		method: 'PUT',

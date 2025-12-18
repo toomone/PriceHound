@@ -39,10 +39,11 @@
 
 	function cloneQuote() {
 		if (!quote) return;
-		// Encode quote data as URL parameter for the main page
+		// Encode quote data as URL parameter for the main page (include product IDs)
 		const cloneData = {
 			name: quote.name,
 			items: quote.items.map(item => ({
+				id: item.id,
 				product: item.product,
 				quantity: item.quantity
 			}))
