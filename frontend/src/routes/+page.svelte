@@ -337,16 +337,17 @@
 			// 2. Add the updated line
 			newLines.push({ ...existingLine!, product, quantity });
 			
-			// 3. Find and add new allotments for this product
+			// 3. Find and add new allotments for this product (match by product_id)
 			const productAllotments = allotments.filter(a => 
-				a.parent_product.toLowerCase().includes(product.product.toLowerCase()) ||
-				product.product.toLowerCase().includes(a.parent_product.toLowerCase())
+				a.parent_product_id === product.id
 			);
 			
 			for (const allotment of productAllotments) {
+				// Match allotted product by ID first, then fallback to name
 				const allottedProduct = products.find(p => 
-					p.product.toLowerCase().includes(allotment.allotted_product.toLowerCase()) ||
-					allotment.allotted_product.toLowerCase().includes(p.product.toLowerCase())
+					p.id === allotment.allotted_product_id
+				) || products.find(p =>
+					p.product.toLowerCase().includes(allotment.allotted_product.toLowerCase())
 				);
 				
 				if (allottedProduct) {
@@ -762,16 +763,17 @@
 				
 				lines = [...lines, newLine];
 				
-				// Find and add allotments for this product
+				// Find and add allotments for this product (match by product_id)
 				const productAllotments = allotments.filter(a => 
-					a.parent_product.toLowerCase().includes(matchingProduct.product.toLowerCase()) ||
-					matchingProduct.product.toLowerCase().includes(a.parent_product.toLowerCase())
+					a.parent_product_id === matchingProduct.id
 				);
 				
 				for (const allotment of productAllotments) {
+					// Match allotted product by ID first, then fallback to name
 					const allottedProduct = products.find(p => 
-						p.product.toLowerCase().includes(allotment.allotted_product.toLowerCase()) ||
-						allotment.allotted_product.toLowerCase().includes(p.product.toLowerCase())
+						p.id === allotment.allotted_product_id
+					) || products.find(p =>
+						p.product.toLowerCase().includes(allotment.allotted_product.toLowerCase())
 					);
 					
 					if (allottedProduct) {

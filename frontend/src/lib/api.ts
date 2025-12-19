@@ -70,6 +70,8 @@ export interface Allotment {
 	allotted_unit: string;
 	per_parent_unit: string;
 	frequency: string;
+	parent_product_id?: string;
+	allotted_product_id?: string;
 }
 
 export async function fetchRegions(): Promise<Record<string, Region>> {
