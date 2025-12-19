@@ -6,6 +6,12 @@
 	import { formatCurrency, parsePrice, formatNumber } from '$lib/utils';
 	import type { Product, Allotment } from '$lib/api';
 
+	interface AllotmentItem {
+		product: Product | null;
+		includedQuantity: number;
+		allotmentInfo: Allotment | null;
+	}
+
 	export let products: Product[] = [];
 	export let selectedProduct: Product | null = null;
 	export let quantity: number = 1;
@@ -17,6 +23,7 @@
 	export let includedQuantity: number = 0;
 	export let allotmentInfo: Allotment | null = null;
 	export let totalAllottedForProduct: number = 0; // Total included from parent products
+	export let lineAllotments: AllotmentItem[] = []; // Allotments for this line
 
 	const dispatch = createEventDispatcher<{
 		update: { product: Product | null; quantity: number };
@@ -181,6 +188,31 @@
 				</Button>
 			</div>
 		</div>
+
+		<!-- Included Allotments (inside product card) -->
+		{#if lineAllotments.length > 0}
+			<div class="mt-3 pt-3 border-t border-datadog-green/20">
+				<div class="rounded-lg bg-datadog-green/5 border border-datadog-green/20 px-3 py-2">
+					<div class="flex items-center gap-2 mb-1.5">
+						<svg class="w-3.5 h-3.5 text-datadog-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+						</svg>
+						<span class="text-[10px] font-medium text-datadog-green uppercase tracking-wide">Included Allotments</span>
+					</div>
+					<ul class="space-y-0.5">
+						{#each lineAllotments as allotment}
+							<li class="flex items-center gap-2 text-xs text-muted-foreground">
+								<span class="w-1 h-1 rounded-full bg-datadog-green/50"></span>
+								<span class="truncate">{allotment.product?.product || 'Unknown'}</span>
+								<span class="ml-auto font-mono text-[10px] text-datadog-green shrink-0">
+									{formatNumber(allotment.includedQuantity || 0)} {allotment.allotmentInfo?.allotted_unit || 'units'}
+								</span>
+							</li>
+						{/each}
+					</ul>
+				</div>
+			</div>
+		{/if}
 	</div>
 {/if}
 
