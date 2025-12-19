@@ -2,6 +2,18 @@
 export default {
 	darkMode: 'class',
 	content: ['./src/**/*.{html,js,svelte,ts}'],
+	safelist: [
+		'bg-datadog-blue',
+		'text-datadog-blue',
+		'border-datadog-blue',
+		'bg-datadog-blue/5',
+		'bg-datadog-blue/10',
+		'bg-datadog-blue/20',
+		'border-datadog-blue/20',
+		'border-datadog-blue/30',
+		'text-datadog-blue/60',
+		'ring-datadog-blue',
+	],
 	theme: {
 		extend: {
 			colors: {
