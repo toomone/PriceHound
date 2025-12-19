@@ -1096,20 +1096,20 @@
 					{/each}
 				</div>
 
-				<div class="mt-4 flex gap-2">
-					<Button
-						variant="outline"
-						class="flex-1 py-6 border-2 border-dashed border-border hover:border-foreground/30 hover:bg-muted transition-all"
+				<div class="mt-4 inline-flex w-full rounded-lg border-2 border-dashed border-border hover:border-foreground/30 transition-all">
+					<button
+						type="button"
+						class="flex-1 inline-flex items-center justify-center gap-2 py-5 text-sm font-semibold transition-colors hover:bg-muted rounded-l-md"
 						on:click={addLine}
 					>
-						<svg class="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 							<path d="M12 5v14M5 12h14" />
 						</svg>
-						<span class="font-semibold">Add Product</span>
-					</Button>
-					<Button
-						variant={showLogsCalculator ? "default" : "outline"}
-						class="py-6 px-4 {showLogsCalculator ? 'bg-datadog-purple hover:bg-datadog-purple/90' : ''}"
+						Add Product
+					</button>
+					<button
+						type="button"
+						class="inline-flex items-center justify-center gap-2 px-4 py-5 text-sm font-medium transition-colors border-l-2 border-dashed border-border rounded-r-md {showLogsCalculator ? 'bg-datadog-purple text-white hover:bg-datadog-purple/90' : 'hover:bg-muted'}"
 						on:click={() => showLogsCalculator = !showLogsCalculator}
 						title="Indexes Estimator"
 					>
@@ -1119,7 +1119,8 @@
 							<line x1="16" y1="13" x2="8" y2="13" />
 							<line x1="16" y1="17" x2="8" y2="17" />
 						</svg>
-					</Button>
+						<span class="hidden sm:inline">Estimator</span>
+					</button>
 				</div>
 			{/if}
 		</CardContent>
