@@ -101,7 +101,7 @@
 			</div>
 			<div>
 				<CardTitle>Indexes Estimator</CardTitle>
-				<CardDescription>Intelligently estimate your log indexing needs based on ingestion volume</CardDescription>
+				<CardDescription>Estimate your log indexing needs based on ingestion volume</CardDescription>
 			</div>
 		</div>
 	</CardHeader>
