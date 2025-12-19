@@ -3,7 +3,7 @@
 	import ProductSearch from './ProductSearch.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
-	import { formatCurrency, parsePrice, formatNumber } from '$lib/utils';
+	import { formatCurrency, parsePrice, formatNumber, isPercentagePrice, parsePercentage } from '$lib/utils';
 	import type { Product, Allotment } from '$lib/api';
 
 	interface AllotmentItem {
@@ -30,18 +30,27 @@
 		remove: void;
 	}>();
 
-	// Calculate all 3 prices
+	// Check if this product uses percentage-based pricing
+	$: isPercentageBased = selectedProduct ? isPercentagePrice(selectedProduct.billed_annually) : false;
+
+	// Calculate all 3 prices (or percentages)
 	$: annualPrice = selectedProduct ? parsePrice(selectedProduct.billed_annually) : 0;
 	$: monthlyPrice = selectedProduct ? parsePrice(selectedProduct.billed_month_to_month) : 0;
 	$: onDemandPrice = selectedProduct ? parsePrice(selectedProduct.on_demand) : 0;
+
+	// For percentage-based pricing, get the percentage values
+	$: annualPercent = selectedProduct ? parsePercentage(selectedProduct.billed_annually) : 0;
+	$: monthlyPercent = selectedProduct ? parsePercentage(selectedProduct.billed_month_to_month) : 0;
+	$: onDemandPercent = selectedProduct ? parsePercentage(selectedProduct.on_demand) : 0;
 
 	// For allotments, only charge for quantity exceeding the included amount
 	$: chargeableQuantity = isAllotment ? Math.max(0, quantity - includedQuantity) : quantity;
 
 	// Calculate totals for all 3 (only for chargeable quantity)
-	$: annualTotal = annualPrice * chargeableQuantity;
-	$: monthlyTotal = monthlyPrice * chargeableQuantity;
-	$: onDemandTotal = onDemandPrice * chargeableQuantity;
+	// For percentage items, the "total" shown is just the percentage - actual calculation done in summary
+	$: annualTotal = isPercentageBased ? annualPercent : annualPrice * chargeableQuantity;
+	$: monthlyTotal = isPercentageBased ? monthlyPercent : monthlyPrice * chargeableQuantity;
+	$: onDemandTotal = isPercentageBased ? onDemandPercent : onDemandPrice * chargeableQuantity;
 
 	$: visibleColumns = [showAnnual, showMonthly, showOnDemand].filter(Boolean).length;
 
@@ -130,11 +139,21 @@
 						<label class="mb-1.5 block text-xs font-medium text-datadog-green">Annual</label>
 						<div class="rounded-lg bg-datadog-green/10 border border-datadog-green/20 px-2 py-2">
 							<div class="font-mono text-sm font-semibold text-datadog-green truncate">
-								{selectedProduct ? formatCurrency(annualTotal) : '-'}
+								{#if !selectedProduct}
+									-
+								{:else if isPercentageBased}
+									{annualPercent}%
+								{:else}
+									{formatCurrency(annualTotal)}
+								{/if}
 							</div>
-							{#if selectedProduct && annualPrice > 0}
+							{#if selectedProduct && !isPercentageBased && annualPrice > 0}
 								<div class="font-mono text-[10px] text-datadog-green/60 mt-0.5">
 									{formatCurrency(annualPrice)}/unit
+								</div>
+							{:else if selectedProduct && isPercentageBased}
+								<div class="font-mono text-[10px] text-datadog-green/60 mt-0.5">
+									of total
 								</div>
 							{/if}
 						</div>
@@ -146,11 +165,21 @@
 						<label class="mb-1.5 block text-xs font-medium text-datadog-blue">Monthly</label>
 						<div class="rounded-lg bg-datadog-blue/10 border border-datadog-blue/20 px-2 py-2">
 							<div class="font-mono text-sm font-semibold text-datadog-blue truncate">
-								{selectedProduct ? formatCurrency(monthlyTotal) : '-'}
+								{#if !selectedProduct}
+									-
+								{:else if isPercentageBased}
+									{monthlyPercent}%
+								{:else}
+									{formatCurrency(monthlyTotal)}
+								{/if}
 							</div>
-							{#if selectedProduct && monthlyPrice > 0}
+							{#if selectedProduct && !isPercentageBased && monthlyPrice > 0}
 								<div class="font-mono text-[10px] text-datadog-blue/60 mt-0.5">
 									{formatCurrency(monthlyPrice)}/unit
+								</div>
+							{:else if selectedProduct && isPercentageBased}
+								<div class="font-mono text-[10px] text-datadog-blue/60 mt-0.5">
+									of total
 								</div>
 							{/if}
 						</div>
@@ -162,11 +191,21 @@
 						<label class="mb-1.5 block text-xs font-medium text-datadog-orange">On-Demand</label>
 						<div class="rounded-lg bg-datadog-orange/10 border border-datadog-orange/20 px-2 py-2">
 							<div class="font-mono text-sm font-semibold text-datadog-orange truncate">
-								{selectedProduct ? formatCurrency(onDemandTotal) : '-'}
+								{#if !selectedProduct}
+									-
+								{:else if isPercentageBased}
+									{onDemandPercent}%
+								{:else}
+									{formatCurrency(onDemandTotal)}
+								{/if}
 							</div>
-							{#if selectedProduct && onDemandPrice > 0}
+							{#if selectedProduct && !isPercentageBased && onDemandPrice > 0}
 								<div class="font-mono text-[10px] text-datadog-orange/60 mt-0.5">
 									{formatCurrency(onDemandPrice)}/unit
+								</div>
+							{:else if selectedProduct && isPercentageBased}
+								<div class="font-mono text-[10px] text-datadog-orange/60 mt-0.5">
+									of total
 								</div>
 							{/if}
 						</div>

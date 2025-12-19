@@ -8,7 +8,7 @@
 	import QuoteLine from '$lib/components/QuoteLine.svelte';
 	import LogsIndexingCalculator from '$lib/components/LogsIndexingCalculator.svelte';
 	import { fetchProducts, fetchMetadata, createQuote, fetchRegions, fetchAllotments, initAllotments, type Product, type PricingMetadata, type Region, type Allotment } from '$lib/api';
-	import { formatCurrency, parsePrice, formatNumber } from '$lib/utils';
+	import { formatCurrency, parsePrice, formatNumber, isPercentagePrice, parsePercentage } from '$lib/utils';
 
 	interface LineItem {
 		id: string;
@@ -65,27 +65,62 @@
 			.reduce((sum, l) => sum + (l.includedQuantity || 0), 0);
 	}
 
-	// Compute all billing totals simultaneously (considering allotments)
-	$: totals = validLines.reduce(
-		(acc, line) => {
-			if (!line.product) return acc;
-			const annualPrice = parsePrice(line.product.billed_annually);
-			const monthlyPrice = parsePrice(line.product.billed_month_to_month);
-			const onDemandPrice = parsePrice(line.product.on_demand);
-			
-			// For allotments, only charge for quantity exceeding included amount
-			const chargeableQty = line.isAllotment 
-				? Math.max(0, line.quantity - (line.includedQuantity || 0))
-				: line.quantity;
-			
-			return {
-				annually: acc.annually + annualPrice * chargeableQty,
-				monthly: acc.monthly + monthlyPrice * chargeableQty,
-				on_demand: acc.on_demand + onDemandPrice * chargeableQty
-			};
-		},
-		{ annually: 0, monthly: 0, on_demand: 0 }
-	);
+	// Compute all billing totals simultaneously (considering allotments and percentage-based pricing)
+	$: totals = (() => {
+		// First pass: calculate base totals (non-percentage items)
+		const baseTotals = validLines.reduce(
+			(acc, line) => {
+				if (!line.product) return acc;
+				
+				// Skip percentage-based products in first pass
+				if (isPercentagePrice(line.product.billed_annually)) return acc;
+				
+				const annualPrice = parsePrice(line.product.billed_annually);
+				const monthlyPrice = parsePrice(line.product.billed_month_to_month);
+				const onDemandPrice = parsePrice(line.product.on_demand);
+				
+				// For allotments, only charge for quantity exceeding included amount
+				const chargeableQty = line.isAllotment 
+					? Math.max(0, line.quantity - (line.includedQuantity || 0))
+					: line.quantity;
+				
+				return {
+					annually: acc.annually + annualPrice * chargeableQty,
+					monthly: acc.monthly + monthlyPrice * chargeableQty,
+					on_demand: acc.on_demand + onDemandPrice * chargeableQty
+				};
+			},
+			{ annually: 0, monthly: 0, on_demand: 0 }
+		);
+		
+		// Second pass: calculate percentage-based add-ons
+		const percentageAddOns = validLines.reduce(
+			(acc, line) => {
+				if (!line.product) return acc;
+				
+				// Only process percentage-based products
+				if (!isPercentagePrice(line.product.billed_annually)) return acc;
+				
+				const annualPercent = parsePercentage(line.product.billed_annually);
+				const monthlyPercent = parsePercentage(line.product.billed_month_to_month);
+				const onDemandPercent = parsePercentage(line.product.on_demand);
+				
+				return {
+					annually: acc.annually + (baseTotals.annually * annualPercent / 100),
+					monthly: acc.monthly + (baseTotals.monthly * monthlyPercent / 100),
+					on_demand: acc.on_demand + (baseTotals.on_demand * onDemandPercent / 100)
+				};
+			},
+			{ annually: 0, monthly: 0, on_demand: 0 }
+		);
+		
+		// Return total = base + percentage add-ons
+		return {
+			annually: baseTotals.annually + percentageAddOns.annually,
+			monthly: baseTotals.monthly + percentageAddOns.monthly,
+			on_demand: baseTotals.on_demand + percentageAddOns.on_demand
+		};
+	})();
 
 	// Calculate annual costs for comparison
 	$: annualCosts = {
