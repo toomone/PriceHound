@@ -2,11 +2,14 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from typing import Optional
+from datetime import datetime, timedelta
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
 
 from .models import PricingItem, Quote, QuoteCreate, SyncResponse
 from .scraper import (
     load_pricing_data, load_metadata, sync_pricing, ensure_pricing_data,
-    get_all_regions, get_regions_status, sync_all_regions, DEFAULT_REGION
+    get_all_regions, get_regions_status, sync_all_regions, DEFAULT_REGION, REGIONS
 )
 from .quotes import create_quote, get_quote, update_quote, delete_quote, list_quotes
 from .allotments_scraper import (
@@ -16,13 +19,64 @@ from .allotments_scraper import (
 )
 
 
+# Background scheduler for automatic syncing
+scheduler = BackgroundScheduler()
+
+
+def sync_all_pricing_job():
+    """Background job to sync pricing data for all regions."""
+    print(f"[{datetime.now().isoformat()}] Running scheduled pricing sync...")
+    try:
+        results = sync_all_regions()
+        success_count = sum(1 for r in results if r.get('success', False))
+        print(f"[{datetime.now().isoformat()}] Sync complete: {success_count}/{len(results)} regions updated")
+    except Exception as e:
+        print(f"[{datetime.now().isoformat()}] Sync failed: {e}")
+
+
+def should_sync_on_startup() -> bool:
+    """Check if we should sync on startup (if data is older than 1 hour)."""
+    metadata = load_metadata(DEFAULT_REGION)
+    if not metadata or not metadata.get('last_sync'):
+        return True
+    
+    try:
+        last_sync = datetime.fromisoformat(metadata['last_sync'].replace('Z', '+00:00'))
+        # Make last_sync offset-naive for comparison
+        if last_sync.tzinfo is not None:
+            last_sync = last_sync.replace(tzinfo=None)
+        age = datetime.utcnow() - last_sync
+        return age > timedelta(hours=1)
+    except Exception:
+        return True
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: ensure pricing data exists for default region
     success, message, count = ensure_pricing_data(DEFAULT_REGION)
     print(f"Startup: {message}")
+    
+    # Check if we should sync on startup (data older than 1 hour)
+    if should_sync_on_startup():
+        print("Data is older than 1 hour, syncing all regions...")
+        sync_all_pricing_job()
+    
+    # Start the background scheduler - sync every hour
+    scheduler.add_job(
+        sync_all_pricing_job,
+        trigger=IntervalTrigger(hours=1),
+        id='sync_pricing_hourly',
+        name='Sync pricing data every hour',
+        replace_existing=True
+    )
+    scheduler.start()
+    print("Background scheduler started - pricing will sync every hour")
+    
     yield
+    
     # Shutdown
+    scheduler.shutdown()
     print("Shutting down...")
 
 

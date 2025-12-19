@@ -576,27 +576,27 @@
     "on_demand": "$3.70"
   },
   {
-    "id": "3abee8ce9654",
+    "id": "0159150caa07",
     "region": "eu1",
-    "product": "Application Security - Threat Management",
-    "billing_unit": "Per ASM host, per month",
+    "product": "App and API Protection",
+    "billing_unit": "Per AAP host, per month",
     "billed_annually": "$31",
     "billed_month_to_month": "$36",
     "on_demand": "$36"
   },
   {
-    "id": "15e90ee2827b",
+    "id": "185b6f169822",
     "region": "eu1",
-    "product": "Fargate (Application Security - Threat Management)",
+    "product": "Fargate (App and API Protection)",
     "billing_unit": "Per Fargate task, per month",
     "billed_annually": "$2",
     "billed_month_to_month": "$2.40",
     "on_demand": "$2.90"
   },
   {
-    "id": "db3bbcbacb5e",
+    "id": "632bdad9530d",
     "region": "eu1",
-    "product": "Serverless Application Security (Threat Management)",
+    "product": "Serverless App and API Protection",
     "billing_unit": "Per 1M traced invocations, per month",
     "billed_annually": "$10",
     "billed_month_to_month": "$12",

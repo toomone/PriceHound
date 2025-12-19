@@ -6,7 +6,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import QuoteLine from '$lib/components/QuoteLine.svelte';
-	import { fetchProducts, fetchMetadata, syncPricing, createQuote, fetchRegions, fetchAllotments, initAllotments, type Product, type PricingMetadata, type Region, type Allotment } from '$lib/api';
+	import { fetchProducts, fetchMetadata, createQuote, fetchRegions, fetchAllotments, initAllotments, type Product, type PricingMetadata, type Region, type Allotment } from '$lib/api';
 	import { formatCurrency, parsePrice } from '$lib/utils';
 
 	interface LineItem {
@@ -27,7 +27,6 @@
 	let lines: LineItem[] = [{ id: crypto.randomUUID(), product: null, quantity: 1 }];
 	let quoteName = '';
 	let loading = false;
-	let syncing = false;
 	let saving = false;
 	let error = '';
 	let success = '';
@@ -209,32 +208,12 @@
 				fetchMetadata(selectedRegion)
 			]);
 			if (products.length === 0) {
-				error = 'No products found. Click "Sync Pricing" to fetch the latest data.';
+				error = 'No products found. Please wait for automatic sync or check backend connection.';
 			}
 		} catch (e) {
 			error = 'Failed to load products. Make sure the backend is running.';
 		} finally {
 			loading = false;
-		}
-	}
-
-	async function handleSync() {
-		syncing = true;
-		error = '';
-		success = '';
-		try {
-			const result = await syncPricing(selectedRegion);
-			if (result.success) {
-				success = result.message;
-				await loadProducts();
-				metadata = await fetchMetadata(selectedRegion);
-			} else {
-				error = result.message;
-			}
-		} catch (e) {
-			error = 'Failed to sync pricing data';
-		} finally {
-			syncing = false;
 		}
 	}
 
@@ -899,40 +878,20 @@
 	<!-- Pricing Region & Sync -->
 	<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
 		<div class="flex items-center gap-4">
-			<!-- Region Selector Group -->
-			<div class="flex items-center gap-2">
-				<div class="flex items-center rounded-lg border border-input bg-background">
-					<select
-						bind:value={selectedRegion}
-						on:change={handleRegionChange}
-						class="h-9 rounded-l-lg border-0 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-0 cursor-pointer"
-					>
-						{#each Object.entries(regions) as [id, region]}
-							<option value={id}>{region.name}</option>
-						{/each}
-					</select>
-					<Button
-						variant="ghost"
-						size="sm"
-						on:click={handleSync}
-						disabled={syncing}
-						class="h-9 rounded-l-none border-l border-input gap-1.5 px-3"
-					>
-						{#if syncing}
-							<svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<path d="M21 12a9 9 0 11-6.219-8.56" />
-							</svg>
-						{:else}
-							<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
-							</svg>
-						{/if}
-						Sync
-					</Button>
-				</div>
+			<!-- Region Selector -->
+			<div class="flex items-center rounded-lg border border-input bg-background">
+				<select
+					bind:value={selectedRegion}
+					on:change={handleRegionChange}
+					class="h-9 rounded-lg border-0 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-0 cursor-pointer"
+				>
+					{#each Object.entries(regions) as [id, region]}
+						<option value={id}>{region.name}</option>
+					{/each}
+				</select>
 			</div>
 
-			<!-- Sync Info -->
+			<!-- Pricing Info -->
 			<div class="text-xs text-muted-foreground">
 				{#if loading}
 					<span class="text-muted-foreground/50">Loading...</span>
@@ -940,10 +899,10 @@
 					<span>{products.length} products</span>
 					{#if lastSyncFormatted}
 						<span class="mx-1">·</span>
-						<span>Last synced: {lastSyncFormatted}</span>
+						<span>Updated: {lastSyncFormatted}</span>
 					{/if}
-				{:else if !lastSyncFormatted}
-					<span class="text-datadog-orange">Not synced yet</span>
+					<span class="mx-1">·</span>
+					<span class="text-muted-foreground/60">Auto-syncs hourly</span>
 				{/if}
 			</div>
 		</div>
