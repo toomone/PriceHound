@@ -1132,17 +1132,20 @@
 					</button>
 					<button
 						type="button"
-						class="inline-flex items-center justify-center gap-2 px-4 py-5 text-sm font-medium transition-colors border-l-2 border-dashed border-border rounded-r-md {showLogsCalculator ? 'bg-datadog-purple text-white hover:bg-datadog-purple/90' : 'hover:bg-muted'}"
+						class="inline-flex items-center justify-center gap-2 px-3 py-3 text-xs font-medium transition-colors border-l-2 border-dashed border-border rounded-r-md {showLogsCalculator ? 'bg-datadog-purple text-white hover:bg-datadog-purple/90' : 'hover:bg-muted'}"
 						on:click={() => showLogsCalculator = !showLogsCalculator}
 						title="Indexes Estimator"
 					>
-						<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
 							<polyline points="14 2 14 8 20 8" />
 							<line x1="16" y1="13" x2="8" y2="13" />
 							<line x1="16" y1="17" x2="8" y2="17" />
 						</svg>
-						<span class="hidden sm:inline">Estimator</span>
+						<span class="hidden sm:flex flex-col leading-tight text-center">
+							<span>Indexes</span>
+							<span>Estimator</span>
+						</span>
 					</button>
 				</div>
 			{/if}
