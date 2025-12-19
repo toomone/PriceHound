@@ -6,6 +6,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import QuoteLine from '$lib/components/QuoteLine.svelte';
+	import LogsIndexingCalculator from '$lib/components/LogsIndexingCalculator.svelte';
 	import { fetchProducts, fetchMetadata, createQuote, fetchRegions, fetchAllotments, initAllotments, type Product, type PricingMetadata, type Region, type Allotment } from '$lib/api';
 	import { formatCurrency, parsePrice } from '$lib/utils';
 
@@ -40,6 +41,9 @@
 	let showAnnual = true;
 	let showMonthly = true;
 	let showOnDemand = false;
+	
+	// Tools visibility
+	let showLogsCalculator = false;
 
 	$: lastSyncFormatted = metadata?.last_sync
 		? new Date(metadata.last_sync).toLocaleString('en-US', {
@@ -262,6 +266,46 @@
 
 	function addLine() {
 		lines = [...lines, { id: crypto.randomUUID(), product: null, quantity: 1 }];
+	}
+
+	function addItemsFromCalculator(items: { product: Product; quantity: number }[]) {
+		const newLines: LineItem[] = [];
+		
+		for (const item of items) {
+			// Check if product already exists in lines
+			const existingLine = lines.find(l => l.product?.id === item.product.id);
+			if (existingLine) {
+				// Update quantity
+				lines = lines.map(l => 
+					l.id === existingLine.id 
+						? { ...l, quantity: l.quantity + item.quantity }
+						: l
+				);
+			} else {
+				// Add new line
+				newLines.push({
+					id: crypto.randomUUID(),
+					product: item.product,
+					quantity: item.quantity
+				});
+			}
+		}
+		
+		if (newLines.length > 0) {
+			// Remove empty lines first
+			lines = lines.filter(l => l.product !== null);
+			lines = [...lines, ...newLines];
+			
+			// If lines was empty, the new lines are already added
+			if (lines.length === 0) {
+				lines = newLines;
+			}
+		}
+		
+		// Close the calculator
+		showLogsCalculator = false;
+		success = `Added ${items.length} item(s) to quote`;
+		setTimeout(() => success = '', 3000);
 	}
 
 	function removeLine(id: string) {
@@ -907,26 +951,42 @@
 			</div>
 		</div>
 
-		<!-- Tier Visibility Dropdown -->
-		<div class="filter-menu-container relative">
+		<div class="flex items-center gap-2">
+			<!-- Logs Calculator Button -->
 			<Button
-				variant="outline"
-				on:click={() => filterMenuOpen = !filterMenuOpen}
-				class="gap-2"
+				variant={showLogsCalculator ? "default" : "outline"}
+				on:click={() => showLogsCalculator = !showLogsCalculator}
+				class="gap-2 {showLogsCalculator ? 'bg-datadog-purple hover:bg-datadog-purple/90' : ''}"
 			>
 				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<path d="M3 6h18M7 12h10M10 18h4" />
+					<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+					<polyline points="14 2 14 8 20 8" />
+					<line x1="16" y1="13" x2="8" y2="13" />
+					<line x1="16" y1="17" x2="8" y2="17" />
 				</svg>
-				Tier
-				<div class="flex items-center gap-1 ml-1">
-					{#if showAnnual}<span class="w-2 h-2 rounded-full bg-datadog-green"></span>{/if}
-					{#if showMonthly}<span class="w-2 h-2 rounded-full bg-datadog-blue"></span>{/if}
-					{#if showOnDemand}<span class="w-2 h-2 rounded-full bg-datadog-orange"></span>{/if}
-				</div>
-				<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<path d="M6 9l6 6 6-6" />
-				</svg>
+				Logs Calculator
 			</Button>
+
+			<!-- Tier Visibility Dropdown -->
+			<div class="filter-menu-container relative">
+				<Button
+					variant="outline"
+					on:click={() => filterMenuOpen = !filterMenuOpen}
+					class="gap-2"
+				>
+					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M3 6h18M7 12h10M10 18h4" />
+					</svg>
+					Tier
+					<div class="flex items-center gap-1 ml-1">
+						{#if showAnnual}<span class="w-2 h-2 rounded-full bg-datadog-green"></span>{/if}
+						{#if showMonthly}<span class="w-2 h-2 rounded-full bg-datadog-blue"></span>{/if}
+						{#if showOnDemand}<span class="w-2 h-2 rounded-full bg-datadog-orange"></span>{/if}
+					</div>
+					<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M6 9l6 6 6-6" />
+					</svg>
+				</Button>
 
 			{#if filterMenuOpen}
 				<div class="absolute right-0 top-full mt-2 w-48 rounded-xl border border-border bg-card p-2 shadow-2xl z-50">
@@ -974,8 +1034,19 @@
 					</button>
 				</div>
 			{/if}
+			</div>
 		</div>
 	</div>
+
+	<!-- Logs Indexing Calculator -->
+	{#if showLogsCalculator}
+		<div class="mb-6">
+			<LogsIndexingCalculator 
+				{products} 
+				onAddToQuote={addItemsFromCalculator}
+			/>
+		</div>
+	{/if}
 
 	<!-- Alerts -->
 	{#if error}
