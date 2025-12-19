@@ -1070,18 +1070,18 @@
 	<Card class="mb-6 overflow-visible">
 		<CardHeader>
 			<div class="flex flex-wrap items-start justify-between gap-4">
-				<div>
-					<CardTitle class="flex items-center gap-2">
-						<div class="flex h-7 w-7 items-center justify-center rounded-md bg-datadog-purple">
-							<svg class="h-4 w-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<circle cx="9" cy="21" r="1" />
-								<circle cx="20" cy="21" r="1" />
-								<path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6" />
-							</svg>
-						</div>
-						Quote Items
-					</CardTitle>
-					<CardDescription>Add products and specify quantities</CardDescription>
+				<div class="flex items-center gap-3">
+					<div class="flex h-11 w-11 items-center justify-center rounded-xl bg-datadog-purple shadow-lg shadow-datadog-purple/30">
+						<svg class="h-6 w-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<circle cx="9" cy="21" r="1" />
+							<circle cx="20" cy="21" r="1" />
+							<path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6" />
+						</svg>
+					</div>
+					<div>
+						<CardTitle>Quote Items</CardTitle>
+						<CardDescription>Add products and specify quantities</CardDescription>
+					</div>
 				</div>
 				<div class="w-full max-w-xs">
 					<Input
