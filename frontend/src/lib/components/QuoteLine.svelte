@@ -191,20 +191,20 @@
 
 		<!-- Included Allotments (inside product card) -->
 		{#if lineAllotments.length > 0}
-			<div class="mt-3 pt-3 border-t border-datadog-green/20">
-				<div class="rounded-lg bg-datadog-green/5 border border-datadog-green/20 px-3 py-2">
+			<div class="mt-3 pt-3 border-t border-border/50">
+				<div class="rounded-lg bg-muted/50 border border-border/50 px-3 py-2">
 					<div class="flex items-center gap-2 mb-1.5">
-						<svg class="w-3.5 h-3.5 text-datadog-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<svg class="w-3.5 h-3.5 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
 						</svg>
-						<span class="text-[10px] font-medium text-datadog-green uppercase tracking-wide">Included Allotments</span>
+						<span class="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Included Allotments</span>
 					</div>
 					<ul class="space-y-0.5">
 						{#each lineAllotments as allotment}
 							<li class="flex items-center gap-2 text-xs text-muted-foreground">
-								<span class="w-1 h-1 rounded-full bg-datadog-green/50"></span>
+								<span class="w-1 h-1 rounded-full bg-muted-foreground/50"></span>
 								<span class="truncate">{allotment.product?.product || 'Unknown'}</span>
-								<span class="ml-auto font-mono text-[10px] text-datadog-green shrink-0">
+								<span class="ml-auto font-mono text-[10px] text-muted-foreground shrink-0">
 									{formatNumber(allotment.includedQuantity || 0)} {allotment.allotmentInfo?.allotted_unit || 'units'}
 								</span>
 							</li>
