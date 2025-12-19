@@ -37,10 +37,10 @@
 	let importModalOpen = false;
 	let isDragging = false;
 	
-	// Column visibility toggles
+	// Tier visibility toggles
 	let showAnnual = true;
 	let showMonthly = true;
-	let showOnDemand = true;
+	let showOnDemand = false;
 
 	$: lastSyncFormatted = metadata?.last_sync
 		? new Date(metadata.last_sync).toLocaleString('en-US', {
@@ -948,7 +948,7 @@
 			</div>
 		</div>
 
-		<!-- Column Visibility Dropdown -->
+		<!-- Tier Visibility Dropdown -->
 		<div class="filter-menu-container relative">
 			<Button
 				variant="outline"
@@ -958,7 +958,7 @@
 				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<path d="M3 6h18M7 12h10M10 18h4" />
 				</svg>
-				Columns
+				Tier
 				<div class="flex items-center gap-1 ml-1">
 					{#if showAnnual}<span class="w-2 h-2 rounded-full bg-datadog-green"></span>{/if}
 					{#if showMonthly}<span class="w-2 h-2 rounded-full bg-datadog-purple"></span>{/if}

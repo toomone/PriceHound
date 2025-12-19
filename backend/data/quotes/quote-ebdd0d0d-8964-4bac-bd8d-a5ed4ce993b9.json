@@ -1,0 +1,59 @@
+{
+  "id": "ebdd0d0d-8964-4bac-bd8d-a5ed4ce993b9",
+  "name": "Quote ebdd0d0d",
+  "region": "us",
+  "billing_type": "annually",
+  "items": [
+    {
+      "id": "a2feb43e353a",
+      "product": "Infrastructure Pro",
+      "billing_unit": "Per infra host, per month",
+      "quantity": 1000,
+      "unit_price": 15.0,
+      "total_price": 15000.0,
+      "is_allotment": false,
+      "allotments": [
+        {
+          "id": "cc7ca9648401",
+          "allotted_product": "Custom Metrics",
+          "quantity_included": 100000,
+          "allotted_unit": "custom metrics"
+        },
+        {
+          "id": "cc7ca9648401",
+          "allotted_product": "Custom Metrics",
+          "quantity_included": 100000,
+          "allotted_unit": "ingested custom metrics"
+        },
+        {
+          "id": "ef908b80f876",
+          "allotted_product": "Continuous Profiler - Containers",
+          "quantity_included": 5000,
+          "allotted_unit": "containers"
+        },
+        {
+          "id": "1c1562b3039e",
+          "allotted_product": "Custom Events",
+          "quantity_included": 500000,
+          "allotted_unit": "custom events"
+        }
+      ]
+    },
+    {
+      "id": "1c1562b3039e",
+      "product": "Custom Events",
+      "billing_unit": "Per 100K custom events, per month",
+      "quantity": 100,
+      "unit_price": 2.0,
+      "total_price": 200.0,
+      "is_allotment": false,
+      "allotments": []
+    }
+  ],
+  "total": 15200.0,
+  "total_annually": 15200.0,
+  "total_monthly": 18240.0,
+  "total_on_demand": 18300.0,
+  "created_at": "2025-12-19T10:05:56.552731",
+  "updated_at": "2025-12-19T10:05:56.552731"
+}
