@@ -179,99 +179,81 @@
     "parent_product_id": "cdf4c8acc0ec"
   },
   {
-    "parent_product": "APM",
-    "allotted_product": "Profiled Hosts",
-    "quantity_per_parent": 1,
-    "allotted_unit": "profiled host",
-    "per_parent_unit": "APM host",
-    "frequency": "month",
-    "parent_product_id": "cdf4c8acc0ec"
-  },
-  {
-    "parent_product": "APM",
-    "allotted_product": "Profiled Containers",
-    "quantity_per_parent": 4,
-    "allotted_unit": "profiled containers",
-    "per_parent_unit": "APM host",
-    "frequency": "hour",
-    "parent_product_id": "cdf4c8acc0ec"
-  },
-  {
-    "parent_product": "APM Pro",
+    "parent_product": "APM Pro (APM and Data Streams Monitoring)",
     "allotted_product": "Indexed Spans",
     "quantity_per_parent": 1000000,
     "allotted_unit": "indexed spans",
     "per_parent_unit": "APM host",
     "frequency": "month",
     "allotted_product_id": "39d0e3a55334",
-    "parent_product_id": "cdf4c8acc0ec"
+    "parent_product_id": "b56961fb7fec"
   },
   {
-    "parent_product": "APM Pro",
+    "parent_product": "APM Pro (APM and Data Streams Monitoring)",
     "allotted_product": "Ingested Spans",
     "quantity_per_parent": 150,
     "allotted_unit": "GB",
     "per_parent_unit": "APM host",
     "frequency": "month",
-    "parent_product_id": "cdf4c8acc0ec"
+    "parent_product_id": "b56961fb7fec"
   },
   {
-    "parent_product": "APM Pro",
+    "parent_product": "APM Pro (APM and Data Streams Monitoring)",
     "allotted_product": "Data Streams Monitoring",
     "quantity_per_parent": 1,
     "allotted_unit": "DSM host",
     "per_parent_unit": "APM host",
     "frequency": "month",
     "allotted_product_id": "4335a2769d9e",
-    "parent_product_id": "cdf4c8acc0ec"
+    "parent_product_id": "b56961fb7fec"
   },
   {
-    "parent_product": "APM Enterprise",
+    "parent_product": "APM Enterprise (APM, Data Streams Monitoring, Continuous Profiler)",
     "allotted_product": "Indexed Spans",
     "quantity_per_parent": 1000000,
     "allotted_unit": "indexed spans",
     "per_parent_unit": "APM host",
     "frequency": "month",
     "allotted_product_id": "39d0e3a55334",
-    "parent_product_id": "cdf4c8acc0ec"
+    "parent_product_id": "ee5e36f94333"
   },
   {
-    "parent_product": "APM Enterprise",
+    "parent_product": "APM Enterprise (APM, Data Streams Monitoring, Continuous Profiler)",
     "allotted_product": "Ingested Spans",
     "quantity_per_parent": 150,
     "allotted_unit": "GB",
     "per_parent_unit": "APM host",
     "frequency": "month",
-    "parent_product_id": "cdf4c8acc0ec"
+    "parent_product_id": "ee5e36f94333"
   },
   {
-    "parent_product": "APM Enterprise",
+    "parent_product": "APM Enterprise (APM, Data Streams Monitoring, Continuous Profiler)",
     "allotted_product": "Data Streams Monitoring",
     "quantity_per_parent": 1,
     "allotted_unit": "DSM host",
     "per_parent_unit": "APM host",
     "frequency": "month",
     "allotted_product_id": "4335a2769d9e",
-    "parent_product_id": "cdf4c8acc0ec"
+    "parent_product_id": "ee5e36f94333"
   },
   {
-    "parent_product": "APM Enterprise",
+    "parent_product": "APM Enterprise (APM, Data Streams Monitoring, Continuous Profiler)",
     "allotted_product": "Continuous Profiler",
     "quantity_per_parent": 1,
     "allotted_unit": "profiled host",
     "per_parent_unit": "APM host",
     "frequency": "month",
     "allotted_product_id": "d491c490c08e",
-    "parent_product_id": "cdf4c8acc0ec"
+    "parent_product_id": "ee5e36f94333"
   },
   {
-    "parent_product": "APM Enterprise",
+    "parent_product": "APM Enterprise (APM, Data Streams Monitoring, Continuous Profiler)",
     "allotted_product": "Profiled Containers",
     "quantity_per_parent": 4,
     "allotted_unit": "profiled containers",
     "per_parent_unit": "APM host",
     "frequency": "hour",
-    "parent_product_id": "cdf4c8acc0ec"
+    "parent_product_id": "ee5e36f94333"
   },
   {
     "parent_product": "Database Monitoring",
