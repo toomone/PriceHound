@@ -1164,13 +1164,17 @@
 	{#if validLines.length > 0}
 		<Card class="mb-6">
 			<CardHeader>
-				<CardTitle class="flex items-center gap-2">
-					<svg class="h-5 w-5 text-datadog-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-					</svg>
-					Pricing Summary
-				</CardTitle>
-				<CardDescription>Compare costs across all billing options</CardDescription>
+				<div class="flex items-center gap-3">
+					<div class="flex h-11 w-11 items-center justify-center rounded-xl bg-datadog-purple shadow-lg shadow-datadog-purple/30">
+						<svg class="h-6 w-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+						</svg>
+					</div>
+					<div>
+						<CardTitle>Pricing Summary</CardTitle>
+						<CardDescription>Compare costs across all billing options</CardDescription>
+					</div>
+				</div>
 			</CardHeader>
 			<CardContent>
 				<!-- Totals Grid -->
