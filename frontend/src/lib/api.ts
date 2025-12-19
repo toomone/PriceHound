@@ -46,9 +46,13 @@ export interface QuoteLineItem {
 export interface Quote {
 	id: string;
 	name: string | null;
+	region: string;
 	billing_type: string;
 	items: QuoteLineItem[];
 	total: number;
+	total_annually: number | null;
+	total_monthly: number | null;
+	total_on_demand: number | null;
 	created_at: string;
 	updated_at: string;
 }
@@ -104,13 +108,14 @@ export async function syncPricing(region: string = 'us'): Promise<SyncResponse> 
 
 export async function createQuote(
 	name: string | null,
+	region: string,
 	billing_type: string,
 	items: { id?: string; product: string; quantity: number; allotments?: { id?: string; allotted_product: string; quantity_included: number; allotted_unit: string }[] }[]
 ): Promise<Quote> {
 	const response = await fetch(`${API_BASE}/quotes`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ name, billing_type, items })
+		body: JSON.stringify({ name, region, billing_type, items })
 	});
 	if (!response.ok) throw new Error('Failed to create quote');
 	return response.json();

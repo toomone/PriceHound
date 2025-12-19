@@ -392,7 +392,7 @@
 					};
 				});
 
-			const quote = await createQuote(quoteName || null, 'annually', items);
+			const quote = await createQuote(quoteName || null, selectedRegion, 'annually', items);
 			shareUrl = `${window.location.origin}/quote/${quote.id}`;
 			shareMenuOpen = false;
 			success = 'Quote saved!';

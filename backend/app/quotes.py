@@ -17,9 +17,9 @@ def get_quote_file(quote_id: str) -> Path:
     return QUOTES_DIR / f"quote-{quote_id}.json"
 
 
-def get_price_for_product(product_id: str, product_name: str, billing_type: str) -> tuple[float, str, str]:
+def get_price_for_product(product_id: str, product_name: str, billing_type: str, region: str = "us") -> tuple[float, str, str]:
     """Get price for a product based on billing type. Returns (price, billing_unit, product_id)."""
-    pricing_data = load_pricing_data()
+    pricing_data = load_pricing_data(region)
     
     billing_map = {
         'annually': 'billed_annually',
@@ -45,6 +45,43 @@ def get_price_for_product(product_id: str, product_name: str, billing_type: str)
     return 0.0, 'per unit', ''
 
 
+def get_all_prices_for_product(product_id: str, product_name: str, region: str = "us") -> dict:
+    """Get all prices (annually, monthly, on-demand) for a product. Returns dict with prices."""
+    pricing_data = load_pricing_data(region)
+    
+    # Try to find by ID first
+    target_item = None
+    if product_id:
+        for item in pricing_data:
+            if item.get('id') == product_id:
+                target_item = item
+                break
+    
+    # Fallback to name matching
+    if not target_item:
+        for item in pricing_data:
+            if item['product'] == product_name:
+                target_item = item
+                break
+    
+    if not target_item:
+        return {
+            'annually': 0.0,
+            'monthly': 0.0,
+            'on_demand': 0.0,
+            'billing_unit': 'per unit',
+            'id': ''
+        }
+    
+    return {
+        'annually': parse_price(target_item.get('billed_annually') or '0'),
+        'monthly': parse_price(target_item.get('billed_month_to_month') or '0'),
+        'on_demand': parse_price(target_item.get('on_demand') or '0'),
+        'billing_unit': target_item.get('billing_unit', 'per unit'),
+        'id': target_item.get('id', '')
+    }
+
+
 def save_quote_file(quote: Quote) -> None:
     """Save a quote to its own JSON file."""
     QUOTES_DIR.mkdir(parents=True, exist_ok=True)
@@ -62,22 +99,33 @@ def load_quote_file(quote_id: str) -> Optional[dict]:
         return json.load(f)
 
 
-def create_quote(name: Optional[str], billing_type: str, items: list[dict]) -> Quote:
+def create_quote(name: Optional[str], region: str, billing_type: str, items: list[dict]) -> Quote:
     """Create a new quote."""
     quote_id = str(uuid.uuid4())
     now = datetime.utcnow().isoformat()
     
     quote_items = []
     total = 0.0
+    total_annually = 0.0
+    total_monthly = 0.0
+    total_on_demand = 0.0
     
     for item in items:
         product_id = item.get('id', '')
         product = item.get('product', '')
         quantity = int(item.get('quantity', 0))
         
-        unit_price, billing_unit, resolved_id = get_price_for_product(product_id, product, billing_type)
+        # Get all prices for comparison
+        all_prices = get_all_prices_for_product(product_id, product, region)
+        
+        unit_price, billing_unit, resolved_id = get_price_for_product(product_id, product, billing_type, region)
         item_total = unit_price * quantity
         total += item_total
+        
+        # Calculate totals for all billing types
+        total_annually += all_prices['annually'] * quantity
+        total_monthly += all_prices['monthly'] * quantity
+        total_on_demand += all_prices['on_demand'] * quantity
         
         # Process allotments with IDs
         allotments = []
@@ -103,9 +151,13 @@ def create_quote(name: Optional[str], billing_type: str, items: list[dict]) -> Q
     quote = Quote(
         id=quote_id,
         name=name or f"Quote {quote_id[:8]}",
+        region=region,
         billing_type=billing_type,
         items=quote_items,
         total=total,
+        total_annually=total_annually,
+        total_monthly=total_monthly,
+        total_on_demand=total_on_demand,
         created_at=now,
         updated_at=now
     )
@@ -124,7 +176,7 @@ def get_quote(quote_id: str) -> Optional[Quote]:
     return None
 
 
-def update_quote(quote_id: str, name: Optional[str], billing_type: str, items: list[dict]) -> Optional[Quote]:
+def update_quote(quote_id: str, name: Optional[str], region: str, billing_type: str, items: list[dict]) -> Optional[Quote]:
     """Update an existing quote."""
     old_quote_data = load_quote_file(quote_id)
     
@@ -135,15 +187,26 @@ def update_quote(quote_id: str, name: Optional[str], billing_type: str, items: l
     
     quote_items = []
     total = 0.0
+    total_annually = 0.0
+    total_monthly = 0.0
+    total_on_demand = 0.0
     
     for item in items:
         product_id = item.get('id', '')
         product = item.get('product', '')
         quantity = int(item.get('quantity', 0))
         
-        unit_price, billing_unit, resolved_id = get_price_for_product(product_id, product, billing_type)
+        # Get all prices for comparison
+        all_prices = get_all_prices_for_product(product_id, product, region)
+        
+        unit_price, billing_unit, resolved_id = get_price_for_product(product_id, product, billing_type, region)
         item_total = unit_price * quantity
         total += item_total
+        
+        # Calculate totals for all billing types
+        total_annually += all_prices['annually'] * quantity
+        total_monthly += all_prices['monthly'] * quantity
+        total_on_demand += all_prices['on_demand'] * quantity
         
         # Process allotments with IDs
         allotments = []
@@ -169,9 +232,13 @@ def update_quote(quote_id: str, name: Optional[str], billing_type: str, items: l
     quote = Quote(
         id=quote_id,
         name=name or old_quote_data.get('name', f"Quote {quote_id[:8]}"),
+        region=region,
         billing_type=billing_type,
         items=quote_items,
         total=total,
+        total_annually=total_annually,
+        total_monthly=total_monthly,
+        total_on_demand=total_on_demand,
         created_at=old_quote_data.get('created_at', now),
         updated_at=now
     )

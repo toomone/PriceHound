@@ -34,15 +34,20 @@ class QuoteLineItem(BaseModel):
 class Quote(BaseModel):
     id: str
     name: Optional[str] = None
+    region: str = "us"  # Datadog region
     billing_type: str  # 'annually', 'monthly', 'on_demand'
     items: list[QuoteLineItem]
     total: float
+    total_annually: Optional[float] = None  # For savings comparison
+    total_monthly: Optional[float] = None
+    total_on_demand: Optional[float] = None
     created_at: str
     updated_at: str
 
 
 class QuoteCreate(BaseModel):
     name: Optional[str] = None
+    region: str = "us"
     billing_type: str
     items: list[dict]
 

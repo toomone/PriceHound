@@ -117,6 +117,7 @@ async def create_new_quote(quote_data: QuoteCreate):
     """Create a new quote."""
     quote = create_quote(
         name=quote_data.name,
+        region=quote_data.region,
         billing_type=quote_data.billing_type,
         items=quote_data.items
     )

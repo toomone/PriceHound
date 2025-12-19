@@ -13,6 +13,15 @@
 	let error = '';
 	let copied = false;
 
+	// Region display names
+	const regionNames: Record<string, string> = {
+		'us': 'US (US1, US3, US5)',
+		'us1-fed': 'US1-FED (GovCloud)',
+		'eu1': 'EU1 (Europe)',
+		'ap1': 'AP1 (Asia Pacific)',
+		'ap2': 'AP2 (Asia Pacific 2)'
+	};
+
 	$: quoteId = $page.params.id;
 
 	onMount(async () => {
@@ -39,9 +48,10 @@
 
 	function cloneQuote() {
 		if (!quote) return;
-		// Encode quote data as URL parameter for the main page (include product IDs)
+		// Encode quote data as URL parameter for the main page (include product IDs and region)
 		const cloneData = {
 			name: quote.name,
+			region: quote.region,
 			items: quote.items.map(item => ({
 				id: item.id,
 				product: item.product,
@@ -54,10 +64,22 @@
 
 	$: billingLabel =
 		quote?.billing_type === 'annually'
-			? 'Annual billing'
+			? 'Annual'
 			: quote?.billing_type === 'monthly'
-			? 'Monthly billing'
-			: 'On-demand';
+			? 'Monthly'
+			: 'On-Demand';
+	
+	$: regionLabel = quote?.region ? (regionNames[quote.region] || quote.region.toUpperCase()) : 'US';
+	
+	// Calculate savings
+	$: annualTotal = quote?.total_annually || 0;
+	$: monthlyTotal = quote?.total_monthly || 0;
+	$: onDemandTotal = quote?.total_on_demand || 0;
+	
+	$: savingsVsMonthly = monthlyTotal > annualTotal ? monthlyTotal - annualTotal : 0;
+	$: savingsVsOnDemand = onDemandTotal > annualTotal ? onDemandTotal - annualTotal : 0;
+	$: savingsPercentVsMonthly = monthlyTotal > 0 ? Math.round((savingsVsMonthly / monthlyTotal) * 100) : 0;
+	$: savingsPercentVsOnDemand = onDemandTotal > 0 ? Math.round((savingsVsOnDemand / onDemandTotal) * 100) : 0;
 </script>
 
 <svelte:head>
@@ -102,8 +124,8 @@
 			</CardContent>
 		</Card>
 	{:else if quote}
-		<Card class="mb-6">
-			<CardHeader>
+		<Card class="mb-6 print:shadow-none print:border-0">
+			<CardHeader class="pb-4">
 				<div class="flex flex-wrap items-start justify-between gap-4">
 					<div>
 						<CardTitle class="text-2xl">{quote.name}</CardTitle>
@@ -115,7 +137,24 @@
 							})}
 						</CardDescription>
 					</div>
-					<Badge variant="outline" class="text-sm">{billingLabel}</Badge>
+					<div class="flex flex-wrap gap-2">
+						<Badge variant="outline" class="text-sm">
+							<svg class="mr-1 h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<circle cx="12" cy="12" r="10" />
+								<path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
+							</svg>
+							{regionLabel}
+						</Badge>
+						<Badge class="text-sm bg-datadog-purple/10 text-datadog-purple border-datadog-purple/20">
+							<svg class="mr-1 h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+								<line x1="16" y1="2" x2="16" y2="6" />
+								<line x1="8" y1="2" x2="8" y2="6" />
+								<line x1="3" y1="10" x2="21" y2="10" />
+							</svg>
+							{billingLabel} Billing
+						</Badge>
+					</div>
 				</div>
 			</CardHeader>
 			<CardContent>
@@ -139,6 +178,15 @@
 									<td class="py-4">
 										<div class="font-medium">{item.product}</div>
 										<div class="text-xs text-muted-foreground">{item.billing_unit}</div>
+										{#if item.allotments && item.allotments.length > 0}
+											<div class="mt-1 flex flex-wrap gap-1">
+												{#each item.allotments as allot}
+													<span class="inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+														+{formatNumber(allot.quantity_included)} {allot.allotted_product}
+													</span>
+												{/each}
+											</div>
+										{/if}
 									</td>
 									<td class="py-4 text-center font-mono">{formatNumber(item.quantity)}</td>
 									<td class="py-4 text-right font-mono">{formatCurrency(item.unit_price)}</td>
@@ -148,27 +196,80 @@
 								</tr>
 							{/each}
 						</tbody>
-						<tfoot>
-							<tr>
-								<td colspan="3" class="pt-4 text-right font-semibold">Annual Total</td>
-								<td class="pt-4 text-right text-2xl font-bold text-datadog-green">
-									{formatCurrency(quote.total * 12)}
-								</td>
-							</tr>
-							<tr>
-								<td colspan="3" class="pt-1 text-right text-sm text-muted-foreground">Monthly Cost</td>
-								<td class="pt-1 text-right font-mono text-muted-foreground">
-									{formatCurrency(quote.total)}/mo
-								</td>
-							</tr>
-						</tfoot>
 					</table>
+				</div>
+				
+				<!-- Pricing Summary -->
+				<div class="mt-6 rounded-lg border border-border bg-muted/30 p-4">
+					<h3 class="mb-4 text-sm font-semibold text-muted-foreground uppercase tracking-wide">Pricing Summary</h3>
+					
+					<div class="grid gap-4 sm:grid-cols-3">
+						<!-- Annual -->
+						<div class="rounded-lg border border-datadog-green/30 bg-datadog-green/5 p-4 {quote.billing_type === 'annually' ? 'ring-2 ring-datadog-green' : ''}">
+							<div class="flex items-center justify-between mb-2">
+								<span class="text-sm font-medium text-muted-foreground">Annual</span>
+								{#if quote.billing_type === 'annually'}
+									<Badge class="bg-datadog-green text-white text-xs">Selected</Badge>
+								{:else if savingsVsMonthly > 0 || savingsVsOnDemand > 0}
+									<Badge variant="outline" class="text-datadog-green border-datadog-green text-xs">Best Value</Badge>
+								{/if}
+							</div>
+							<div class="text-2xl font-bold text-datadog-green font-mono">
+								{formatCurrency(annualTotal * 12)}<span class="text-sm font-normal text-muted-foreground">/yr</span>
+							</div>
+							<div class="text-sm text-muted-foreground font-mono">
+								{formatCurrency(annualTotal)}/mo
+							</div>
+						</div>
+						
+						<!-- Monthly -->
+						<div class="rounded-lg border border-border bg-card p-4 {quote.billing_type === 'monthly' ? 'ring-2 ring-datadog-purple' : ''}">
+							<div class="flex items-center justify-between mb-2">
+								<span class="text-sm font-medium text-muted-foreground">Monthly</span>
+								{#if quote.billing_type === 'monthly'}
+									<Badge class="bg-datadog-purple text-white text-xs">Selected</Badge>
+								{/if}
+							</div>
+							<div class="text-2xl font-bold font-mono">
+								{formatCurrency(monthlyTotal * 12)}<span class="text-sm font-normal text-muted-foreground">/yr</span>
+							</div>
+							<div class="text-sm text-muted-foreground font-mono">
+								{formatCurrency(monthlyTotal)}/mo
+							</div>
+							{#if savingsVsMonthly > 0}
+								<div class="mt-2 text-xs text-datadog-green">
+									Save {formatCurrency(savingsVsMonthly * 12)}/yr ({savingsPercentVsMonthly}%) with annual
+								</div>
+							{/if}
+						</div>
+						
+						<!-- On-Demand -->
+						<div class="rounded-lg border border-border bg-card p-4 {quote.billing_type === 'on_demand' ? 'ring-2 ring-orange-500' : ''}">
+							<div class="flex items-center justify-between mb-2">
+								<span class="text-sm font-medium text-muted-foreground">On-Demand</span>
+								{#if quote.billing_type === 'on_demand'}
+									<Badge class="bg-orange-500 text-white text-xs">Selected</Badge>
+								{/if}
+							</div>
+							<div class="text-2xl font-bold font-mono">
+								{formatCurrency(onDemandTotal * 12)}<span class="text-sm font-normal text-muted-foreground">/yr</span>
+							</div>
+							<div class="text-sm text-muted-foreground font-mono">
+								{formatCurrency(onDemandTotal)}/mo
+							</div>
+							{#if savingsVsOnDemand > 0}
+								<div class="mt-2 text-xs text-datadog-green">
+									Save {formatCurrency(savingsVsOnDemand * 12)}/yr ({savingsPercentVsOnDemand}%) with annual
+								</div>
+							{/if}
+						</div>
+					</div>
 				</div>
 			</CardContent>
 		</Card>
 
 		<!-- Actions -->
-		<div class="flex flex-wrap items-center justify-center gap-3">
+		<div class="flex flex-wrap items-center justify-center gap-3 print:hidden">
 			<Button variant="outline" on:click={copyUrl} class="gap-2">
 				{#if copied}
 					<svg class="h-4 w-4 text-datadog-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -190,6 +291,14 @@
 				</svg>
 				Clone & Edit
 			</Button>
+			<Button variant="outline" on:click={() => window.print()} class="gap-2">
+				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<polyline points="6 9 6 2 18 2 18 9" />
+					<path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" />
+					<rect x="6" y="14" width="12" height="8" />
+				</svg>
+				Print / PDF
+			</Button>
 			<Button variant="outline" href="/" class="gap-2">
 				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<path d="M12 5v14M5 12h14" />
@@ -209,6 +318,20 @@
 		to {
 			opacity: 1;
 			transform: translateX(0);
+		}
+	}
+	
+	/* Print styles */
+	@media print {
+		:global(body) {
+			background: white !important;
+			-webkit-print-color-adjust: exact;
+			print-color-adjust: exact;
+		}
+		
+		:global(.container) {
+			max-width: 100% !important;
+			padding: 0 !important;
 		}
 	}
 </style>
