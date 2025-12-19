@@ -338,9 +338,17 @@
 			newLines.push({ ...existingLine!, product, quantity });
 			
 			// 3. Find and add new allotments for this product (match by product_id)
-			const productAllotments = allotments.filter(a => 
+			// Deduplicate by allotted_product to avoid duplicate entries
+			const productAllotmentsRaw = allotments.filter(a => 
 				a.parent_product_id === product.id
 			);
+			const seenAllotments = new Set<string>();
+			const productAllotments = productAllotmentsRaw.filter(a => {
+				const key = a.allotted_product;
+				if (seenAllotments.has(key)) return false;
+				seenAllotments.add(key);
+				return true;
+			});
 			
 			for (const allotment of productAllotments) {
 				// Match allotted product by ID first, then fallback to name
@@ -764,9 +772,17 @@
 				lines = [...lines, newLine];
 				
 				// Find and add allotments for this product (match by product_id)
-				const productAllotments = allotments.filter(a => 
+				// Deduplicate by allotted_product to avoid duplicate entries
+				const productAllotmentsRaw = allotments.filter(a => 
 					a.parent_product_id === matchingProduct.id
 				);
+				const seenAllotments = new Set<string>();
+				const productAllotments = productAllotmentsRaw.filter(a => {
+					const key = a.allotted_product;
+					if (seenAllotments.has(key)) return false;
+					seenAllotments.add(key);
+					return true;
+				});
 				
 				for (const allotment of productAllotments) {
 					// Match allotted product by ID first, then fallback to name
