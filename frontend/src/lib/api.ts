@@ -108,6 +108,12 @@ export async function syncPricing(region: string = 'us'): Promise<SyncResponse> 
 	return response.json();
 }
 
+export async function syncAllPricing(): Promise<{ results: SyncResponse[] }> {
+	const response = await fetch(`${API_BASE}/pricing/sync-all`, { method: 'POST' });
+	if (!response.ok) throw new Error('Failed to sync all pricing');
+	return response.json();
+}
+
 export async function createQuote(
 	name: string | null,
 	region: string,

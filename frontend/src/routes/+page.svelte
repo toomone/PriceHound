@@ -7,7 +7,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import QuoteLine from '$lib/components/QuoteLine.svelte';
 	import LogsIndexingCalculator from '$lib/components/LogsIndexingCalculator.svelte';
-	import { fetchProducts, fetchMetadata, createQuote, fetchRegions, fetchAllotments, initAllotments, type Product, type PricingMetadata, type Region, type Allotment } from '$lib/api';
+	import { fetchProducts, fetchMetadata, createQuote, fetchRegions, fetchAllotments, initAllotments, syncPricing, type Product, type PricingMetadata, type Region, type Allotment } from '$lib/api';
 	import { formatCurrency, parsePrice, formatNumber, isPercentagePrice, parsePercentage } from '$lib/utils';
 
 	interface LineItem {
@@ -29,6 +29,7 @@
 	let quoteName = '';
 	let loading = false;
 	let saving = false;
+	let syncing = false;
 	let error = '';
 	let success = '';
 	let shareUrl = '';
@@ -255,6 +256,21 @@
 			error = 'Failed to load products. Make sure the backend is running.';
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function handleSync() {
+		syncing = true;
+		error = '';
+		try {
+			await syncPricing(selectedRegion);
+			await loadProducts();
+			success = 'Pricing data synced successfully!';
+			setTimeout(() => success = '', 3000);
+		} catch (e) {
+			error = 'Failed to sync pricing data.';
+		} finally {
+			syncing = false;
 		}
 	}
 
@@ -907,17 +923,30 @@
 				<!-- Separator -->
 				<div class="h-6 w-px bg-border"></div>
 
-				<!-- Pricing Info -->
-				<div class="text-xs text-muted-foreground hidden sm:block">
-					{#if loading}
-						<span class="text-muted-foreground/50">Loading...</span>
-					{:else if products.length > 0}
-						<span>{products.length} products</span>
-						{#if lastSyncFormatted}
-							<span class="mx-1">·</span>
-							<span>Updated: {lastSyncFormatted}</span>
+				<!-- Pricing Info & Sync Button -->
+				<div class="flex items-center gap-2">
+					<div class="text-xs text-muted-foreground hidden sm:block">
+						{#if loading}
+							<span class="text-muted-foreground/50">Loading...</span>
+						{:else if products.length > 0}
+							<span>{products.length} products</span>
+							{#if lastSyncFormatted}
+								<span class="mx-1">·</span>
+								<span>Updated: {lastSyncFormatted}</span>
+							{/if}
 						{/if}
-					{/if}
+					</div>
+					<button
+						type="button"
+						on:click={handleSync}
+						disabled={syncing}
+						class="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50"
+						title="Sync pricing data now"
+					>
+						<svg class="h-4 w-4 {syncing ? 'animate-spin' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+						</svg>
+					</button>
 				</div>
 			</div>
 
