@@ -868,27 +868,12 @@
 
 			<!-- Right: Button Group -->
 			<div class="inline-flex items-center rounded-lg border border-input bg-background">
-				<!-- Indexes Estimator Button -->
-				<button
-					type="button"
-					on:click={() => showLogsCalculator = !showLogsCalculator}
-					class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-muted border-r border-input rounded-l-lg {showLogsCalculator ? 'bg-datadog-purple text-white hover:bg-datadog-purple/90' : ''}"
-				>
-					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-						<polyline points="14 2 14 8 20 8" />
-						<line x1="16" y1="13" x2="8" y2="13" />
-						<line x1="16" y1="17" x2="8" y2="17" />
-					</svg>
-					<span class="hidden sm:inline">Indexes Estimator</span>
-				</button>
-
 				<!-- Tier Visibility Dropdown -->
 				<div class="filter-menu-container relative">
 					<button
 						type="button"
 						on:click={() => filterMenuOpen = !filterMenuOpen}
-						class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-muted border-r border-input"
+						class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-muted border-r border-input rounded-l-lg"
 					>
 						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M3 6h18M7 12h10M10 18h4" />
@@ -1120,16 +1105,31 @@
 					{/each}
 				</div>
 
-				<Button
-					variant="outline"
-					class="mt-4 w-full py-6 border-2 border-dashed border-border hover:border-foreground/30 hover:bg-muted transition-all"
-					on:click={addLine}
-				>
-					<svg class="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-						<path d="M12 5v14M5 12h14" />
-					</svg>
-					<span class="font-semibold">Add Product</span>
-				</Button>
+				<div class="mt-4 flex gap-2">
+					<Button
+						variant="outline"
+						class="flex-1 py-6 border-2 border-dashed border-border hover:border-foreground/30 hover:bg-muted transition-all"
+						on:click={addLine}
+					>
+						<svg class="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+							<path d="M12 5v14M5 12h14" />
+						</svg>
+						<span class="font-semibold">Add Product</span>
+					</Button>
+					<Button
+						variant={showLogsCalculator ? "default" : "outline"}
+						class="py-6 px-4 {showLogsCalculator ? 'bg-datadog-purple hover:bg-datadog-purple/90' : ''}"
+						on:click={() => showLogsCalculator = !showLogsCalculator}
+						title="Indexes Estimator"
+					>
+						<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+							<polyline points="14 2 14 8 20 8" />
+							<line x1="16" y1="13" x2="8" y2="13" />
+							<line x1="16" y1="17" x2="8" y2="17" />
+						</svg>
+					</Button>
+				</div>
 			{/if}
 		</CardContent>
 	</Card>
