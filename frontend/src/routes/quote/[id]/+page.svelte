@@ -14,12 +14,11 @@
 	let copied = false;
 	let tierMenuOpen = false;
 	
-	// Tier visibility toggles
-	let showAnnual = true;
-	let showMonthly = true;
-	let showOnDemand = false;
+	// Single tier selection (annual, monthly, on-demand)
+	let selectedTier: 'annual' | 'monthly' | 'on-demand' = 'annual';
 	
-	$: visibleTierCount = [showAnnual, showMonthly, showOnDemand].filter(Boolean).length;
+	$: tierLabel = selectedTier === 'annual' ? 'Annual' : selectedTier === 'monthly' ? 'Monthly' : 'On-Demand';
+	$: tierColor = selectedTier === 'annual' ? 'datadog-green' : selectedTier === 'monthly' ? 'datadog-blue' : 'datadog-orange';
 
 	// Region display names
 	const regionNames: Record<string, string> = {
@@ -213,76 +212,80 @@
 				<div class="mt-6 rounded-lg border border-border bg-muted/30 p-4">
 					<h3 class="mb-4 text-sm font-semibold text-muted-foreground uppercase tracking-wide">Pricing Summary</h3>
 					
-					{#if visibleTierCount > 0}
-						<div class="grid gap-4" style="grid-template-columns: repeat({visibleTierCount}, 1fr);">
-							{#if showAnnual}
-								<!-- Annual -->
-								<div class="rounded-lg border border-datadog-green/30 bg-datadog-green/5 p-4 {quote.billing_type === 'annually' ? 'ring-2 ring-datadog-green' : ''}">
-									<div class="flex items-center justify-between mb-2">
-										<span class="text-sm font-medium text-muted-foreground">Annual</span>
-										{#if quote.billing_type === 'annually'}
-											<Badge class="bg-datadog-green text-white text-xs">Selected</Badge>
-										{:else if savingsVsMonthly > 0 || savingsVsOnDemand > 0}
-											<Badge variant="outline" class="text-datadog-green border-datadog-green text-xs">Best Value</Badge>
-										{/if}
-									</div>
-									<div class="text-2xl font-bold text-datadog-green font-mono">
-										{formatCurrency(annualTotal * 12)}<span class="text-sm font-normal text-muted-foreground">/yr</span>
-									</div>
-									<div class="text-sm text-muted-foreground font-mono">
-										{formatCurrency(annualTotal)}/mo
-									</div>
+					{#if selectedTier === 'annual'}
+						<!-- Annual -->
+						<div class="rounded-lg border-2 border-datadog-green/50 bg-datadog-green/5 p-6">
+							<div class="flex items-center justify-between mb-3">
+								<span class="text-lg font-semibold text-datadog-green">Annual Billing</span>
+								{#if savingsVsMonthly > 0 || savingsVsOnDemand > 0}
+									<Badge class="bg-datadog-green text-white text-xs">Best Value</Badge>
+								{/if}
+							</div>
+							<div class="text-4xl font-bold text-datadog-green font-mono mb-2">
+								{formatCurrency(annualTotal * 12)}<span class="text-lg font-normal text-muted-foreground">/yr</span>
+							</div>
+							<div class="text-sm text-muted-foreground font-mono mb-4">
+								{formatCurrency(annualTotal)}/month
+							</div>
+							{#if savingsVsMonthly > 0}
+								<div class="flex items-center gap-2 text-sm text-datadog-green">
+									<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M12 5v14M5 12l7 7 7-7" />
+									</svg>
+									Save {formatCurrency(savingsVsMonthly * 12)}/yr ({savingsPercentVsMonthly}%) vs monthly
 								</div>
 							{/if}
-							
-							{#if showMonthly}
-								<!-- Monthly -->
-								<div class="rounded-lg border border-datadog-blue/30 bg-datadog-blue/5 p-4 {quote.billing_type === 'monthly' ? 'ring-2 ring-datadog-blue' : ''}">
-									<div class="flex items-center justify-between mb-2">
-										<span class="text-sm font-medium text-muted-foreground">Monthly</span>
-										{#if quote.billing_type === 'monthly'}
-											<Badge class="bg-datadog-blue text-white text-xs">Selected</Badge>
-										{/if}
-									</div>
-									<div class="text-2xl font-bold text-datadog-blue font-mono">
-										{formatCurrency(monthlyTotal * 12)}<span class="text-sm font-normal text-muted-foreground">/yr</span>
-									</div>
-									<div class="text-sm text-muted-foreground font-mono">
-										{formatCurrency(monthlyTotal)}/mo
-									</div>
-									{#if showAnnual && savingsVsMonthly > 0}
-										<div class="mt-2 text-xs text-datadog-green">
-											Save {formatCurrency(savingsVsMonthly * 12)}/yr ({savingsPercentVsMonthly}%) with annual
-										</div>
-									{/if}
+							{#if savingsVsOnDemand > 0}
+								<div class="flex items-center gap-2 text-sm text-datadog-green mt-1">
+									<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M12 5v14M5 12l7 7 7-7" />
+									</svg>
+									Save {formatCurrency(savingsVsOnDemand * 12)}/yr ({savingsPercentVsOnDemand}%) vs on-demand
 								</div>
 							{/if}
-							
-							{#if showOnDemand}
-								<!-- On-Demand -->
-								<div class="rounded-lg border border-datadog-orange/30 bg-datadog-orange/5 p-4 {quote.billing_type === 'on_demand' ? 'ring-2 ring-datadog-orange' : ''}">
-									<div class="flex items-center justify-between mb-2">
-										<span class="text-sm font-medium text-muted-foreground">On-Demand</span>
-										{#if quote.billing_type === 'on_demand'}
-											<Badge class="bg-datadog-orange text-white text-xs">Selected</Badge>
-										{/if}
-									</div>
-									<div class="text-2xl font-bold text-datadog-orange font-mono">
-										{formatCurrency(onDemandTotal * 12)}<span class="text-sm font-normal text-muted-foreground">/yr</span>
-									</div>
-									<div class="text-sm text-muted-foreground font-mono">
-										{formatCurrency(onDemandTotal)}/mo
-									</div>
-									{#if showAnnual && savingsVsOnDemand > 0}
-										<div class="mt-2 text-xs text-datadog-green">
-											Save {formatCurrency(savingsVsOnDemand * 12)}/yr ({savingsPercentVsOnDemand}%) with annual
-										</div>
-									{/if}
+						</div>
+					{:else if selectedTier === 'monthly'}
+						<!-- Monthly -->
+						<div class="rounded-lg border-2 border-datadog-blue/50 bg-datadog-blue/5 p-6">
+							<div class="flex items-center justify-between mb-3">
+								<span class="text-lg font-semibold text-datadog-blue">Monthly Billing</span>
+							</div>
+							<div class="text-4xl font-bold text-datadog-blue font-mono mb-2">
+								{formatCurrency(monthlyTotal * 12)}<span class="text-lg font-normal text-muted-foreground">/yr</span>
+							</div>
+							<div class="text-sm text-muted-foreground font-mono mb-4">
+								{formatCurrency(monthlyTotal)}/month
+							</div>
+							{#if savingsVsMonthly > 0}
+								<div class="flex items-center gap-2 text-sm text-muted-foreground">
+									<svg class="h-4 w-4 text-datadog-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M12 19V5M5 12l7-7 7 7" />
+									</svg>
+									+{formatCurrency(savingsVsMonthly * 12)}/yr vs annual billing
 								</div>
 							{/if}
 						</div>
 					{:else}
-						<p class="text-sm text-muted-foreground text-center py-4">Select at least one tier to display pricing</p>
+						<!-- On-Demand -->
+						<div class="rounded-lg border-2 border-datadog-orange/50 bg-datadog-orange/5 p-6">
+							<div class="flex items-center justify-between mb-3">
+								<span class="text-lg font-semibold text-datadog-orange">On-Demand</span>
+							</div>
+							<div class="text-4xl font-bold text-datadog-orange font-mono mb-2">
+								{formatCurrency(onDemandTotal * 12)}<span class="text-lg font-normal text-muted-foreground">/yr</span>
+							</div>
+							<div class="text-sm text-muted-foreground font-mono mb-4">
+								{formatCurrency(onDemandTotal)}/month
+							</div>
+							{#if savingsVsOnDemand > 0}
+								<div class="flex items-center gap-2 text-sm text-muted-foreground">
+									<svg class="h-4 w-4 text-datadog-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M12 19V5M5 12l7-7 7 7" />
+									</svg>
+									+{formatCurrency(savingsVsOnDemand * 12)}/yr vs annual billing
+								</div>
+							{/if}
+						</div>
 					{/if}
 				</div>
 			</CardContent>
@@ -290,7 +293,7 @@
 
 		<!-- Actions -->
 		<div class="flex flex-wrap items-center justify-center gap-3 print:hidden">
-			<!-- Tier Visibility Dropdown -->
+			<!-- Tier Selection Dropdown -->
 			<!-- svelte-ignore a11y-click-events-have-key-events -->
 			<!-- svelte-ignore a11y-no-static-element-interactions -->
 			<div class="relative" on:click|stopPropagation>
@@ -302,12 +305,8 @@
 					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<path d="M3 6h18M7 12h10M10 18h4" />
 					</svg>
-					Tier
-					<div class="flex items-center gap-0.5 ml-1">
-						{#if showAnnual}<span class="w-2 h-2 rounded-full bg-datadog-green"></span>{/if}
-						{#if showMonthly}<span class="w-2 h-2 rounded-full bg-datadog-blue"></span>{/if}
-						{#if showOnDemand}<span class="w-2 h-2 rounded-full bg-datadog-orange"></span>{/if}
-					</div>
+					{tierLabel}
+					<span class="w-2 h-2 rounded-full bg-{tierColor}"></span>
 				</Button>
 				
 				{#if tierMenuOpen}
@@ -315,27 +314,26 @@
 						<button
 							type="button"
 							class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-muted"
-							on:click={() => showAnnual = !showAnnual}
+							on:click={() => { selectedTier = 'annual'; tierMenuOpen = false; }}
 						>
-							<span class="w-4 h-4 rounded border flex items-center justify-center {showAnnual ? 'bg-datadog-green border-datadog-green' : 'border-muted-foreground/30'}">
-								{#if showAnnual}
-									<svg class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-										<path d="M20 6L9 17l-5-5" />
-									</svg>
+							<span class="w-4 h-4 rounded-full border-2 flex items-center justify-center {selectedTier === 'annual' ? 'border-datadog-green' : 'border-muted-foreground/30'}">
+								{#if selectedTier === 'annual'}
+									<span class="w-2 h-2 rounded-full bg-datadog-green"></span>
 								{/if}
 							</span>
 							<span class="text-datadog-green font-medium">Annual</span>
+							{#if savingsVsMonthly > 0 || savingsVsOnDemand > 0}
+								<Badge variant="outline" class="ml-auto text-[10px] text-datadog-green border-datadog-green/50">Best</Badge>
+							{/if}
 						</button>
 						<button
 							type="button"
 							class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-muted"
-							on:click={() => showMonthly = !showMonthly}
+							on:click={() => { selectedTier = 'monthly'; tierMenuOpen = false; }}
 						>
-							<span class="w-4 h-4 rounded border flex items-center justify-center {showMonthly ? 'bg-datadog-blue border-datadog-blue' : 'border-muted-foreground/30'}">
-								{#if showMonthly}
-									<svg class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-										<path d="M20 6L9 17l-5-5" />
-									</svg>
+							<span class="w-4 h-4 rounded-full border-2 flex items-center justify-center {selectedTier === 'monthly' ? 'border-datadog-blue' : 'border-muted-foreground/30'}">
+								{#if selectedTier === 'monthly'}
+									<span class="w-2 h-2 rounded-full bg-datadog-blue"></span>
 								{/if}
 							</span>
 							<span class="text-datadog-blue font-medium">Monthly</span>
@@ -343,13 +341,11 @@
 						<button
 							type="button"
 							class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-muted"
-							on:click={() => showOnDemand = !showOnDemand}
+							on:click={() => { selectedTier = 'on-demand'; tierMenuOpen = false; }}
 						>
-							<span class="w-4 h-4 rounded border flex items-center justify-center {showOnDemand ? 'bg-datadog-orange border-datadog-orange' : 'border-muted-foreground/30'}">
-								{#if showOnDemand}
-									<svg class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-										<path d="M20 6L9 17l-5-5" />
-									</svg>
+							<span class="w-4 h-4 rounded-full border-2 flex items-center justify-center {selectedTier === 'on-demand' ? 'border-datadog-orange' : 'border-muted-foreground/30'}">
+								{#if selectedTier === 'on-demand'}
+									<span class="w-2 h-2 rounded-full bg-datadog-orange"></span>
 								{/if}
 							</span>
 							<span class="text-datadog-orange font-medium">On-Demand</span>
