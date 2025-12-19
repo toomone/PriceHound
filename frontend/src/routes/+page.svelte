@@ -866,14 +866,13 @@
 				</div>
 			</div>
 
-			<!-- Right: Actions -->
-			<div class="flex items-center gap-2">
-				<!-- Smart Logs Index Estimator Button -->
-				<Button
-					variant={showLogsCalculator ? "default" : "outline"}
-					size="sm"
+			<!-- Right: Button Group -->
+			<div class="inline-flex items-center rounded-lg border border-input bg-background overflow-hidden">
+				<!-- Indexes Estimator Button -->
+				<button
+					type="button"
 					on:click={() => showLogsCalculator = !showLogsCalculator}
-					class="gap-1.5 {showLogsCalculator ? 'bg-datadog-purple hover:bg-datadog-purple/90' : ''}"
+					class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-muted border-r border-input {showLogsCalculator ? 'bg-datadog-purple text-white hover:bg-datadog-purple/90' : ''}"
 				>
 					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
@@ -881,16 +880,15 @@
 						<line x1="16" y1="13" x2="8" y2="13" />
 						<line x1="16" y1="17" x2="8" y2="17" />
 					</svg>
-					<span class="hidden sm:inline">Logs Estimator</span>
-				</Button>
+					<span class="hidden sm:inline">Indexes Estimator</span>
+				</button>
 
 				<!-- Tier Visibility Dropdown -->
 				<div class="filter-menu-container relative">
-					<Button
-						variant="outline"
-						size="sm"
+					<button
+						type="button"
 						on:click={() => filterMenuOpen = !filterMenuOpen}
-						class="gap-1.5"
+						class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-muted border-r border-input"
 					>
 						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M3 6h18M7 12h10M10 18h4" />
@@ -901,79 +899,75 @@
 							{#if showMonthly}<span class="w-2 h-2 rounded-full bg-datadog-blue"></span>{/if}
 							{#if showOnDemand}<span class="w-2 h-2 rounded-full bg-datadog-orange"></span>{/if}
 						</div>
-					</Button>
+					</button>
 
-			{#if filterMenuOpen}
-				<div class="absolute right-0 top-full mt-2 w-48 rounded-xl border border-border bg-card p-2 shadow-2xl z-50">
-					<button
-						type="button"
-						class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-muted"
-						on:click={() => showAnnual = !showAnnual}
-					>
-						<span class="w-4 h-4 rounded border flex items-center justify-center {showAnnual ? 'bg-datadog-green border-datadog-green' : 'border-muted-foreground/30'}">
-							{#if showAnnual}
-								<svg class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-									<path d="M20 6L9 17l-5-5" />
-								</svg>
-							{/if}
-						</span>
-						<span class="text-datadog-green font-medium">Annual</span>
-					</button>
-					<button
-						type="button"
-						class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-muted"
-						on:click={() => showMonthly = !showMonthly}
-					>
-						<span class="w-4 h-4 rounded border flex items-center justify-center {showMonthly ? 'bg-datadog-blue border-datadog-blue' : 'border-muted-foreground/30'}">
-							{#if showMonthly}
-								<svg class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-									<path d="M20 6L9 17l-5-5" />
-								</svg>
-							{/if}
-						</span>
-						<span class="text-datadog-blue font-medium">Monthly</span>
-					</button>
-					<button
-						type="button"
-						class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-muted"
-						on:click={() => showOnDemand = !showOnDemand}
-					>
-						<span class="w-4 h-4 rounded border flex items-center justify-center {showOnDemand ? 'bg-datadog-orange border-datadog-orange' : 'border-muted-foreground/30'}">
-							{#if showOnDemand}
-								<svg class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-									<path d="M20 6L9 17l-5-5" />
-								</svg>
-							{/if}
-						</span>
-						<span class="text-datadog-orange font-medium">On-Demand</span>
-					</button>
+					{#if filterMenuOpen}
+						<div class="absolute right-0 top-full mt-2 w-48 rounded-xl border border-border bg-card p-2 shadow-2xl z-50">
+							<button
+								type="button"
+								class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-muted"
+								on:click={() => showAnnual = !showAnnual}
+							>
+								<span class="w-4 h-4 rounded border flex items-center justify-center {showAnnual ? 'bg-datadog-green border-datadog-green' : 'border-muted-foreground/30'}">
+									{#if showAnnual}
+										<svg class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+											<path d="M20 6L9 17l-5-5" />
+										</svg>
+									{/if}
+								</span>
+								<span class="text-datadog-green font-medium">Annual</span>
+							</button>
+							<button
+								type="button"
+								class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-muted"
+								on:click={() => showMonthly = !showMonthly}
+							>
+								<span class="w-4 h-4 rounded border flex items-center justify-center {showMonthly ? 'bg-datadog-blue border-datadog-blue' : 'border-muted-foreground/30'}">
+									{#if showMonthly}
+										<svg class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+											<path d="M20 6L9 17l-5-5" />
+										</svg>
+									{/if}
+								</span>
+								<span class="text-datadog-blue font-medium">Monthly</span>
+							</button>
+							<button
+								type="button"
+								class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-muted"
+								on:click={() => showOnDemand = !showOnDemand}
+							>
+								<span class="w-4 h-4 rounded border flex items-center justify-center {showOnDemand ? 'bg-datadog-orange border-datadog-orange' : 'border-muted-foreground/30'}">
+									{#if showOnDemand}
+										<svg class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+											<path d="M20 6L9 17l-5-5" />
+										</svg>
+									{/if}
+								</span>
+								<span class="text-datadog-orange font-medium">On-Demand</span>
+							</button>
+						</div>
+					{/if}
 				</div>
-			{/if}
-			</div>
-
-				<!-- Separator -->
-				<div class="h-6 w-px bg-border hidden sm:block"></div>
 
 				<!-- Import Button -->
-				<Button
-					variant="outline"
-					size="sm"
+				<button
+					type="button"
 					on:click={() => importModalOpen = true}
-					class="gap-1.5"
+					class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-muted border-r border-input"
 				>
 					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 3v12" />
 					</svg>
 					<span class="hidden sm:inline">Import</span>
-				</Button>
+				</button>
 
 				<!-- Share Button with Dropdown -->
 				<div class="share-menu-container relative">
-					<Button
-						size="sm"
+					<button
+						type="button"
 						on:click={() => shareMenuOpen = !shareMenuOpen}
 						disabled={validLines.length === 0}
-						class="gap-1.5"
+						class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed bg-datadog-purple text-white hover:bg-datadog-purple/90"
 					>
 						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" />
@@ -982,7 +976,7 @@
 						<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M6 9l6 6 6-6" />
 						</svg>
-					</Button>
+					</button>
 
 					<!-- Dropdown Menu -->
 					{#if shareMenuOpen}
