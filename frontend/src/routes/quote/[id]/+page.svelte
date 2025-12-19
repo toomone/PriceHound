@@ -12,6 +12,14 @@
 	let loading = true;
 	let error = '';
 	let copied = false;
+	let tierMenuOpen = false;
+	
+	// Tier visibility toggles
+	let showAnnual = true;
+	let showMonthly = true;
+	let showOnDemand = false;
+	
+	$: visibleTierCount = [showAnnual, showMonthly, showOnDemand].filter(Boolean).length;
 
 	// Region display names
 	const regionNames: Record<string, string> = {
@@ -85,6 +93,8 @@
 <svelte:head>
 	<title>{quote?.name || 'Quote'} | PriceHound</title>
 </svelte:head>
+
+<svelte:window on:click={() => tierMenuOpen = false} />
 
 <div class="container mx-auto max-w-4xl px-4 py-8">
 	<!-- Header -->
@@ -203,73 +213,151 @@
 				<div class="mt-6 rounded-lg border border-border bg-muted/30 p-4">
 					<h3 class="mb-4 text-sm font-semibold text-muted-foreground uppercase tracking-wide">Pricing Summary</h3>
 					
-					<div class="grid gap-4 sm:grid-cols-3">
-						<!-- Annual -->
-						<div class="rounded-lg border border-datadog-green/30 bg-datadog-green/5 p-4 {quote.billing_type === 'annually' ? 'ring-2 ring-datadog-green' : ''}">
-							<div class="flex items-center justify-between mb-2">
-								<span class="text-sm font-medium text-muted-foreground">Annual</span>
-								{#if quote.billing_type === 'annually'}
-									<Badge class="bg-datadog-green text-white text-xs">Selected</Badge>
-								{:else if savingsVsMonthly > 0 || savingsVsOnDemand > 0}
-									<Badge variant="outline" class="text-datadog-green border-datadog-green text-xs">Best Value</Badge>
-								{/if}
-							</div>
-							<div class="text-2xl font-bold text-datadog-green font-mono">
-								{formatCurrency(annualTotal * 12)}<span class="text-sm font-normal text-muted-foreground">/yr</span>
-							</div>
-							<div class="text-sm text-muted-foreground font-mono">
-								{formatCurrency(annualTotal)}/mo
-							</div>
-						</div>
-						
-						<!-- Monthly -->
-						<div class="rounded-lg border border-border bg-card p-4 {quote.billing_type === 'monthly' ? 'ring-2 ring-datadog-blue' : ''}">
-							<div class="flex items-center justify-between mb-2">
-								<span class="text-sm font-medium text-muted-foreground">Monthly</span>
-								{#if quote.billing_type === 'monthly'}
-									<Badge class="bg-datadog-blue text-white text-xs">Selected</Badge>
-								{/if}
-							</div>
-							<div class="text-2xl font-bold font-mono">
-								{formatCurrency(monthlyTotal * 12)}<span class="text-sm font-normal text-muted-foreground">/yr</span>
-							</div>
-							<div class="text-sm text-muted-foreground font-mono">
-								{formatCurrency(monthlyTotal)}/mo
-							</div>
-							{#if savingsVsMonthly > 0}
-								<div class="mt-2 text-xs text-datadog-green">
-									Save {formatCurrency(savingsVsMonthly * 12)}/yr ({savingsPercentVsMonthly}%) with annual
+					{#if visibleTierCount > 0}
+						<div class="grid gap-4" style="grid-template-columns: repeat({visibleTierCount}, 1fr);">
+							{#if showAnnual}
+								<!-- Annual -->
+								<div class="rounded-lg border border-datadog-green/30 bg-datadog-green/5 p-4 {quote.billing_type === 'annually' ? 'ring-2 ring-datadog-green' : ''}">
+									<div class="flex items-center justify-between mb-2">
+										<span class="text-sm font-medium text-muted-foreground">Annual</span>
+										{#if quote.billing_type === 'annually'}
+											<Badge class="bg-datadog-green text-white text-xs">Selected</Badge>
+										{:else if savingsVsMonthly > 0 || savingsVsOnDemand > 0}
+											<Badge variant="outline" class="text-datadog-green border-datadog-green text-xs">Best Value</Badge>
+										{/if}
+									</div>
+									<div class="text-2xl font-bold text-datadog-green font-mono">
+										{formatCurrency(annualTotal * 12)}<span class="text-sm font-normal text-muted-foreground">/yr</span>
+									</div>
+									<div class="text-sm text-muted-foreground font-mono">
+										{formatCurrency(annualTotal)}/mo
+									</div>
+								</div>
+							{/if}
+							
+							{#if showMonthly}
+								<!-- Monthly -->
+								<div class="rounded-lg border border-datadog-blue/30 bg-datadog-blue/5 p-4 {quote.billing_type === 'monthly' ? 'ring-2 ring-datadog-blue' : ''}">
+									<div class="flex items-center justify-between mb-2">
+										<span class="text-sm font-medium text-muted-foreground">Monthly</span>
+										{#if quote.billing_type === 'monthly'}
+											<Badge class="bg-datadog-blue text-white text-xs">Selected</Badge>
+										{/if}
+									</div>
+									<div class="text-2xl font-bold text-datadog-blue font-mono">
+										{formatCurrency(monthlyTotal * 12)}<span class="text-sm font-normal text-muted-foreground">/yr</span>
+									</div>
+									<div class="text-sm text-muted-foreground font-mono">
+										{formatCurrency(monthlyTotal)}/mo
+									</div>
+									{#if showAnnual && savingsVsMonthly > 0}
+										<div class="mt-2 text-xs text-datadog-green">
+											Save {formatCurrency(savingsVsMonthly * 12)}/yr ({savingsPercentVsMonthly}%) with annual
+										</div>
+									{/if}
+								</div>
+							{/if}
+							
+							{#if showOnDemand}
+								<!-- On-Demand -->
+								<div class="rounded-lg border border-datadog-orange/30 bg-datadog-orange/5 p-4 {quote.billing_type === 'on_demand' ? 'ring-2 ring-datadog-orange' : ''}">
+									<div class="flex items-center justify-between mb-2">
+										<span class="text-sm font-medium text-muted-foreground">On-Demand</span>
+										{#if quote.billing_type === 'on_demand'}
+											<Badge class="bg-datadog-orange text-white text-xs">Selected</Badge>
+										{/if}
+									</div>
+									<div class="text-2xl font-bold text-datadog-orange font-mono">
+										{formatCurrency(onDemandTotal * 12)}<span class="text-sm font-normal text-muted-foreground">/yr</span>
+									</div>
+									<div class="text-sm text-muted-foreground font-mono">
+										{formatCurrency(onDemandTotal)}/mo
+									</div>
+									{#if showAnnual && savingsVsOnDemand > 0}
+										<div class="mt-2 text-xs text-datadog-green">
+											Save {formatCurrency(savingsVsOnDemand * 12)}/yr ({savingsPercentVsOnDemand}%) with annual
+										</div>
+									{/if}
 								</div>
 							{/if}
 						</div>
-						
-						<!-- On-Demand -->
-						<div class="rounded-lg border border-border bg-card p-4 {quote.billing_type === 'on_demand' ? 'ring-2 ring-orange-500' : ''}">
-							<div class="flex items-center justify-between mb-2">
-								<span class="text-sm font-medium text-muted-foreground">On-Demand</span>
-								{#if quote.billing_type === 'on_demand'}
-									<Badge class="bg-orange-500 text-white text-xs">Selected</Badge>
-								{/if}
-							</div>
-							<div class="text-2xl font-bold font-mono">
-								{formatCurrency(onDemandTotal * 12)}<span class="text-sm font-normal text-muted-foreground">/yr</span>
-							</div>
-							<div class="text-sm text-muted-foreground font-mono">
-								{formatCurrency(onDemandTotal)}/mo
-							</div>
-							{#if savingsVsOnDemand > 0}
-								<div class="mt-2 text-xs text-datadog-green">
-									Save {formatCurrency(savingsVsOnDemand * 12)}/yr ({savingsPercentVsOnDemand}%) with annual
-								</div>
-							{/if}
-						</div>
-					</div>
+					{:else}
+						<p class="text-sm text-muted-foreground text-center py-4">Select at least one tier to display pricing</p>
+					{/if}
 				</div>
 			</CardContent>
 		</Card>
 
 		<!-- Actions -->
 		<div class="flex flex-wrap items-center justify-center gap-3 print:hidden">
+			<!-- Tier Visibility Dropdown -->
+			<!-- svelte-ignore a11y-click-events-have-key-events -->
+			<!-- svelte-ignore a11y-no-static-element-interactions -->
+			<div class="relative" on:click|stopPropagation>
+				<Button 
+					variant="outline" 
+					on:click={() => tierMenuOpen = !tierMenuOpen}
+					class="gap-2"
+				>
+					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M3 6h18M7 12h10M10 18h4" />
+					</svg>
+					Tier
+					<div class="flex items-center gap-0.5 ml-1">
+						{#if showAnnual}<span class="w-2 h-2 rounded-full bg-datadog-green"></span>{/if}
+						{#if showMonthly}<span class="w-2 h-2 rounded-full bg-datadog-blue"></span>{/if}
+						{#if showOnDemand}<span class="w-2 h-2 rounded-full bg-datadog-orange"></span>{/if}
+					</div>
+				</Button>
+				
+				{#if tierMenuOpen}
+					<div class="absolute left-0 top-full mt-2 w-48 rounded-xl border border-border bg-card p-2 shadow-2xl z-50">
+						<button
+							type="button"
+							class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-muted"
+							on:click={() => showAnnual = !showAnnual}
+						>
+							<span class="w-4 h-4 rounded border flex items-center justify-center {showAnnual ? 'bg-datadog-green border-datadog-green' : 'border-muted-foreground/30'}">
+								{#if showAnnual}
+									<svg class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+										<path d="M20 6L9 17l-5-5" />
+									</svg>
+								{/if}
+							</span>
+							<span class="text-datadog-green font-medium">Annual</span>
+						</button>
+						<button
+							type="button"
+							class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-muted"
+							on:click={() => showMonthly = !showMonthly}
+						>
+							<span class="w-4 h-4 rounded border flex items-center justify-center {showMonthly ? 'bg-datadog-blue border-datadog-blue' : 'border-muted-foreground/30'}">
+								{#if showMonthly}
+									<svg class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+										<path d="M20 6L9 17l-5-5" />
+									</svg>
+								{/if}
+							</span>
+							<span class="text-datadog-blue font-medium">Monthly</span>
+						</button>
+						<button
+							type="button"
+							class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-muted"
+							on:click={() => showOnDemand = !showOnDemand}
+						>
+							<span class="w-4 h-4 rounded border flex items-center justify-center {showOnDemand ? 'bg-datadog-orange border-datadog-orange' : 'border-muted-foreground/30'}">
+								{#if showOnDemand}
+									<svg class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+										<path d="M20 6L9 17l-5-5" />
+									</svg>
+								{/if}
+							</span>
+							<span class="text-datadog-orange font-medium">On-Demand</span>
+						</button>
+					</div>
+				{/if}
+			</div>
+			
 			<Button variant="outline" on:click={copyUrl} class="gap-2">
 				{#if copied}
 					<svg class="h-4 w-4 text-datadog-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
