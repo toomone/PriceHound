@@ -1269,7 +1269,7 @@
 							<line x1="16" y1="17" x2="8" y2="17" />
 						</svg>
 						<span class="hidden sm:flex flex-col leading-tight text-center">
-							<span>Indexes</span>
+							<span>Log Indexing</span>
 							<span>Estimator</span>
 						</span>
 					</button>
