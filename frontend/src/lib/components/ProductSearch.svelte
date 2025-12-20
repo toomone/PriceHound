@@ -123,7 +123,7 @@
 				<button
 					type="button"
 					class={cn(
-						'relative flex w-full cursor-pointer select-none items-center rounded-md px-3 py-2 text-sm outline-none transition-colors',
+						'relative flex w-full cursor-pointer select-none items-start rounded-md px-3 py-2 text-sm outline-none transition-colors text-left',
 						index === highlightedIndex
 							? 'bg-accent text-accent-foreground'
 							: 'hover:bg-accent/50 hover:text-accent-foreground'
@@ -131,9 +131,9 @@
 					on:mousedown|preventDefault={() => handleSelect(product)}
 					on:mouseenter={() => (highlightedIndex = index)}
 				>
-					<div class="flex flex-col items-start gap-0.5">
-						<span class="font-medium">{product.product}</span>
-						<span class="text-xs text-muted-foreground">{product.billing_unit}</span>
+					<div class="flex flex-col items-start gap-0.5 w-full">
+						<span class="font-medium text-left">{product.product}</span>
+						<span class="text-xs text-muted-foreground text-left">{product.billing_unit}</span>
 					</div>
 				</button>
 			{/each}
