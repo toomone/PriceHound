@@ -3,6 +3,7 @@ const API_BASE = '/api';
 export interface Product {
 	id: string;
 	product: string;
+	plan: string; // 'Pro', 'Enterprise', or 'All'
 	billing_unit: string;
 	billed_annually: string | null;
 	billed_month_to_month: string | null;

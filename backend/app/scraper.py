@@ -17,6 +17,24 @@ def generate_product_id(product_name: str, billing_unit: str) -> str:
     return hash_obj.hexdigest()[:12]
 
 
+def extract_plan_from_product(product_name: str) -> str:
+    """Extract the plan tier from product name.
+    
+    Returns:
+        - 'Enterprise' if product name contains 'Enterprise'
+        - 'Pro' if product name contains 'Pro' (but not 'Enterprise')
+        - 'All' if no specific plan tier is found (available to all plans)
+    """
+    product_lower = product_name.lower()
+    
+    if 'enterprise' in product_lower:
+        return 'Enterprise'
+    elif 'pro' in product_lower:
+        return 'Pro'
+    else:
+        return 'All'
+
+
 DATA_DIR = Path(__file__).parent.parent / "data"
 PRICING_DIR = DATA_DIR / "pricing"
 
@@ -126,6 +144,7 @@ def scrape_pricing_data(region: str = DEFAULT_REGION) -> list[dict]:
                             "id": generate_product_id(clean_product, clean_billing_unit),
                             "region": region,
                             "product": clean_product,
+                            "plan": extract_plan_from_product(clean_product),
                             "billing_unit": clean_billing_unit,
                             "billed_annually": str(row.iloc[2]).strip() if len(row) > 2 and pd.notna(row.iloc[2]) else None,
                             "billed_month_to_month": str(row.iloc[3]).strip() if len(row) > 3 and pd.notna(row.iloc[3]) else None,
