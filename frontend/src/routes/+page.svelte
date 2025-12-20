@@ -1080,7 +1080,7 @@
 	{/if}
 
 	<!-- Quote Lines -->
-	<Card class="mb-6 overflow-visible">
+	<Card class="mb-6 overflow-visible relative z-10">
 		<CardHeader>
 			<div class="flex flex-wrap items-start justify-between gap-4">
 				<div class="flex items-center gap-3">
@@ -1315,7 +1315,7 @@
 
 	<!-- Summary Section -->
 	{#if validLines.length > 0}
-		<Card class="mb-6">
+		<Card class="mb-6 relative z-0">
 			<CardHeader>
 				<div class="flex items-center gap-3">
 					<div class="flex h-11 w-11 items-center justify-center rounded-xl bg-datadog-purple shadow-lg shadow-datadog-purple/30">
