@@ -25,8 +25,10 @@
 	let regions: Record<string, Region> = {};
 	let allotments: Allotment[] = [];
 	let selectedRegion = 'us';
+	let selectedPlan: 'Pro' | 'Enterprise' = 'Pro';
 	let lines: LineItem[] = [{ id: crypto.randomUUID(), product: null, quantity: 1 }];
 	let quoteName = '';
+	let editingQuoteName = false;
 	let loading = false;
 	let saving = false;
 	let syncing = false;
@@ -45,6 +47,9 @@
 	
 	// Tools visibility
 	let showLogsCalculator = false;
+	
+	// Filter products based on selected plan (show selected plan + "All" products)
+	$: filteredProducts = products.filter(p => p.plan === selectedPlan || p.plan === 'All');
 
 	$: lastSyncFormatted = metadata?.last_sync
 		? new Date(metadata.last_sync).toLocaleString('en-US', {
@@ -678,6 +683,7 @@
 		const exportData = {
 			name: quoteName || 'PriceHound Quote',
 			region: selectedRegion,
+			plan: selectedPlan,
 			created_at: new Date().toISOString(),
 			items: validLines
 				.filter(l => !l.isAllotment)
@@ -772,6 +778,11 @@
 			// Set quote name if present
 			if (data.name) {
 				quoteName = data.name;
+			}
+
+			// Set plan if present and valid
+			if (data.plan && ['Pro', 'Enterprise'].includes(data.plan)) {
+				selectedPlan = data.plan;
 			}
 
 			// Set region if present and valid
@@ -952,77 +963,11 @@
 
 			<!-- Right: Button Group -->
 			<div class="inline-flex items-center rounded-lg border border-input bg-background">
-				<!-- Billing Visibility Dropdown -->
-				<div class="filter-menu-container relative">
-					<button
-						type="button"
-						on:click={() => filterMenuOpen = !filterMenuOpen}
-						class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-muted border-r border-input rounded-l-lg"
-					>
-						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<path d="M3 6h18M7 12h10M10 18h4" />
-						</svg>
-						<span class="hidden sm:inline">Billing</span>
-						<div class="flex items-center gap-0.5">
-							{#if showAnnual}<span class="w-2 h-2 rounded-full bg-datadog-green"></span>{/if}
-							{#if showMonthly}<span class="w-2 h-2 rounded-full bg-datadog-blue"></span>{/if}
-							{#if showOnDemand}<span class="w-2 h-2 rounded-full bg-datadog-orange"></span>{/if}
-						</div>
-					</button>
-
-					{#if filterMenuOpen}
-						<div class="absolute right-0 top-full mt-2 w-48 rounded-xl border border-border bg-card p-2 shadow-2xl z-50">
-							<button
-								type="button"
-								class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-muted"
-								on:click={() => showAnnual = !showAnnual}
-							>
-								<span class="w-4 h-4 rounded border flex items-center justify-center {showAnnual ? 'bg-datadog-green border-datadog-green' : 'border-muted-foreground/30'}">
-									{#if showAnnual}
-										<svg class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-											<path d="M20 6L9 17l-5-5" />
-										</svg>
-									{/if}
-								</span>
-								<span class="text-datadog-green font-medium">Annually</span>
-							</button>
-							<button
-								type="button"
-								class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-muted"
-								on:click={() => showMonthly = !showMonthly}
-							>
-								<span class="w-4 h-4 rounded border flex items-center justify-center {showMonthly ? 'bg-datadog-blue border-datadog-blue' : 'border-muted-foreground/30'}">
-									{#if showMonthly}
-										<svg class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-											<path d="M20 6L9 17l-5-5" />
-										</svg>
-									{/if}
-								</span>
-								<span class="text-datadog-blue font-medium">Monthly</span>
-							</button>
-							<button
-								type="button"
-								class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-muted"
-								on:click={() => showOnDemand = !showOnDemand}
-							>
-								<span class="w-4 h-4 rounded border flex items-center justify-center {showOnDemand ? 'bg-datadog-orange border-datadog-orange' : 'border-muted-foreground/30'}">
-									{#if showOnDemand}
-										<svg class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-											<path d="M20 6L9 17l-5-5" />
-										</svg>
-									{/if}
-								</span>
-								<span class="text-datadog-orange font-medium">On-Demand</span>
-							</button>
-						</div>
-					{/if}
-				</div>
-
 				<!-- Import Button -->
 				<button
 					type="button"
 					on:click={() => importModalOpen = true}
-					class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-muted border-r border-input"
+					class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-muted border-r border-input rounded-l-lg"
 				>
 					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 3v12" />
@@ -1139,16 +1084,85 @@
 						</svg>
 					</div>
 					<div>
-						<CardTitle>Quote Items</CardTitle>
+						{#if editingQuoteName}
+							<input
+								bind:value={quoteName}
+								placeholder="Enter quote name..."
+								class="text-lg font-semibold h-8 px-2 rounded border border-input bg-background focus:outline-none focus:ring-2 focus:ring-datadog-purple"
+								autofocus
+								on:blur={() => editingQuoteName = false}
+								on:keydown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') editingQuoteName = false; }}
+							/>
+						{:else}
+							<!-- svelte-ignore a11y-click-events-have-key-events -->
+							<!-- svelte-ignore a11y-no-static-element-interactions -->
+							<div 
+								class="group flex items-center gap-2 cursor-pointer"
+								on:click={() => editingQuoteName = true}
+							>
+								<CardTitle class="group-hover:text-datadog-purple transition-colors">
+									{quoteName || 'Quote Items'}
+								</CardTitle>
+								<svg class="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+									<path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+								</svg>
+							</div>
+						{/if}
 						<CardDescription>Add products and specify quantities</CardDescription>
 					</div>
 				</div>
-				<div class="w-full max-w-xs">
-					<Input
-						bind:value={quoteName}
-						placeholder="Quote name (optional)"
-						class="text-sm"
-					/>
+				
+				<!-- Plan & Billing Selectors -->
+				<div class="flex items-center gap-2">
+					<!-- Plan Selector -->
+					<div class="inline-flex items-center rounded-lg border border-input bg-background p-1">
+						<button
+							type="button"
+							class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors {selectedPlan === 'Pro' ? 'bg-datadog-purple text-white' : 'hover:bg-muted'}"
+							on:click={() => selectedPlan = 'Pro'}
+						>
+							Pro
+						</button>
+						<button
+							type="button"
+							class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors {selectedPlan === 'Enterprise' ? 'bg-datadog-purple text-white' : 'hover:bg-muted'}"
+							on:click={() => selectedPlan = 'Enterprise'}
+						>
+							Enterprise
+						</button>
+					</div>
+					
+					<!-- Billing Toggles -->
+					<div class="inline-flex items-center rounded-lg border border-input bg-background p-1">
+						<button
+							type="button"
+							class="px-2 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1 {showAnnual ? 'bg-datadog-green/20 text-datadog-green' : 'hover:bg-muted text-muted-foreground'}"
+							on:click={() => showAnnual = !showAnnual}
+							title="Toggle Annual billing"
+						>
+							<span class="w-2 h-2 rounded-full {showAnnual ? 'bg-datadog-green' : 'bg-muted-foreground/30'}"></span>
+							<span class="hidden sm:inline">Annual</span>
+						</button>
+						<button
+							type="button"
+							class="px-2 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1 {showMonthly ? 'bg-datadog-blue/20 text-datadog-blue' : 'hover:bg-muted text-muted-foreground'}"
+							on:click={() => showMonthly = !showMonthly}
+							title="Toggle Monthly billing"
+						>
+							<span class="w-2 h-2 rounded-full {showMonthly ? 'bg-datadog-blue' : 'bg-muted-foreground/30'}"></span>
+							<span class="hidden sm:inline">Monthly</span>
+						</button>
+						<button
+							type="button"
+							class="px-2 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1 {showOnDemand ? 'bg-datadog-orange/20 text-datadog-orange' : 'hover:bg-muted text-muted-foreground'}"
+							on:click={() => showOnDemand = !showOnDemand}
+							title="Toggle On-Demand billing"
+						>
+							<span class="w-2 h-2 rounded-full {showOnDemand ? 'bg-datadog-orange' : 'bg-muted-foreground/30'}"></span>
+							<span class="hidden sm:inline">On-Demand</span>
+						</button>
+					</div>
 				</div>
 			</div>
 		</CardHeader>
@@ -1168,7 +1182,7 @@
 							allotmentInfo: l.allotmentInfo || null
 						}))}
 						<QuoteLine
-							{products}
+							products={filteredProducts}
 							{index}
 							{showAnnual}
 							{showMonthly}
@@ -1201,7 +1215,7 @@
 						type="button"
 						class="inline-flex items-center justify-center gap-2 px-3 py-3 text-xs font-medium transition-colors border-l-2 border-dashed border-border rounded-r-md {showLogsCalculator ? 'bg-datadog-purple text-white hover:bg-datadog-purple/90' : 'hover:bg-muted'}"
 						on:click={() => showLogsCalculator = !showLogsCalculator}
-						title="Indexes Estimator"
+						title="Logs Indexes Estimator"
 					>
 						<svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
