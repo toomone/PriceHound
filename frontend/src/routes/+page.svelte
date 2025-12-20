@@ -911,7 +911,7 @@
 				</h1>
 			</div>
 			<p class="text-sm text-muted-foreground">
-				Forecasts your Datadog usage and builds an accurate quote before you commit.
+				Get a realistic sense of your Datadog costs before you commit.
 			</p>
 		</div>
 
