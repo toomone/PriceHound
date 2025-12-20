@@ -100,7 +100,7 @@
 				</svg>
 			</div>
 			<div>
-				<CardTitle>Logs Indexes Estimator</CardTitle>
+				<CardTitle>Log Indexing Estimator</CardTitle>
 				<CardDescription>Estimate your log indexing needs based on ingestion volume</CardDescription>
 			</div>
 		</div>
