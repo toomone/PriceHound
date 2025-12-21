@@ -1,0 +1,32 @@
+{
+  "id": "14b3bf6d-219a-4119-85a6-6cd06d20801c",
+  "name": "Quote 14b3bf6d",
+  "region": "us",
+  "billing_type": "annually",
+  "items": [
+    {
+      "id": "cdf4c8acc0ec",
+      "product": "APM",
+      "billing_unit": "Per APM host, per month",
+      "quantity": 13,
+      "unit_price": 31.0,
+      "total_price": 403.0,
+      "unit_price_annually": 31.0,
+      "unit_price_monthly": 36.0,
+      "unit_price_on_demand": 36.0,
+      "total_price_annually": 403.0,
+      "total_price_monthly": 468.0,
+      "total_price_on_demand": 468.0,
+      "is_allotment": false,
+      "allotments": []
+    }
+  ],
+  "total": 403.0,
+  "total_annually": 403.0,
+  "total_monthly": 468.0,
+  "total_on_demand": 468.0,
+  "created_at": "2025-12-21T22:56:49.261461",
+  "updated_at": "2025-12-21T22:57:37.226433",
+  "edit_password_hash": "0b64bf4bf6273b49f5bd2481a0329906$a76a2925b680f068df41e95a6a66651eee9fbf3273c9168e3daccbde69c7bd03",
+  "is_protected": true
+}
