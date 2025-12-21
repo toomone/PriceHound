@@ -1,0 +1,45 @@
+{
+  "id": "f3022114-1904-43a6-ad3d-d3d7db179811",
+  "name": "test",
+  "region": "us",
+  "billing_type": "annually",
+  "items": [
+    {
+      "id": "cdf4c8acc0ec",
+      "product": "APM",
+      "billing_unit": "Per APM host, per month",
+      "quantity": 1,
+      "unit_price": 31.0,
+      "total_price": 31.0,
+      "unit_price_annually": 31.0,
+      "unit_price_monthly": 36.0,
+      "unit_price_on_demand": 36.0,
+      "total_price_annually": 31.0,
+      "total_price_monthly": 36.0,
+      "total_price_on_demand": 36.0,
+      "is_allotment": false,
+      "allotments": [
+        {
+          "id": "39d0e3a55334",
+          "allotted_product": "APM - Indexed Spans",
+          "quantity_included": 1000000,
+          "allotted_unit": "indexed spans"
+        },
+        {
+          "id": "9037fb7521b2",
+          "allotted_product": "APM Ingestion",
+          "quantity_included": 150,
+          "allotted_unit": "GB"
+        }
+      ]
+    }
+  ],
+  "total": 31.0,
+  "total_annually": 31.0,
+  "total_monthly": 36.0,
+  "total_on_demand": 36.0,
+  "created_at": "2025-12-21T22:34:47.976570",
+  "updated_at": "2025-12-21T22:34:47.976570",
+  "edit_password_hash": "1a02e43c0d5b5f1a6e0bfea41545cdfa$3cdecd703525be930d2d0f868c8cc96efff5033bb861e56e3d08864c8a9b7426",
+  "is_protected": true
+}
