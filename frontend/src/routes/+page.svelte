@@ -7,7 +7,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import QuoteLine from '$lib/components/QuoteLine.svelte';
 	import LogsIndexingCalculator from '$lib/components/LogsIndexingCalculator.svelte';
-	import { fetchProducts, fetchMetadata, createQuote, updateQuote, fetchRegions, fetchAllotments, initAllotments, syncPricing, type Product, type PricingMetadata, type Region, type Allotment } from '$lib/api';
+	import { fetchProducts, fetchMetadata, createQuote, updateQuote, fetchRegions, fetchAllotments, initAllotments, syncPricing, fetchTemplates, type Product, type PricingMetadata, type Region, type Allotment, type Template } from '$lib/api';
 	import { formatCurrency, parsePrice, formatNumber, isPercentagePrice, parsePercentage } from '$lib/utils';
 
 	interface LineItem {
@@ -65,6 +65,11 @@
 	
 	// Tools visibility
 	let showLogsCalculator = false;
+	
+	// Templates
+	let templates: Template[] = [];
+	let showTemplates = false;
+	let loadingTemplates = false;
 	
 	// Filter products based on selected plan (show selected plan + "All" products)
 	// Products without a plan field are treated as "All" (available to all plans)
@@ -199,6 +204,7 @@
 		await loadRegions();
 		await loadAllotments();
 		await loadProducts();
+		await loadTemplates();
 		
 		// Check for edit parameter (editing existing quote)
 		const editParam = $page.url.searchParams.get('edit');
@@ -239,6 +245,95 @@
 		} catch (e) {
 			console.error('Failed to load allotments:', e);
 		}
+	}
+
+	async function loadTemplates() {
+		loadingTemplates = true;
+		try {
+			templates = await fetchTemplates();
+		} catch (e) {
+			console.error('Failed to load templates:', e);
+		} finally {
+			loadingTemplates = false;
+		}
+	}
+
+	async function applyTemplate(template: Template) {
+		// Clear existing lines
+		lines = [];
+		
+		// Set quote name from template
+		quoteName = template.name;
+		
+		// Change region if different
+		if (template.region !== selectedRegion) {
+			selectedRegion = template.region;
+			await loadProducts();
+		}
+		
+		// Map template items to lines
+		const newLines: LineItem[] = [];
+		for (const item of template.items) {
+			// Find matching product by name
+			const matchedProduct = products.find(p => 
+				p.product.toLowerCase().includes(item.product_name.toLowerCase()) ||
+				item.product_name.toLowerCase().includes(p.product.toLowerCase())
+			);
+			
+			if (matchedProduct) {
+				const lineId = crypto.randomUUID();
+				newLines.push({
+					id: lineId,
+					product: matchedProduct,
+					quantity: item.quantity
+				});
+				
+				// Find and add allotments for this product
+				const productAllotmentsRaw = allotments.filter(a => 
+					a.parent_product_id === matchedProduct.id
+				);
+				const seenAllotments = new Set<string>();
+				const productAllotments = productAllotmentsRaw.filter(a => {
+					const key = a.allotted_product;
+					if (seenAllotments.has(key)) return false;
+					seenAllotments.add(key);
+					return true;
+				});
+				
+				for (const allotment of productAllotments) {
+					const allottedProduct = products.find(p => 
+						p.id === allotment.allotted_product_id
+					) || products.find(p =>
+						p.product.toLowerCase().includes(allotment.allotted_product.toLowerCase())
+					);
+					
+					if (allottedProduct) {
+						const includedQty = allotment.quantity_per_parent * item.quantity;
+						newLines.push({
+							id: crypto.randomUUID(),
+							product: allottedProduct,
+							quantity: includedQty,
+							isAllotment: true,
+							parentLineId: lineId,
+							allotmentInfo: allotment,
+							includedQuantity: includedQty
+						});
+					}
+				}
+			}
+		}
+		
+		if (newLines.length > 0) {
+			lines = newLines;
+			success = `Loaded "${template.name}" template with ${template.items.length} products`;
+			setTimeout(() => success = '', 3000);
+		} else {
+			error = 'Could not match any products from the template';
+			setTimeout(() => error = '', 5000);
+		}
+		
+		// Collapse templates section after applying
+		showTemplates = false;
 	}
 
 	async function loadClonedQuote(cloneData: { name: string; items: { id?: string; product: string; quantity: number }[] }) {
@@ -1440,6 +1535,44 @@
 						</span>
 					</button>
 				</div>
+
+				<!-- Templates Section -->
+				{#if templates.length > 0}
+					<div class="mt-4">
+						<button
+							type="button"
+							class="flex w-full items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
+							on:click={() => showTemplates = !showTemplates}
+						>
+							<svg 
+								class="h-4 w-4 transition-transform {showTemplates ? 'rotate-90' : ''}" 
+								viewBox="0 0 24 24" 
+								fill="none" 
+								stroke="currentColor" 
+								stroke-width="2"
+							>
+								<path d="M9 18l6-6-6-6" />
+							</svg>
+							<span>Start from a template</span>
+						</button>
+						
+						{#if showTemplates}
+							<div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+								{#each templates as template}
+									<button
+										type="button"
+										class="group flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-border p-4 transition-all hover:border-datadog-purple hover:bg-datadog-purple/5"
+										on:click={() => applyTemplate(template)}
+									>
+										<span class="text-3xl">{template.icon}</span>
+										<span class="font-medium text-sm group-hover:text-datadog-purple">{template.name}</span>
+										<span class="text-xs text-muted-foreground text-center line-clamp-2">{template.description}</span>
+									</button>
+								{/each}
+							</div>
+						{/if}
+					</div>
+				{/if}
 			{/if}
 		</CardContent>
 	</Card>
