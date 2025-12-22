@@ -23,10 +23,8 @@ class StorageType(str, Enum):
 STORAGE_TYPE = StorageType(os.getenv("STORAGE_TYPE", "file").lower())
 
 # Redis configuration (only used if STORAGE_TYPE is "redis")
-REDIS_URL = os.getenv(
-    "REDIS_URL",
-    "redis://localhost:6379"
-)
+# Set REDIS_URL environment variable to your Redis connection string
+REDIS_URL = os.getenv("REDIS_URL", "")
 
 
 def is_redis_storage() -> bool:
