@@ -1504,10 +1504,10 @@
 					{/each}
 				</div>
 
-				<div class="mt-4 inline-flex w-full rounded-lg border-2 border-dashed border-border hover:border-foreground/30 transition-all">
+				<div class="mt-4 flex flex-wrap items-center gap-3">
 					<button
 						type="button"
-						class="flex-1 inline-flex items-center justify-center gap-2 py-5 text-sm font-semibold transition-colors hover:bg-muted rounded-l-md"
+						class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg border border-border transition-colors hover:bg-muted"
 						on:click={addLine}
 					>
 						<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -1515,9 +1515,28 @@
 						</svg>
 						Add Product
 					</button>
+					{#if templates.length > 0}
+						<button
+							type="button"
+							class="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-datadog-purple transition-colors"
+							on:click={() => showTemplates = !showTemplates}
+						>
+							<span>(or start from stack example</span>
+							<svg 
+								class="h-3 w-3 transition-transform {showTemplates ? 'rotate-180' : ''}" 
+								viewBox="0 0 24 24" 
+								fill="none" 
+								stroke="currentColor" 
+								stroke-width="2"
+							>
+								<path d="M6 9l6 6 6-6" />
+							</svg>
+							<span>)</span>
+						</button>
+					{/if}
 					<button
 						type="button"
-						class="inline-flex items-center justify-center gap-2 px-3 py-3 text-xs font-medium transition-colors border-l-2 border-dashed border-border rounded-r-md {showLogsCalculator ? 'bg-datadog-purple text-white hover:bg-datadog-purple/90' : 'hover:bg-muted'}"
+						class="ml-auto inline-flex items-center gap-2 px-3 py-2.5 text-xs font-medium rounded-lg border border-border transition-colors {showLogsCalculator ? 'bg-datadog-purple text-white hover:bg-datadog-purple/90' : 'hover:bg-muted'}"
 						on:click={() => showLogsCalculator = !showLogsCalculator}
 						title="Log Indexing Estimator"
 					>
@@ -1534,40 +1553,19 @@
 					</button>
 				</div>
 
-				<!-- Templates Section -->
-				{#if templates.length > 0}
-					<div class="mt-4">
-						<button
-							type="button"
-							class="flex w-full items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
-							on:click={() => showTemplates = !showTemplates}
-						>
-							<svg 
-								class="h-4 w-4 transition-transform {showTemplates ? 'rotate-90' : ''}" 
-								viewBox="0 0 24 24" 
-								fill="none" 
-								stroke="currentColor" 
-								stroke-width="2"
+				<!-- Templates Dropdown -->
+				{#if templates.length > 0 && showTemplates}
+					<div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+						{#each templates as template}
+							<button
+								type="button"
+								class="group flex flex-col items-start gap-1 rounded-xl border border-border p-4 transition-all hover:border-datadog-purple hover:bg-datadog-purple/5"
+								on:click={() => applyTemplate(template)}
 							>
-								<path d="M9 18l6-6-6-6" />
-							</svg>
-							<span>Start from stack example</span>
-						</button>
-						
-						{#if showTemplates}
-							<div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
-								{#each templates as template}
-									<button
-										type="button"
-										class="group flex flex-col items-start gap-1 rounded-xl border border-border p-4 transition-all hover:border-datadog-purple hover:bg-datadog-purple/5"
-										on:click={() => applyTemplate(template)}
-									>
-										<span class="font-medium text-sm group-hover:text-datadog-purple">{template.name}</span>
-										<span class="text-xs text-muted-foreground text-left line-clamp-2">{template.description}</span>
-									</button>
-								{/each}
-							</div>
-						{/if}
+								<span class="font-medium text-sm group-hover:text-datadog-purple">{template.name}</span>
+								<span class="text-xs text-muted-foreground text-left line-clamp-2">{template.description}</span>
+							</button>
+						{/each}
 					</div>
 				{/if}
 			{/if}
