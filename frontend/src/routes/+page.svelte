@@ -1559,7 +1559,7 @@
 								{#each templates as template}
 									<button
 										type="button"
-										class="group flex flex-col items-start gap-1 rounded-xl border-2 border-dashed border-border p-4 transition-all hover:border-datadog-purple hover:bg-datadog-purple/5"
+										class="group flex flex-col items-start gap-1 rounded-xl border border-border p-4 transition-all hover:border-datadog-purple hover:bg-datadog-purple/5"
 										on:click={() => applyTemplate(template)}
 									>
 										<span class="font-medium text-sm group-hover:text-datadog-purple">{template.name}</span>
