@@ -136,7 +136,7 @@
 
 		<!-- Retention Selection -->
 		<div class="space-y-3">
-			<label class="text-sm font-medium">Index Retention Period</label>
+			<span class="text-sm font-medium">Index Retention Period</span>
 			<div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
 				{#each retentionOptions as option}
 					<button
@@ -156,7 +156,7 @@
 		<!-- Indexing Percentage -->
 		<div class="space-y-3">
 			<div class="flex items-center justify-between">
-				<label class="text-sm font-medium">Indexing Percentage</label>
+				<span class="text-sm font-medium">Indexing Percentage</span>
 				<span class="font-mono text-lg font-bold text-datadog-purple">{indexingPercentage}%</span>
 			</div>
 			<input 
@@ -174,7 +174,7 @@
 
 		<!-- Use Case Presets -->
 		<div class="space-y-3">
-			<label class="text-sm font-medium">Quick Presets</label>
+			<span class="text-sm font-medium">Quick Presets</span>
 			<div class="grid gap-2 sm:grid-cols-2">
 				{#each useCasePresets as preset}
 					<button
