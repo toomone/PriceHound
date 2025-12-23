@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { fade, slide } from 'svelte/transition';
+	import { fade, slide, fly } from 'svelte/transition';
+	import { flip } from 'svelte/animate';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '$lib/components/ui/card';
@@ -1370,7 +1371,7 @@
 								on:click={() => editingQuoteName = true}
 							>
 								<CardTitle class="group-hover:text-datadog-purple transition-colors">
-									{quoteName || 'Quote Items'}
+									{quoteName || 'Quote for your project'}
 								</CardTitle>
 								<svg class="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 									<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
@@ -1487,22 +1488,28 @@
 							includedQuantity: l.includedQuantity || 0,
 							allotmentInfo: l.allotmentInfo || null
 						}))}
-						<QuoteLine
-							products={filteredProducts}
-							{index}
-							{showAnnual}
-							{showMonthly}
-							{showOnDemand}
-							selectedProduct={line.product}
-							quantity={line.quantity}
-							isAllotment={false}
-							includedQuantity={0}
-							allotmentInfo={null}
-							totalAllottedForProduct={getTotalAllottedForProduct(line.product?.product)}
-							{lineAllotments}
-							on:update={(e) => updateLine(line.id, e.detail.product, e.detail.quantity)}
-							on:remove={() => removeLine(line.id)}
-						/>
+						<div
+							in:fly={{ y: -20, duration: 200 }}
+							out:fade={{ duration: 150 }}
+							animate:flip={{ duration: 200 }}
+						>
+							<QuoteLine
+								products={filteredProducts}
+								{index}
+								{showAnnual}
+								{showMonthly}
+								{showOnDemand}
+								selectedProduct={line.product}
+								quantity={line.quantity}
+								isAllotment={false}
+								includedQuantity={0}
+								allotmentInfo={null}
+								totalAllottedForProduct={getTotalAllottedForProduct(line.product?.product)}
+								{lineAllotments}
+								on:update={(e) => updateLine(line.id, e.detail.product, e.detail.quantity)}
+								on:remove={() => removeLine(line.id)}
+							/>
+						</div>
 					{/each}
 				</div>
 
