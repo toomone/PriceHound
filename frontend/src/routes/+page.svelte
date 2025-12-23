@@ -1505,35 +1505,36 @@
 				</div>
 
 				<div class="mt-4 flex flex-wrap items-center gap-3">
-					<button
-						type="button"
-						class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg border border-border transition-colors hover:bg-muted"
-						on:click={addLine}
-					>
-						<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-							<path d="M12 5v14M5 12h14" />
-						</svg>
-						Add Product
-					</button>
-					{#if templates.length > 0}
+					<div class="inline-flex rounded-lg border border-border overflow-hidden">
 						<button
 							type="button"
-							class="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-datadog-purple transition-colors"
-							on:click={() => showTemplates = !showTemplates}
+							class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-muted"
+							on:click={addLine}
 						>
-							<span>(or start from stack example</span>
-							<svg 
-								class="h-3 w-3 transition-transform {showTemplates ? 'rotate-180' : ''}" 
-								viewBox="0 0 24 24" 
-								fill="none" 
-								stroke="currentColor" 
-								stroke-width="2"
-							>
-								<path d="M6 9l6 6 6-6" />
+							<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+								<path d="M12 5v14M5 12h14" />
 							</svg>
-							<span>)</span>
+							Add Product
 						</button>
-					{/if}
+						{#if templates.length > 0}
+							<button
+								type="button"
+								class="inline-flex items-center gap-1 px-3 py-2.5 text-sm text-muted-foreground hover:text-datadog-purple hover:bg-muted border-l border-border transition-colors"
+								on:click={() => showTemplates = !showTemplates}
+							>
+								<span>or stack example</span>
+								<svg 
+									class="h-3 w-3 transition-transform {showTemplates ? 'rotate-180' : ''}" 
+									viewBox="0 0 24 24" 
+									fill="none" 
+									stroke="currentColor" 
+									stroke-width="2"
+								>
+									<path d="M6 9l6 6 6-6" />
+								</svg>
+							</button>
+						{/if}
+					</div>
 					<button
 						type="button"
 						class="ml-auto inline-flex items-center gap-2 px-3 py-2.5 text-xs font-medium rounded-lg border border-border transition-colors {showLogsCalculator ? 'bg-datadog-purple text-white hover:bg-datadog-purple/90' : 'hover:bg-muted'}"
