@@ -272,7 +272,7 @@
 						/>
 						<div class="flex-1 min-w-0">
 							<label for="flexStarter" class="font-medium text-sm cursor-pointer">Flex Logs Starter</label>
-							<p class="text-xs text-muted-foreground mt-0.5">Cost-effective compute for querying archived logs</p>
+							<p class="text-xs text-muted-foreground mt-0.5">Cost-effective compute for querying archived logs. Adapted for users who ingest less than 1TB per day.</p>
 							{#if enableFlexStarter}
 								<div class="mt-2 flex items-center gap-2">
 									<Input 
