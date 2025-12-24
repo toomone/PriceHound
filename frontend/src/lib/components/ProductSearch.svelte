@@ -30,6 +30,37 @@
 		  )
 		: products;
 
+	// Group products by category
+	interface CategoryGroup {
+		name: string;
+		products: Product[];
+	}
+	
+	$: groupedProducts = (() => {
+		const groups: Record<string, Product[]> = {};
+		for (const product of filteredProducts) {
+			const category = product.category || 'Other';
+			if (!groups[category]) {
+				groups[category] = [];
+			}
+			groups[category].push(product);
+		}
+		// Convert to array and maintain order (categories are already sorted in filteredProducts)
+		const result: CategoryGroup[] = [];
+		const seenCategories = new Set<string>();
+		for (const product of filteredProducts) {
+			const category = product.category || 'Other';
+			if (!seenCategories.has(category)) {
+				seenCategories.add(category);
+				result.push({ name: category, products: groups[category] });
+			}
+		}
+		return result;
+	})();
+
+	// Flatten for keyboard navigation
+	$: flatProducts = filteredProducts;
+
 	$: if (filteredProducts.length > 0 && highlightedIndex >= filteredProducts.length) {
 		highlightedIndex = 0;
 	}
@@ -117,25 +148,33 @@
 
 	{#if isOpen && filteredProducts.length > 0}
 		<div
-			class="absolute z-[9999] mt-1 max-h-60 w-full overflow-auto rounded-lg border border-border bg-card p-1 shadow-2xl"
+			class="absolute z-[9999] mt-1 max-h-72 w-full overflow-auto rounded-lg border border-border bg-card p-1 shadow-2xl"
 		>
-			{#each filteredProducts as product, index}
-				<button
-					type="button"
-					class={cn(
-						'relative flex w-full cursor-pointer select-none items-start rounded-md px-3 py-2 text-sm outline-none transition-colors text-left',
-						index === highlightedIndex
-							? 'bg-accent text-accent-foreground'
-							: 'hover:bg-accent/50 hover:text-accent-foreground'
-					)}
-					on:mousedown|preventDefault={() => handleSelect(product)}
-					on:mouseenter={() => (highlightedIndex = index)}
-				>
-					<div class="flex flex-col items-start gap-0.5 w-full">
-						<span class="font-medium text-left">{product.product}</span>
-						<span class="text-xs text-muted-foreground text-left">{product.billing_unit}</span>
-					</div>
-				</button>
+			{#each groupedProducts as group}
+				<!-- Category Header -->
+				<div class="sticky top-0 z-10 bg-card px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border mb-1 shadow-sm">
+					{group.name}
+				</div>
+				<!-- Products in this category -->
+				{#each group.products as product}
+					{@const index = flatProducts.indexOf(product)}
+					<button
+						type="button"
+						class={cn(
+							'relative flex w-full cursor-pointer select-none items-start rounded-md px-3 py-2 text-sm outline-none transition-colors text-left',
+							index === highlightedIndex
+								? 'bg-accent text-accent-foreground'
+								: 'hover:bg-accent/50 hover:text-accent-foreground'
+						)}
+						on:mousedown|preventDefault={() => handleSelect(product)}
+						on:mouseenter={() => (highlightedIndex = index)}
+					>
+						<div class="flex flex-col items-start gap-0.5 w-full">
+							<span class="font-medium text-left">{product.product}</span>
+							<span class="text-xs text-muted-foreground text-left">{product.billing_unit}</span>
+						</div>
+					</button>
+				{/each}
 			{/each}
 		</div>
 	{/if}
