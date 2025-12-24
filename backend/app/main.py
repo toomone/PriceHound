@@ -233,6 +233,7 @@ async def get_products(region: str = Query(default=DEFAULT_REGION, description="
         {
             "id": item.get("id", ""),
             "product": item["product"],
+            "category": item.get("category", "Other"),
             "plan": item.get("plan", "All"),
             "billing_unit": item["billing_unit"],
             "billed_annually": item.get("billed_annually"),
