@@ -1635,38 +1635,6 @@
 				</div>
 			{:else}
 				<div class="space-y-4 overflow-visible">
-					<!-- Uncategorized lines (no product selected yet) -->
-					{#each groupedLines.uncategorizedLines as line, index (line.id)}
-						{@const lineAllotments = lines.filter(l => l.isAllotment && l.parentLineId === line.id).map(l => ({
-							product: l.product,
-							includedQuantity: l.includedQuantity || 0,
-							allotmentInfo: l.allotmentInfo || null
-						}))}
-						<div
-							in:fly={{ y: -20, duration: 200 }}
-							out:fade={{ duration: 150 }}
-							animate:flip={{ duration: 200 }}
-						>
-							<QuoteLine
-								products={filteredProducts}
-								{index}
-								{showAnnual}
-								{showMonthly}
-								{showOnDemand}
-								selectedProduct={line.product}
-								quantity={line.quantity}
-								isAllotment={false}
-								includedQuantity={0}
-								allotmentInfo={null}
-								totalAllottedForProduct={getTotalAllottedForProduct(line.product?.product)}
-								{lineAllotments}
-								categoryOrder={categoryOrder}
-								on:update={(e) => updateLine(line.id, e.detail.product, e.detail.quantity)}
-								on:remove={() => removeLine(line.id)}
-							/>
-						</div>
-					{/each}
-
 					<!-- Grouped lines by category -->
 					{#each groupedLines.sortedCategories as category (category)}
 						{@const categoryLines = groupedLines.groups[category]}
@@ -1743,6 +1711,37 @@
 								</div>
 							{/each}
 						{/if}
+					{/each}
+
+					<!-- Uncategorized lines (no product selected yet) - at the bottom -->
+					{#each groupedLines.uncategorizedLines as line, index (line.id)}
+						{@const lineAllotments = lines.filter(l => l.isAllotment && l.parentLineId === line.id).map(l => ({
+							product: l.product,
+							includedQuantity: l.includedQuantity || 0,
+							allotmentInfo: l.allotmentInfo || null
+						}))}
+						<div
+							in:fly={{ y: 20, duration: 200 }}
+							out:fade={{ duration: 150 }}
+							animate:flip={{ duration: 200 }}
+						>
+							<QuoteLine
+								products={filteredProducts}
+								{index}
+								{showAnnual}
+								{showMonthly}
+								{showOnDemand}
+								selectedProduct={line.product}
+								quantity={line.quantity}
+								isAllotment={false}
+								includedQuantity={0}
+								allotmentInfo={null}
+								totalAllottedForProduct={getTotalAllottedForProduct(line.product?.product)}
+								{lineAllotments}
+								on:update={(e) => updateLine(line.id, e.detail.product, e.detail.quantity)}
+								on:remove={() => removeLine(line.id)}
+							/>
+						</div>
 					{/each}
 				</div>
 
