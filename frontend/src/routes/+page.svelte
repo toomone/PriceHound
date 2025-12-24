@@ -1655,7 +1655,6 @@
 								<div
 									in:fly={{ y: -20, duration: 200 }}
 									out:fade={{ duration: 150 }}
-									animate:flip={{ duration: 200 }}
 								>
 									<QuoteLine
 										products={filteredProducts}

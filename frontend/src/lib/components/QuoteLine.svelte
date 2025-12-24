@@ -24,7 +24,6 @@
 	export let allotmentInfo: Allotment | null = null;
 	export let totalAllottedForProduct: number = 0; // Total included from parent products
 	export let lineAllotments: AllotmentItem[] = []; // Allotments for this line
-	export let categoryOrder: Record<string, number> = {}; // Category ordering (not used in component but passed through)
 	export let hideCategory: boolean = false; // Hide category label when grouped
 
 	const dispatch = createEventDispatcher<{
