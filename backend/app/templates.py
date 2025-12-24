@@ -39,7 +39,15 @@ def load_templates_from_files() -> list[dict]:
 
 
 def sync_templates_to_redis() -> int:
-    """Load templates from JSON files and sync to Redis. Returns count synced."""
+    """Load templates from JSON files and sync to Redis. 
+    
+    This function performs a full sync:
+    - Adds new templates from files
+    - Updates existing templates from files
+    - Removes templates from Redis that no longer exist in files
+    
+    Returns count of templates after sync.
+    """
     redis_client = get_redis()
     
     if not redis_client or not is_redis_available():
@@ -47,8 +55,23 @@ def sync_templates_to_redis() -> int:
         return 0
     
     templates_data = load_templates_from_files()
-    count = 0
+    file_template_ids = {tmpl["id"] for tmpl in templates_data}
     
+    # Get current templates in Redis
+    redis_template_ids = set(redis_client.get_index(RedisKeys.TEMPLATES_INDEX) or [])
+    
+    # Remove templates that no longer exist in files
+    templates_to_remove = redis_template_ids - file_template_ids
+    for template_id in templates_to_remove:
+        try:
+            redis_client.client.delete(RedisKeys.template(template_id))
+            redis_client.remove_from_index(RedisKeys.TEMPLATES_INDEX, template_id)
+            logger.info(f"Removed template from Redis: {template_id}")
+        except Exception as e:
+            logger.error(f"Failed to remove template {template_id}: {e}")
+    
+    # Add/update templates from files
+    count = 0
     for tmpl_data in templates_data:
         try:
             template_id = tmpl_data["id"]
@@ -58,7 +81,7 @@ def sync_templates_to_redis() -> int:
                 RedisKeys.template(template_id),
                 tmpl_data
             )
-            # Add to index
+            # Add to index (idempotent for sets)
             redis_client.add_to_index(RedisKeys.TEMPLATES_INDEX, template_id)
             count += 1
             logger.info(f"Synced template: {tmpl_data.get('name', template_id)}")
@@ -66,24 +89,27 @@ def sync_templates_to_redis() -> int:
         except Exception as e:
             logger.error(f"Failed to sync template {tmpl_data.get('name', 'unknown')}: {e}")
     
+    if templates_to_remove:
+        logger.info(f"Removed {len(templates_to_remove)} obsolete templates from Redis")
+    
     return count
 
 
 def ensure_templates() -> tuple[bool, str, int]:
-    """Ensure templates exist in Redis, sync from files if needed."""
+    """Ensure templates in Redis are in sync with files.
+    
+    Always syncs from files to Redis on startup to ensure:
+    - New templates are added
+    - Updated templates are refreshed
+    - Deleted templates are removed
+    """
     redis_client = get_redis()
     
     if redis_client and is_redis_available():
-        # Check if templates exist in Redis
-        template_ids = redis_client.get_index(RedisKeys.TEMPLATES_INDEX)
-        
-        if not template_ids:
-            # No templates in Redis, sync from files
-            logger.info("No templates in Redis, syncing from files...")
-            count = sync_templates_to_redis()
-            return True, f"Synced {count} templates from files to Redis", count
-        else:
-            return True, f"Found {len(template_ids)} templates in Redis", len(template_ids)
+        # Always sync from files to keep Redis up to date
+        logger.info("Syncing templates from files to Redis...")
+        count = sync_templates_to_redis()
+        return True, f"Synced {count} templates from files to Redis", count
     else:
         # Redis not available, will use file fallback
         templates = load_templates_from_files()
