@@ -103,6 +103,15 @@
 		class="group relative rounded-xl border border-border/50 bg-card/50 p-4 transition-all hover:border-foreground/20 hover:bg-card/80"
 		style="animation: slideIn 0.3s ease-out {index * 0.05}s both;"
 	>
+		<!-- Category Label -->
+		{#if selectedProduct?.category}
+			<div class="absolute -top-2.5 left-4">
+				<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border/50">
+					{selectedProduct.category}
+				</span>
+			</div>
+		{/if}
+
 		<div class="flex flex-col gap-4 lg:flex-row lg:items-start">
 			<!-- Product Search -->
 			<div class="flex-1 min-w-0">

@@ -991,7 +991,7 @@
 				` : ''}
 
 				<div class="footer">
-					<p>Pricing data sourced from datadoghq.com/pricing/list/</p>
+					<p>Pricing data sourced from datadoghq.com/pricing/list/ and others official pages</p>
 					${shareUrl ? `<p>Quote URL: ${shareUrl}</p>` : ''}
 				</div>
 			</body>
