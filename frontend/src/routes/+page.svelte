@@ -1640,7 +1640,7 @@
 						{@const categoryLines = groupedLines.groups[category]}
 						{#if categoryLines.length > 1}
 							<!-- Multiple products in same category: grouped in a container -->
-							<div class="rounded-xl border border-border/50 bg-card/30 overflow-hidden">
+							<div class="rounded-xl border border-border/50 bg-card/30 overflow-visible mt-3">
 								{#each categoryLines as line, index (line.id)}
 									{@const lineAllotments = lines.filter(l => l.isAllotment && l.parentLineId === line.id).map(l => ({
 										product: l.product,
