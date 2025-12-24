@@ -25,6 +25,7 @@
 	export let totalAllottedForProduct: number = 0; // Total included from parent products
 	export let lineAllotments: AllotmentItem[] = []; // Allotments for this line
 	export let hideCategory: boolean = false; // Hide category label when grouped
+	export let isGrouped: boolean = false; // Part of a category group (reduces visual weight)
 
 	const dispatch = createEventDispatcher<{
 		update: { product: Product | null; quantity: number };
@@ -101,7 +102,7 @@
 {:else}
 	<!-- Regular Product Line -->
 	<div
-		class="group relative rounded-xl border border-border/50 bg-card/50 p-4 transition-all hover:border-foreground/20 hover:bg-card/80"
+		class="group relative p-4 transition-all {isGrouped ? 'bg-transparent hover:bg-muted/30' : 'rounded-xl border border-border/50 bg-card/50 hover:border-foreground/20 hover:bg-card/80'}"
 		style="animation: slideIn 0.3s ease-out {index * 0.05}s both;"
 	>
 		<!-- Category Label (hidden when grouped) -->
