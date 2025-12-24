@@ -24,6 +24,8 @@
 	export let allotmentInfo: Allotment | null = null;
 	export let totalAllottedForProduct: number = 0; // Total included from parent products
 	export let lineAllotments: AllotmentItem[] = []; // Allotments for this line
+	export let categoryOrder: Record<string, number> = {}; // Category ordering (not used in component but passed through)
+	export let hideCategory: boolean = false; // Hide category label when grouped
 
 	const dispatch = createEventDispatcher<{
 		update: { product: Product | null; quantity: number };
@@ -103,8 +105,8 @@
 		class="group relative rounded-xl border border-border/50 bg-card/50 p-4 transition-all hover:border-foreground/20 hover:bg-card/80"
 		style="animation: slideIn 0.3s ease-out {index * 0.05}s both;"
 	>
-		<!-- Category Label -->
-		{#if selectedProduct?.category}
+		<!-- Category Label (hidden when grouped) -->
+		{#if selectedProduct?.category && !hideCategory}
 			<div class="absolute -top-2.5 left-4">
 				<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border/50">
 					{selectedProduct.category}

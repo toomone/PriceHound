@@ -113,6 +113,34 @@
 
 	$: validLines = lines.filter((l) => l.product !== null);
 
+	// Group non-allotment lines by category for visual grouping
+	$: groupedLines = (() => {
+		const nonAllotmentLines = lines.filter(l => !l.isAllotment);
+		const groups: Record<string, LineItem[]> = {};
+		
+		for (const line of nonAllotmentLines) {
+			const category = line.product?.category || null;
+			if (category) {
+				if (!groups[category]) {
+					groups[category] = [];
+				}
+				groups[category].push(line);
+			}
+		}
+		
+		// Sort categories by order
+		const sortedCategories = Object.keys(groups).sort((a, b) => {
+			const orderA = categoryOrder[a] ?? 99;
+			const orderB = categoryOrder[b] ?? 99;
+			return orderA - orderB;
+		});
+		
+		// Get lines without a category (product not selected yet)
+		const uncategorizedLines = nonAllotmentLines.filter(l => !l.product?.category);
+		
+		return { groups, sortedCategories, uncategorizedLines };
+	})();
+
 	// Calculate total allotted quantity for each product from allotment lines
 	function getTotalAllottedForProduct(productName: string | undefined): number {
 		if (!productName) return 0;
@@ -1606,8 +1634,9 @@
 					</svg>
 				</div>
 			{:else}
-				<div class="space-y-3 overflow-visible">
-					{#each lines.filter(l => !l.isAllotment) as line, index (line.id)}
+				<div class="space-y-4 overflow-visible">
+					<!-- Uncategorized lines (no product selected yet) -->
+					{#each groupedLines.uncategorizedLines as line, index (line.id)}
 						{@const lineAllotments = lines.filter(l => l.isAllotment && l.parentLineId === line.id).map(l => ({
 							product: l.product,
 							includedQuantity: l.includedQuantity || 0,
@@ -1631,10 +1660,89 @@
 								allotmentInfo={null}
 								totalAllottedForProduct={getTotalAllottedForProduct(line.product?.product)}
 								{lineAllotments}
+								categoryOrder={categoryOrder}
 								on:update={(e) => updateLine(line.id, e.detail.product, e.detail.quantity)}
 								on:remove={() => removeLine(line.id)}
 							/>
 						</div>
+					{/each}
+
+					<!-- Grouped lines by category -->
+					{#each groupedLines.sortedCategories as category (category)}
+						{@const categoryLines = groupedLines.groups[category]}
+						{#if categoryLines.length > 1}
+							<!-- Multiple products in same category: show grouped -->
+							<div 
+								class="rounded-xl border border-border/30 bg-muted/20 p-3 space-y-3"
+								in:fly={{ y: -20, duration: 200 }}
+							>
+								<div class="flex items-center gap-2 px-1">
+									<span class="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{category}</span>
+									<span class="text-xs text-muted-foreground/60">({categoryLines.length} products)</span>
+								</div>
+								{#each categoryLines as line, index (line.id)}
+									{@const lineAllotments = lines.filter(l => l.isAllotment && l.parentLineId === line.id).map(l => ({
+										product: l.product,
+										includedQuantity: l.includedQuantity || 0,
+										allotmentInfo: l.allotmentInfo || null
+									}))}
+									<div
+										out:fade={{ duration: 150 }}
+										animate:flip={{ duration: 200 }}
+									>
+										<QuoteLine
+											products={filteredProducts}
+											{index}
+											{showAnnual}
+											{showMonthly}
+											{showOnDemand}
+											selectedProduct={line.product}
+											quantity={line.quantity}
+											isAllotment={false}
+											includedQuantity={0}
+											allotmentInfo={null}
+											totalAllottedForProduct={getTotalAllottedForProduct(line.product?.product)}
+											{lineAllotments}
+											hideCategory={true}
+											on:update={(e) => updateLine(line.id, e.detail.product, e.detail.quantity)}
+											on:remove={() => removeLine(line.id)}
+										/>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<!-- Single product in category: show normally with category label -->
+							{#each categoryLines as line, index (line.id)}
+								{@const lineAllotments = lines.filter(l => l.isAllotment && l.parentLineId === line.id).map(l => ({
+									product: l.product,
+									includedQuantity: l.includedQuantity || 0,
+									allotmentInfo: l.allotmentInfo || null
+								}))}
+								<div
+									in:fly={{ y: -20, duration: 200 }}
+									out:fade={{ duration: 150 }}
+									animate:flip={{ duration: 200 }}
+								>
+									<QuoteLine
+										products={filteredProducts}
+										{index}
+										{showAnnual}
+										{showMonthly}
+										{showOnDemand}
+										selectedProduct={line.product}
+										quantity={line.quantity}
+										isAllotment={false}
+										includedQuantity={0}
+										allotmentInfo={null}
+										totalAllottedForProduct={getTotalAllottedForProduct(line.product?.product)}
+										{lineAllotments}
+										hideCategory={false}
+										on:update={(e) => updateLine(line.id, e.detail.product, e.detail.quantity)}
+										on:remove={() => removeLine(line.id)}
+									/>
+								</div>
+							{/each}
+						{/if}
 					{/each}
 				</div>
 
