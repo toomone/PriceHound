@@ -304,8 +304,13 @@ def parse_price(price_str: str) -> float:
         return 0.0
 
 
-def scrape_pricing_data(region: str = DEFAULT_REGION) -> list[dict]:
-    """Scrape pricing data from Datadog pricing page with category information."""
+def scrape_pricing_data(region: str = DEFAULT_REGION, force_category_refresh: bool = False) -> list[dict]:
+    """Scrape pricing data from Datadog pricing page with category information.
+    
+    Args:
+        region: Datadog region to scrape
+        force_category_refresh: If True, re-sync categories before scraping products
+    """
     region_info = REGIONS.get(region, REGIONS[DEFAULT_REGION])
     site = region_info["site"]
     
@@ -326,7 +331,11 @@ def scrape_pricing_data(region: str = DEFAULT_REGION) -> list[dict]:
     
     pricing_data = []
     
-    # Get categories for matching (use cached or default)
+    # Ensure categories are loaded before matching products
+    # Force refresh on first sync to ensure we have good category data
+    if force_category_refresh:
+        logger.info("🔄 Refreshing categories before product sync...")
+        sync_categories()
     categories = get_categories()
     
     for table in tables:
@@ -487,13 +496,19 @@ def get_regions_status() -> list[dict]:
     return status
 
 
-def sync_pricing(region: str = DEFAULT_REGION) -> tuple[bool, str, int]:
-    """Sync pricing data from Datadog website for a specific region."""
+def sync_pricing(region: str = DEFAULT_REGION, force_category_refresh: bool = True) -> tuple[bool, str, int]:
+    """Sync pricing data from Datadog website for a specific region.
+    
+    Args:
+        region: Datadog region to sync
+        force_category_refresh: If True, refresh categories before syncing products.
+                               This ensures products are properly categorized.
+    """
     if region not in REGIONS:
         return False, f"Unknown region: {region}", 0
     
     try:
-        data = scrape_pricing_data(region)
+        data = scrape_pricing_data(region, force_category_refresh=force_category_refresh)
         if data:
             save_pricing_data(data, region)
             region_name = REGIONS[region]["name"]
@@ -508,8 +523,9 @@ def sync_pricing(region: str = DEFAULT_REGION) -> tuple[bool, str, int]:
 def sync_all_regions() -> list[dict]:
     """Sync pricing data for all regions."""
     results = []
-    for region_id in REGIONS:
-        success, message, count = sync_pricing(region_id)
+    # Only refresh categories for the first region (they're shared)
+    for i, region_id in enumerate(REGIONS):
+        success, message, count = sync_pricing(region_id, force_category_refresh=(i == 0))
         results.append({
             "region": region_id,
             "success": success,

@@ -71,6 +71,11 @@ async def lifespan(app: FastAPI):
     redis_status = "connected" if is_redis_available() else "disconnected"
     logger.info(f"📦 Redis status: {redis_status}")
     
+    # Startup: ensure categories are synced first (needed for product categorization)
+    logger.info("📋 Ensuring product categories are loaded...")
+    cat_success, cat_message, cat_count = sync_categories()
+    logger.info(f"📋 {cat_message}")
+    
     # Startup: ensure pricing data exists for default region
     success, message, count = ensure_pricing_data(DEFAULT_REGION)
     logger.info(f"📊 {message}")
