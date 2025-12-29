@@ -1846,11 +1846,11 @@
 							{/if}
 							<div class="text-xs font-medium text-datadog-green mb-1">Billed Annually</div>
 							<div class="text-xl font-bold text-datadog-green mb-0.5">
-								{formatCurrency(annualCosts.annually)}
-								<span class="text-xs font-normal text-muted-foreground">/year</span>
+								{formatCurrency(totals.annually)}
+								<span class="text-xs font-normal text-muted-foreground">/month</span>
 							</div>
 							<div class="text-xs text-muted-foreground mb-2">
-								{formatCurrency(totals.annually)}/month
+								{formatCurrency(annualCosts.annually)}/year
 							</div>
 							{#if bestValueOption?.key === 'annual' && dynamicSavings > 0}
 								<div class="flex items-center gap-1 text-xs font-medium text-datadog-green">
@@ -1880,11 +1880,11 @@
 							{/if}
 							<div class="text-xs font-medium text-datadog-blue mb-1">Billed Monthly</div>
 							<div class="text-xl font-bold text-datadog-blue mb-0.5">
-								{formatCurrency(annualCosts.monthly)}
-								<span class="text-xs font-normal text-muted-foreground">/year</span>
+								{formatCurrency(totals.monthly)}
+								<span class="text-xs font-normal text-muted-foreground">/month</span>
 							</div>
 							<div class="text-xs text-muted-foreground mb-2">
-								{formatCurrency(totals.monthly)}/month
+								{formatCurrency(annualCosts.monthly)}/year
 							</div>
 							{#if bestValueOption?.key === 'monthly' && dynamicSavings > 0}
 								<div class="flex items-center gap-1 text-xs font-medium text-datadog-blue">
@@ -1914,11 +1914,11 @@
 							{/if}
 							<div class="text-xs font-medium text-datadog-orange mb-1">On-Demand</div>
 							<div class="text-xl font-bold text-datadog-orange mb-0.5">
-								{formatCurrency(annualCosts.on_demand)}
-								<span class="text-xs font-normal text-muted-foreground">/year</span>
+								{formatCurrency(totals.on_demand)}
+								<span class="text-xs font-normal text-muted-foreground">/month</span>
 							</div>
 							<div class="text-xs text-muted-foreground mb-2">
-								{formatCurrency(totals.on_demand)}/month
+								{formatCurrency(annualCosts.on_demand)}/year
 							</div>
 							{#if bestValueOption?.key === 'ondemand' && dynamicSavings > 0}
 								<div class="flex items-center gap-1 text-xs font-medium text-datadog-orange">
