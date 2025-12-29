@@ -1412,39 +1412,47 @@
 	</div>
 
 
-	<!-- Share URL Display -->
-	{#if shareUrl}
-		<div transition:slide={{ duration: 200 }} class="mb-4 flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3">
-			<span class="text-sm text-muted-foreground">Public URL:</span>
-			<a 
-				href={shareUrl} 
-				target="_blank"
-				class="flex-1 truncate font-mono text-sm text-datadog-purple hover:underline"
-			>
-				{shareUrl}
-			</a>
-			<button
-				type="button"
-				class="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-				on:click={copyShareUrl}
-				title="Copy URL"
-			>
-				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<rect x="9" y="9" width="13" height="13" rx="2" />
-					<path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-				</svg>
-			</button>
-			<button
-				type="button"
-				class="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-				on:click={() => shareUrl = ''}
-				title="Dismiss"
-			>
-				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<path d="M18 6L6 18M6 6l12 12" />
-				</svg>
-			</button>
-		</div>
+	<!-- Share URL Display (always visible in edit mode) -->
+	{#if shareUrl || editingQuoteId}
+		{@const displayUrl = shareUrl || (editingQuoteId ? `${window.location.origin}/quote/${editingQuoteId}` : '')}
+		{#if displayUrl}
+			<div transition:slide={{ duration: 200 }} class="mb-4 flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3">
+				{#if editingQuoteId}
+					<span class="text-xs font-medium text-datadog-green bg-datadog-green/10 px-2 py-0.5 rounded">Editing</span>
+				{/if}
+				<span class="text-sm text-muted-foreground">Public URL:</span>
+				<a 
+					href={displayUrl} 
+					target="_blank"
+					class="flex-1 truncate font-mono text-sm text-datadog-purple hover:underline"
+				>
+					{displayUrl}
+				</a>
+				<button
+					type="button"
+					class="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+					on:click={() => { navigator.clipboard.writeText(displayUrl); toast.success('URL copied to clipboard!'); }}
+					title="Copy URL"
+				>
+					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<rect x="9" y="9" width="13" height="13" rx="2" />
+						<path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+					</svg>
+				</button>
+				{#if !editingQuoteId}
+					<button
+						type="button"
+						class="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+						on:click={() => shareUrl = ''}
+						title="Dismiss"
+					>
+						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M18 6L6 18M6 6l12 12" />
+						</svg>
+					</button>
+				{/if}
+			</div>
+		{/if}
 	{/if}
 
 	<!-- Quote Lines -->
