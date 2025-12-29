@@ -8,16 +8,27 @@
 	export let size: Size = 'default';
 	export let disabled: boolean = false;
 	export let type: 'button' | 'submit' | 'reset' = 'button';
+	export let href: string | undefined = undefined;
 </script>
 
-<button
-	{type}
-	{disabled}
-	class={cn(buttonVariants({ variant, size }), className)}
-	on:click
-	on:keydown
-	{...$$restProps}
->
-	<slot />
-</button>
+{#if href}
+	<a
+		{href}
+		class={cn(buttonVariants({ variant, size }), disabled && 'pointer-events-none opacity-50', className)}
+		{...$$restProps}
+	>
+		<slot />
+	</a>
+{:else}
+	<button
+		{type}
+		{disabled}
+		class={cn(buttonVariants({ variant, size }), className)}
+		on:click
+		on:keydown
+		{...$$restProps}
+	>
+		<slot />
+	</button>
+{/if}
 
