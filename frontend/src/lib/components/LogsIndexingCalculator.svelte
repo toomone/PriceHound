@@ -142,7 +142,7 @@
 		<div class="px-6 py-3 border-b border-border bg-muted/30">
 			<Tabs.Root bind:value={currentStep}>
 				<Tabs.List class="w-full grid grid-cols-4">
-					<Tabs.Trigger value="volume">Volume</Tabs.Trigger>
+					<Tabs.Trigger value="volume">Ingesting</Tabs.Trigger>
 					<Tabs.Trigger value="retention">Retention</Tabs.Trigger>
 					<Tabs.Trigger value="indexing">Indexing</Tabs.Trigger>
 					<Tabs.Trigger value="extras">Extras</Tabs.Trigger>
@@ -156,7 +156,7 @@
 			<!-- Left Panel: Info -->
 			<div class="p-6 flex flex-col justify-center">
 				{#if currentStep === 'volume'}
-					<h3 class="text-lg font-semibold mb-2">Log Volume</h3>
+					<h3 class="text-lg font-semibold mb-2">Log Ingesting</h3>
 					<p class="text-xs text-muted-foreground">
 						Enter your monthly log ingestion volume and average log size to calculate the number of log events.
 					</p>
