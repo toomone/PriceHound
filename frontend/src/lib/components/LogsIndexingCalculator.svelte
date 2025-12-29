@@ -104,7 +104,13 @@
 
 <Card class="border-datadog-purple/20 overflow-hidden">
 	<CardContent class="p-0">
-		<!-- ROW 1: Summary -->
+		<!-- ROW 1: Title -->
+		<div class="px-6 py-4 border-b border-border">
+			<h2 class="text-lg font-semibold">Log Indexing Estimator</h2>
+			<p class="text-sm text-muted-foreground">Estimate your log indexing needs based on ingestion volume</p>
+		</div>
+
+		<!-- ROW 2: Summary -->
 		<div class="flex items-center justify-between px-6 py-4 border-b border-border">
 			<!-- Left: Selected quantities -->
 			<div class="flex items-center gap-6 text-sm">
@@ -131,7 +137,7 @@
 			</div>
 		</div>
 
-		<!-- ROW 2: Tabs -->
+		<!-- ROW 3: Tabs -->
 		<div class="px-6 py-3 border-b border-border bg-muted/30">
 			<Tabs.Root bind:value={currentStep}>
 				<Tabs.List class="w-full grid grid-cols-4">
@@ -143,7 +149,7 @@
 			</Tabs.Root>
 		</div>
 
-		<!-- ROW 3: Form Content -->
+		<!-- ROW 4: Form Content -->
 		<div class="grid grid-cols-[1fr_1px_2fr_1px_1fr] min-h-[300px]">
 			
 			<!-- Left Panel: Info -->
@@ -414,7 +420,7 @@
 			</div>
 		</div>
 
-		<!-- ROW 4: Action Button -->
+		<!-- ROW 5: Action Button -->
 		<div class="flex items-center justify-end px-6 py-4 border-t border-border">
 			<Button 
 				class="bg-datadog-purple hover:bg-datadog-purple/90"
