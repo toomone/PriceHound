@@ -1758,7 +1758,7 @@
 						{#if templates.length > 0}
 							<button
 								type="button"
-								class="inline-flex items-center gap-1 px-3 py-2.5 text-sm text-muted-foreground hover:text-datadog-purple hover:bg-muted border-l border-border transition-colors"
+								class="inline-flex items-center gap-1 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted border-l border-border transition-colors"
 								on:click={() => showTemplates = !showTemplates}
 							>
 								<span>or stack example</span>
@@ -1799,10 +1799,10 @@
 						{#each templates as template}
 							<button
 								type="button"
-								class="group flex flex-col items-start gap-1 rounded-xl border border-border p-4 transition-all hover:border-datadog-purple hover:bg-datadog-purple/5"
+								class="group flex flex-col items-start gap-1 rounded-sm border border-border p-4 transition-all hover:border-foreground/30 hover:bg-muted"
 								on:click={() => applyTemplate(template)}
 							>
-								<span class="font-medium text-sm group-hover:text-datadog-purple">{template.name}</span>
+								<span class="font-medium text-sm group-hover:text-foreground">{template.name}</span>
 								<span class="text-xs text-muted-foreground text-left line-clamp-2">{template.description}</span>
 							</button>
 						{/each}
