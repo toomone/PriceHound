@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { slide } from 'svelte/transition';
+	import { slide, fade } from 'svelte/transition';
 	import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -10,59 +10,62 @@
 	export let products: Product[] = [];
 	export let onAddToQuote: (items: { product: Product; quantity: number }[]) => void = () => {};
 
+	// Wizard state
+	let currentStep = 0;
+	const steps = [
+		{ id: 'volume', title: 'Log Volume', icon: '📊', description: 'How much data?' },
+		{ id: 'retention', title: 'Retention', icon: '📅', description: 'How long to keep?' },
+		{ id: 'indexing', title: 'Indexing', icon: '🔍', description: 'What to search?' },
+		{ id: 'extras', title: 'Extras', icon: '⚡', description: 'Additional options' },
+	];
+
 	// User inputs
-	let ingestedLogsGB = 100; // GB per month
-	let avgLogSizeKB = 2; // Average log size in KB
-	let indexingPercentage = 15; // Percentage of logs to index
+	let ingestedLogsGB = 100;
+	let avgLogSizeKB = 2;
+	let indexingPercentage = 15;
 	let retentionDays: 3 | 7 | 15 | 30 = 15;
 
-	// Additional options (collapsible)
-	let showAdditionalOptions = false;
+	// Additional options
 	let enableFlexStarter = false;
 	let enableFlexStorage = false;
 	let enableForwarding = false;
-	let flexStarterEvents = 10; // Million events per month
-	let flexStorageEvents = 50; // Million events per month
-	let forwardingGB = 20; // GB per month
+	let flexStarterEvents = 10;
+	let flexStorageEvents = 50;
+	let forwardingGB = 20;
 
-	// Use case presets
+	// Presets
 	const useCasePresets = [
-		{ name: 'Minimal (Errors only)', percentage: 5, description: 'Index only errors and critical events' },
-		{ name: 'Standard (Debug + Errors)', percentage: 15, description: 'Index errors, warnings, and key debug logs' },
-		{ name: 'Extended (Most logs)', percentage: 30, description: 'Index most logs for thorough debugging' },
-		{ name: 'Compliance (All logs)', percentage: 100, description: 'Index all logs for compliance requirements' },
+		{ name: 'Minimal', percentage: 5, emoji: '🎯', description: 'Errors only' },
+		{ name: 'Standard', percentage: 15, emoji: '⚖️', description: 'Debug + Errors' },
+		{ name: 'Extended', percentage: 30, emoji: '🔬', description: 'Most logs' },
+		{ name: 'Full', percentage: 100, emoji: '📦', description: 'Everything' },
 	];
 
-	// Retention options
 	const retentionOptions = [
-		{ days: 3, label: '3 days', description: 'Short-term debugging' },
-		{ days: 7, label: '7 days', description: 'Weekly analysis' },
-		{ days: 15, label: '15 days', description: 'Standard retention' },
-		{ days: 30, label: '30 days', description: 'Extended retention' },
+		{ days: 3 as const, label: '3 days', emoji: '⚡', description: 'Quick debugging' },
+		{ days: 7 as const, label: '7 days', emoji: '📆', description: 'Weekly review' },
+		{ days: 15 as const, label: '15 days', emoji: '📊', description: 'Standard' },
+		{ days: 30 as const, label: '30 days', emoji: '🗄️', description: 'Extended' },
 	];
 
-	// Calculate derived values
-	$: totalLogsPerMonth = (ingestedLogsGB * 1024 * 1024) / avgLogSizeKB; // Total number of logs
+	// Calculations
+	$: totalLogsPerMonth = (ingestedLogsGB * 1024 * 1024) / avgLogSizeKB;
 	$: indexedLogsCount = totalLogsPerMonth * (indexingPercentage / 100);
 	$: indexedLogsInMillions = indexedLogsCount / 1_000_000;
 
-	// Find relevant products
+	// Products lookup
 	$: ingestionProduct = products.find(p => 
 		p.product.toLowerCase().includes('logs') && 
 		p.product.toLowerCase().includes('ingestion')
 	);
-
 	$: indexedProduct = products.find(p => 
 		p.product.toLowerCase().includes('indexed log events') &&
 		p.billing_unit.toLowerCase().includes(`${retentionDays}-day`)
 	);
-
-	// Additional products
 	$: flexStarterProduct = products.find(p => p.product === 'Flex Logs Starter');
 	$: flexStorageProduct = products.find(p => p.product === 'Flex Logs Storage');
 	$: forwardingProduct = products.find(p => p.product === 'Logs - Forwarding to Custom Destinations');
 
-	// Parse prices
 	function parsePrice(priceStr: string | null): number {
 		if (!priceStr) return 0;
 		const match = priceStr.match(/[\d.]+/);
@@ -75,7 +78,6 @@
 	$: flexStoragePrice = parsePrice(flexStorageProduct?.billed_annually);
 	$: forwardingPrice = parsePrice(forwardingProduct?.billed_annually);
 
-	// Calculate costs
 	$: ingestionCost = ingestedLogsGB * ingestionPrice;
 	$: indexedCost = indexedLogsInMillions * indexedPrice;
 	$: flexStarterCost = enableFlexStarter ? flexStarterEvents * flexStarterPrice : 0;
@@ -83,454 +85,508 @@
 	$: forwardingCost = enableForwarding ? forwardingGB * forwardingPrice : 0;
 	$: additionalCost = flexStarterCost + flexStorageCost + forwardingCost;
 	$: totalMonthlyCost = ingestionCost + indexedCost + additionalCost;
-	$: totalAnnualCost = totalMonthlyCost * 12;
 
-	// Cost breakdown percentages
-	$: ingestionCostPercent = totalMonthlyCost > 0 ? (ingestionCost / totalMonthlyCost) * 100 : 0;
-	$: indexedCostPercent = totalMonthlyCost > 0 ? (indexedCost / totalMonthlyCost) * 100 : 0;
-	$: additionalCostPercent = totalMonthlyCost > 0 ? (additionalCost / totalMonthlyCost) * 100 : 0;
-
-	function applyPreset(percentage: number) {
-		indexingPercentage = percentage;
+	// Navigation
+	function nextStep() {
+		if (currentStep < steps.length - 1) currentStep++;
+	}
+	function prevStep() {
+		if (currentStep > 0) currentStep--;
+	}
+	function goToStep(index: number) {
+		currentStep = index;
 	}
 
 	function addToQuote() {
 		const items: { product: Product; quantity: number }[] = [];
-		
 		if (ingestionProduct && ingestedLogsGB > 0) {
 			items.push({ product: ingestionProduct, quantity: Math.ceil(ingestedLogsGB) });
 		}
-		
 		if (indexedProduct && indexedLogsInMillions > 0) {
 			items.push({ product: indexedProduct, quantity: Math.ceil(indexedLogsInMillions) });
 		}
-
-		// Additional products
 		if (enableFlexStarter && flexStarterProduct && flexStarterEvents > 0) {
 			items.push({ product: flexStarterProduct, quantity: Math.ceil(flexStarterEvents) });
 		}
-		
 		if (enableFlexStorage && flexStorageProduct && flexStorageEvents > 0) {
 			items.push({ product: flexStorageProduct, quantity: Math.ceil(flexStorageEvents) });
 		}
-		
 		if (enableForwarding && forwardingProduct && forwardingGB > 0) {
 			items.push({ product: forwardingProduct, quantity: Math.ceil(forwardingGB) });
 		}
-		
-		if (items.length > 0) {
-			onAddToQuote(items);
-		}
+		if (items.length > 0) onAddToQuote(items);
 	}
 </script>
 
-<Card class="border-datadog-purple/20">
-	<CardHeader>
+<Card class="border-datadog-purple/20 overflow-hidden">
+	<CardHeader class="bg-gradient-to-r from-datadog-purple/10 to-datadog-blue/10 pb-4">
 		<div class="flex items-center gap-3">
-			<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-datadog-purple to-datadog-blue">
-				<svg class="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-					<polyline points="14 2 14 8 20 8" />
-					<line x1="16" y1="13" x2="8" y2="13" />
-					<line x1="16" y1="17" x2="8" y2="17" />
-					<polyline points="10 9 9 9 8 9" />
-				</svg>
+			<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-datadog-purple to-datadog-blue text-xl">
+				📋
 			</div>
 			<div>
-				<CardTitle>Log Indexing Estimator</CardTitle>
-				<CardDescription>Estimate your log indexing needs based on ingestion volume</CardDescription>
+				<CardTitle>Log Indexing Wizard</CardTitle>
+				<CardDescription>Configure your log indexing step by step</CardDescription>
 			</div>
 		</div>
 	</CardHeader>
-	<CardContent class="space-y-6">
-		<!-- Input Section -->
-		<div class="grid gap-6 md:grid-cols-2">
-			<!-- Ingested Logs -->
-			<div class="space-y-2">
-				<label class="text-sm font-medium">Ingested Logs (GB/month)</label>
-				<Input 
-					type="number" 
-					bind:value={ingestedLogsGB} 
-					min="1" 
-					class="font-mono"
-				/>
-				<p class="text-xs text-muted-foreground">Total volume of logs ingested into Datadog</p>
+
+	<CardContent class="p-0">
+		<div class="grid lg:grid-cols-[240px_1fr_280px]">
+			
+			<!-- LEFT: Step Navigation -->
+			<div class="border-r border-border bg-muted/30 p-4 hidden lg:block">
+				<div class="space-y-1">
+					{#each steps as step, i}
+						<button
+							type="button"
+							class="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all
+								{currentStep === i 
+									? 'bg-datadog-purple text-white shadow-lg' 
+									: currentStep > i
+										? 'bg-datadog-green/10 text-datadog-green hover:bg-datadog-green/20'
+										: 'hover:bg-muted text-muted-foreground'}"
+							on:click={() => goToStep(i)}
+						>
+							<span class="text-lg">{currentStep > i ? '✓' : step.icon}</span>
+							<div>
+								<div class="font-medium text-sm">{step.title}</div>
+								<div class="text-xs opacity-70">{step.description}</div>
+							</div>
+						</button>
+					{/each}
+				</div>
 			</div>
 
-			<!-- Average Log Size -->
-			<div class="space-y-2">
-				<label class="text-sm font-medium">Average Log Size (KB)</label>
-				<Input 
-					type="number" 
-					bind:value={avgLogSizeKB} 
-					min="0.1" 
-					step="0.1"
-					class="font-mono"
-				/>
-				<p class="text-xs text-muted-foreground">Typical log entry size (default: 2KB)</p>
+			<!-- Mobile Step Indicator -->
+			<div class="lg:hidden border-b border-border p-4 bg-muted/30">
+				<div class="flex items-center justify-between">
+					<span class="text-sm font-medium">
+						Step {currentStep + 1} of {steps.length}: {steps[currentStep].title}
+					</span>
+					<div class="flex gap-1">
+						{#each steps as _, i}
+							<button
+								type="button"
+								class="w-2.5 h-2.5 rounded-full transition-all {i === currentStep ? 'bg-datadog-purple w-6' : i < currentStep ? 'bg-datadog-green' : 'bg-muted-foreground/30'}"
+								on:click={() => goToStep(i)}
+							/>
+						{/each}
+					</div>
+				</div>
 			</div>
-		</div>
 
-		<!-- Retention Selection -->
-		<div class="space-y-3">
-			<span class="text-sm font-medium">Index Retention Period</span>
-			<div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-				{#each retentionOptions as option}
-					<button
-						type="button"
-						class="rounded-lg border p-3 text-left transition-all {retentionDays === option.days 
-							? 'border-datadog-purple bg-datadog-purple/10 ring-2 ring-datadog-purple' 
-							: 'border-border hover:border-muted-foreground'}"
-						on:click={() => retentionDays = option.days}
+			<!-- CENTER: Current Step Content -->
+			<div class="p-6 min-h-[420px] flex flex-col">
+				{#key currentStep}
+					<div in:fade={{ duration: 150 }} class="flex-1">
+						
+						<!-- Step 0: Volume -->
+						{#if currentStep === 0}
+							<div class="space-y-6">
+								<div>
+									<h3 class="text-lg font-semibold mb-1 flex items-center gap-2">
+										<span>📊</span> Log Volume
+									</h3>
+									<p class="text-sm text-muted-foreground">Tell us about your log ingestion</p>
+								</div>
+
+								<div class="space-y-5">
+									<div class="space-y-2">
+										<label for="ingestedLogs" class="text-sm font-medium">
+											How many GB of logs do you ingest per month?
+										</label>
+										<div class="flex items-center gap-3">
+											<Input 
+												id="ingestedLogs"
+												type="number" 
+												bind:value={ingestedLogsGB} 
+												min="1" 
+												class="font-mono text-lg w-32"
+											/>
+											<span class="text-muted-foreground">GB / month</span>
+										</div>
+									</div>
+
+									<div class="space-y-2">
+										<label for="avgLogSize" class="text-sm font-medium">
+											What's the average size of a single log entry?
+										</label>
+										<div class="flex items-center gap-3">
+											<Input 
+												id="avgLogSize"
+												type="number" 
+												bind:value={avgLogSizeKB} 
+												min="0.1" 
+												step="0.1"
+												class="font-mono text-lg w-32"
+											/>
+											<span class="text-muted-foreground">KB per log</span>
+										</div>
+										<p class="text-xs text-muted-foreground">
+											Typical: JSON logs ~1-2KB, simple text ~0.5KB
+										</p>
+									</div>
+								</div>
+
+								<div class="rounded-lg bg-datadog-blue/5 border border-datadog-blue/20 p-4">
+									<div class="text-sm font-medium text-datadog-blue">📈 That's approximately</div>
+									<div class="text-2xl font-bold font-mono mt-1">
+										{formatNumber(Math.round(totalLogsPerMonth))}
+									</div>
+									<div class="text-sm text-muted-foreground">log entries per month</div>
+								</div>
+							</div>
+
+						<!-- Step 1: Retention -->
+						{:else if currentStep === 1}
+							<div class="space-y-6">
+								<div>
+									<h3 class="text-lg font-semibold mb-1 flex items-center gap-2">
+										<span>📅</span> Retention Period
+									</h3>
+									<p class="text-sm text-muted-foreground">How long should indexed logs be searchable?</p>
+								</div>
+
+								<div class="grid grid-cols-2 gap-3">
+									{#each retentionOptions as option}
+										<button
+											type="button"
+											class="p-5 rounded-xl border-2 text-center transition-all
+												{retentionDays === option.days 
+													? 'border-datadog-purple bg-datadog-purple/10 ring-2 ring-datadog-purple/50' 
+													: 'border-border hover:border-datadog-purple/50 hover:bg-muted/50'}"
+											on:click={() => retentionDays = option.days}
+										>
+											<div class="text-3xl mb-2">{option.emoji}</div>
+											<div class="font-bold">{option.label}</div>
+											<div class="text-xs text-muted-foreground">{option.description}</div>
+										</button>
+									{/each}
+								</div>
+
+								<div class="text-sm text-muted-foreground flex items-center gap-2">
+									<span>💡</span>
+									<span>Longer retention = higher cost per indexed log</span>
+								</div>
+							</div>
+
+						<!-- Step 2: Indexing -->
+						{:else if currentStep === 2}
+							<div class="space-y-6">
+								<div>
+									<h3 class="text-lg font-semibold mb-1 flex items-center gap-2">
+										<span>🔍</span> Indexing Strategy
+									</h3>
+									<p class="text-sm text-muted-foreground">What percentage of logs do you need to search?</p>
+								</div>
+
+								<div class="grid grid-cols-2 gap-3">
+									{#each useCasePresets as preset}
+										<button
+											type="button"
+											class="p-4 rounded-xl border-2 text-left transition-all
+												{indexingPercentage === preset.percentage 
+													? 'border-datadog-green bg-datadog-green/10' 
+													: 'border-border hover:border-datadog-green/50'}"
+											on:click={() => indexingPercentage = preset.percentage}
+										>
+											<div class="flex items-center gap-2 mb-1">
+												<span class="text-xl">{preset.emoji}</span>
+												<span class="font-bold">{preset.name}</span>
+												<Badge variant="outline" class="ml-auto">{preset.percentage}%</Badge>
+											</div>
+											<div class="text-xs text-muted-foreground">{preset.description}</div>
+										</button>
+									{/each}
+								</div>
+
+								<div class="space-y-2">
+									<div class="flex justify-between text-sm">
+										<span>Or set custom percentage</span>
+										<span class="font-mono font-bold text-datadog-purple">{indexingPercentage}%</span>
+									</div>
+									<input 
+										type="range" 
+										bind:value={indexingPercentage} 
+										min="1" 
+										max="100" 
+										class="w-full accent-datadog-purple h-2"
+									/>
+								</div>
+
+								<div class="rounded-lg bg-datadog-purple/5 border border-datadog-purple/20 p-4">
+									<div class="text-sm">You'll index</div>
+									<div class="text-2xl font-bold font-mono text-datadog-purple">
+										{formatNumber(Math.round(indexedLogsCount))} logs
+									</div>
+									<div class="text-sm text-muted-foreground">
+										({indexedLogsInMillions.toFixed(2)} million events)
+									</div>
+								</div>
+							</div>
+
+						<!-- Step 3: Extras -->
+						{:else if currentStep === 3}
+							<div class="space-y-5">
+								<div>
+									<h3 class="text-lg font-semibold mb-1 flex items-center gap-2">
+										<span>⚡</span> Additional Options
+									</h3>
+									<p class="text-sm text-muted-foreground">Optional features for advanced use cases</p>
+								</div>
+
+								<div class="space-y-3">
+									<!-- Flex Starter -->
+									<label
+										class="flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all
+											{enableFlexStarter ? 'border-datadog-blue bg-datadog-blue/5' : 'border-border hover:border-muted-foreground'}"
+									>
+										<input 
+											type="checkbox" 
+											bind:checked={enableFlexStarter}
+											class="mt-1 h-5 w-5 rounded accent-datadog-blue"
+										/>
+										<div class="flex-1">
+											<div class="font-medium">Flex Logs Starter</div>
+											<div class="text-xs text-muted-foreground">Query archived logs cost-effectively</div>
+											{#if enableFlexStarter}
+												<div class="mt-2 flex items-center gap-2" transition:slide={{ duration: 150 }}>
+													<Input 
+														type="number" 
+														bind:value={flexStarterEvents} 
+														min="1" 
+														class="w-24 font-mono"
+													/>
+													<span class="text-sm text-muted-foreground">M events</span>
+													{#if flexStarterPrice > 0}
+														<span class="text-xs text-datadog-blue ml-auto">{formatCurrency(flexStarterCost)}/mo</span>
+													{/if}
+												</div>
+											{/if}
+										</div>
+									</label>
+
+									<!-- Flex Storage -->
+									<label
+										class="flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all
+											{enableFlexStorage ? 'border-datadog-blue bg-datadog-blue/5' : 'border-border hover:border-muted-foreground'}"
+									>
+										<input 
+											type="checkbox" 
+											bind:checked={enableFlexStorage}
+											class="mt-1 h-5 w-5 rounded accent-datadog-blue"
+										/>
+										<div class="flex-1">
+											<div class="font-medium">Flex Logs Storage</div>
+											<div class="text-xs text-muted-foreground">Long-term storage for compliance</div>
+											{#if enableFlexStorage}
+												<div class="mt-2 flex items-center gap-2" transition:slide={{ duration: 150 }}>
+													<Input 
+														type="number" 
+														bind:value={flexStorageEvents} 
+														min="1" 
+														class="w-24 font-mono"
+													/>
+													<span class="text-sm text-muted-foreground">M events</span>
+													{#if flexStoragePrice > 0}
+														<span class="text-xs text-datadog-blue ml-auto">{formatCurrency(flexStorageCost)}/mo</span>
+													{/if}
+												</div>
+											{/if}
+										</div>
+									</label>
+
+									<!-- Forwarding -->
+									<label
+										class="flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all
+											{enableForwarding ? 'border-datadog-orange bg-datadog-orange/5' : 'border-border hover:border-muted-foreground'}"
+									>
+										<input 
+											type="checkbox" 
+											bind:checked={enableForwarding}
+											class="mt-1 h-5 w-5 rounded accent-datadog-orange"
+										/>
+										<div class="flex-1">
+											<div class="font-medium">Log Forwarding</div>
+											<div class="text-xs text-muted-foreground">Forward to S3, Azure, GCS</div>
+											{#if enableForwarding}
+												<div class="mt-2 flex items-center gap-2" transition:slide={{ duration: 150 }}>
+													<Input 
+														type="number" 
+														bind:value={forwardingGB} 
+														min="1" 
+														class="w-24 font-mono"
+													/>
+													<span class="text-sm text-muted-foreground">GB/month</span>
+													{#if forwardingPrice > 0}
+														<span class="text-xs text-datadog-orange ml-auto">{formatCurrency(forwardingCost)}/mo</span>
+													{/if}
+												</div>
+											{/if}
+										</div>
+									</label>
+								</div>
+
+								<p class="text-xs text-muted-foreground text-center">
+									Skip these options if you don't need them
+								</p>
+							</div>
+						{/if}
+					</div>
+				{/key}
+
+				<!-- Navigation Buttons -->
+				<div class="flex justify-between mt-6 pt-4 border-t border-border">
+					<Button 
+						variant="outline" 
+						on:click={prevStep}
+						disabled={currentStep === 0}
+						class="gap-2"
 					>
-						<div class="font-medium">{option.label}</div>
-						<div class="text-xs text-muted-foreground">{option.description}</div>
-					</button>
-				{/each}
-			</div>
-		</div>
-
-		<!-- Indexing Percentage -->
-		<div class="space-y-3">
-			<div class="flex items-center justify-between">
-				<span class="text-sm font-medium">Indexing Percentage</span>
-				<span class="font-mono text-lg font-bold text-datadog-purple">{indexingPercentage}%</span>
-			</div>
-			<input 
-				type="range" 
-				bind:value={indexingPercentage} 
-				min="1" 
-				max="100" 
-				class="w-full accent-datadog-purple"
-			/>
-			<div class="flex justify-between text-xs text-muted-foreground">
-				<span>1% (Minimal)</span>
-				<span>100% (All)</span>
-			</div>
-		</div>
-
-		<!-- Use Case Presets -->
-		<div class="space-y-3">
-			<span class="text-sm font-medium">Quick Presets</span>
-			<div class="grid gap-2 sm:grid-cols-2">
-				{#each useCasePresets as preset}
-					<button
-						type="button"
-						class="rounded-lg border p-3 text-left transition-all {indexingPercentage === preset.percentage 
-							? 'border-datadog-green bg-datadog-green/10' 
-							: 'border-border hover:border-muted-foreground'}"
-						on:click={() => applyPreset(preset.percentage)}
-					>
-						<div class="flex items-center justify-between">
-							<span class="font-medium">{preset.name}</span>
-							<span class="font-mono text-sm text-muted-foreground">{preset.percentage}%</span>
-						</div>
-						<div class="text-xs text-muted-foreground mt-1">{preset.description}</div>
-					</button>
-				{/each}
-			</div>
-		</div>
-
-		<!-- Additional Options (Collapsible) -->
-		<div class="border border-border rounded-lg overflow-hidden">
-			<button
-				type="button"
-				class="w-full flex items-center justify-between p-4 text-left hover:bg-muted/50 transition-colors"
-				on:click={() => showAdditionalOptions = !showAdditionalOptions}
-			>
-				<div class="flex items-center gap-2">
-					<svg class="h-5 w-5 text-datadog-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M12 5v14M5 12h14" />
-					</svg>
-					<span class="font-medium">Additional Log Options</span>
-					{#if enableFlexStarter || enableFlexStorage || enableForwarding}
-						<span class="text-xs bg-datadog-blue/10 text-datadog-blue px-2 py-0.5 rounded-full">
-							{[enableFlexStarter, enableFlexStorage, enableForwarding].filter(Boolean).length} selected
-						</span>
+						<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M19 12H5M12 19l-7-7 7-7"/>
+						</svg>
+						Back
+					</Button>
+					
+					{#if currentStep < steps.length - 1}
+						<Button 
+							class="bg-datadog-purple hover:bg-datadog-purple/90 gap-2"
+							on:click={nextStep}
+						>
+							Next
+							<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M5 12h14M12 5l7 7-7 7"/>
+							</svg>
+						</Button>
+					{:else}
+						<Button 
+							class="bg-datadog-green hover:bg-datadog-green/90 gap-2"
+							on:click={addToQuote}
+							disabled={!ingestionProduct || !indexedProduct}
+						>
+							<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M5 13l4 4L19 7"/>
+							</svg>
+							Add to Quote
+						</Button>
 					{/if}
 				</div>
-				<svg 
-					class="h-4 w-4 text-muted-foreground transition-transform {showAdditionalOptions ? 'rotate-180' : ''}" 
-					viewBox="0 0 24 24" 
-					fill="none" 
-					stroke="currentColor" 
-					stroke-width="2"
-				>
-					<path d="M6 9l6 6 6-6" />
-				</svg>
-			</button>
-			
-			{#if showAdditionalOptions}
-				<div transition:slide={{ duration: 200 }} class="p-4 pt-0 space-y-4 border-t border-border">
-					<p class="text-xs text-muted-foreground">Add Flex Logs for cost-effective long-term storage or forward logs to external destinations.</p>
-					
-					<!-- Flex Logs Starter -->
-					<div class="flex items-start gap-3 p-3 rounded-lg border {enableFlexStarter ? 'border-datadog-blue bg-datadog-blue/5' : 'border-border'}">
-						<input 
-							type="checkbox" 
-							id="flexStarter"
-							bind:checked={enableFlexStarter}
-							class="mt-1 h-4 w-4 rounded border-border accent-datadog-blue"
-						/>
-						<div class="flex-1 min-w-0">
-							<label for="flexStarter" class="font-medium text-sm cursor-pointer">Flex Logs Starter</label>
-							<Badge variant="outline" class="ml-2 text-xs">Per 1M events stored (6, 12 or 15 months retention), per month</Badge>
-							<p class="text-xs text-muted-foreground mt-1">Cost-effective compute for querying archived logs. Adapted for users who ingest less than 1TB per day.</p>
-							{#if enableFlexStarter}
-								<div class="mt-2 flex items-center gap-2">
-									<Input 
-										type="number" 
-										bind:value={flexStarterEvents} 
-										min="1" 
-										class="w-24 font-mono text-sm"
-									/>
-									<span class="text-xs text-muted-foreground">M events/month</span>
-									{#if flexStarterPrice > 0}
-										<span class="text-xs text-datadog-blue ml-auto">{formatCurrency(flexStarterCost)}/mo</span>
-									{/if}
+			</div>
+
+			<!-- RIGHT: Always-Visible Summary -->
+			<div class="border-t lg:border-t-0 lg:border-l border-border bg-gradient-to-b from-muted/50 to-background p-4">
+				<div class="lg:sticky lg:top-4 space-y-4">
+					<h4 class="font-semibold text-xs uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+						<span>💰</span> Cost Summary
+					</h4>
+
+					<!-- Quick Stats -->
+					<div class="space-y-2 text-sm">
+						<div class="flex justify-between items-center">
+							<span class="text-muted-foreground">Volume</span>
+							<span class="font-mono font-medium">{ingestedLogsGB} GB</span>
+						</div>
+						<div class="flex justify-between items-center">
+							<span class="text-muted-foreground">Retention</span>
+							<span class="font-mono font-medium">{retentionDays} days</span>
+						</div>
+						<div class="flex justify-between items-center">
+							<span class="text-muted-foreground">Indexing</span>
+							<span class="font-mono font-medium">{indexingPercentage}%</span>
+						</div>
+						<div class="flex justify-between items-center">
+							<span class="text-muted-foreground">Indexed logs</span>
+							<span class="font-mono text-xs">{indexedLogsInMillions.toFixed(1)}M</span>
+						</div>
+					</div>
+
+					<hr class="border-border" />
+
+					<!-- Cost Breakdown -->
+					<div class="space-y-2 text-sm">
+						<div class="flex justify-between">
+							<div class="flex items-center gap-2">
+								<div class="w-2 h-2 rounded bg-datadog-blue"></div>
+								<span>Ingestion</span>
+							</div>
+							<span class="font-mono">{formatCurrency(ingestionCost)}</span>
+						</div>
+						<div class="flex justify-between">
+							<div class="flex items-center gap-2">
+								<div class="w-2 h-2 rounded bg-datadog-purple"></div>
+								<span>Indexed</span>
+							</div>
+							<span class="font-mono">{formatCurrency(indexedCost)}</span>
+						</div>
+						{#if additionalCost > 0}
+							<div class="flex justify-between text-datadog-green">
+								<div class="flex items-center gap-2">
+									<div class="w-2 h-2 rounded bg-datadog-green"></div>
+									<span>Extras</span>
 								</div>
-							{/if}
+								<span class="font-mono">{formatCurrency(additionalCost)}</span>
+							</div>
+						{/if}
+					</div>
+
+					<hr class="border-border" />
+
+					<!-- Total -->
+					<div class="rounded-xl bg-datadog-green/10 border border-datadog-green/30 p-4 text-center">
+						<div class="text-xs text-muted-foreground">Monthly Total</div>
+						<div class="text-2xl font-bold font-mono text-datadog-green">
+							{formatCurrency(totalMonthlyCost)}
+						</div>
+						<div class="text-xs text-muted-foreground">
+							~{formatCurrency(totalMonthlyCost * 12)}/year
 						</div>
 					</div>
 
-					<!-- Flex Logs Storage -->
-					<div class="flex items-start gap-3 p-3 rounded-lg border {enableFlexStorage ? 'border-datadog-blue bg-datadog-blue/5' : 'border-border'}">
-						<input 
-							type="checkbox" 
-							id="flexStorage"
-							bind:checked={enableFlexStorage}
-							class="mt-1 h-4 w-4 rounded border-border accent-datadog-blue"
-						/>
-						<div class="flex-1 min-w-0">
-							<label for="flexStorage" class="font-medium text-sm cursor-pointer">Flex Logs Storage</label>
-							<Badge variant="outline" class="ml-2 text-xs">Per 1M events stored, per month</Badge>
-							<p class="text-xs text-muted-foreground mt-1">Long-term storage for compliance and historical analysis. + compute price, ask your Sales Rep.</p>
-							{#if enableFlexStorage}
-								<div class="mt-2 flex items-center gap-2">
-									<Input 
-										type="number" 
-										bind:value={flexStorageEvents} 
-										min="1" 
-										class="w-24 font-mono text-sm"
-									/>
-									<span class="text-xs text-muted-foreground">M events/month</span>
-									{#if flexStoragePrice > 0}
-										<span class="text-xs text-datadog-blue ml-auto">{formatCurrency(flexStorageCost)}/mo</span>
-									{/if}
-								</div>
-							{/if}
+					<!-- Cost Visualization Bar -->
+					{#if totalMonthlyCost > 0}
+						<div class="space-y-1">
+							<div class="h-3 rounded-full overflow-hidden bg-muted flex">
+								<div 
+									class="bg-datadog-blue transition-all duration-300" 
+									style="width: {(ingestionCost / totalMonthlyCost) * 100}%"
+								></div>
+								<div 
+									class="bg-datadog-purple transition-all duration-300" 
+									style="width: {(indexedCost / totalMonthlyCost) * 100}%"
+								></div>
+								{#if additionalCost > 0}
+									<div 
+										class="bg-datadog-green transition-all duration-300" 
+										style="width: {(additionalCost / totalMonthlyCost) * 100}%"
+									></div>
+								{/if}
+							</div>
+						</div>
+					{/if}
+
+					<!-- Progress -->
+					<div class="space-y-2 pt-2">
+						<div class="text-xs text-muted-foreground">Progress</div>
+						<div class="h-1.5 rounded-full bg-muted overflow-hidden">
+							<div 
+								class="h-full bg-datadog-purple transition-all duration-300"
+								style="width: {((currentStep + 1) / steps.length) * 100}%"
+							></div>
+						</div>
+						<div class="text-xs text-center text-muted-foreground">
+							Step {currentStep + 1} of {steps.length}
 						</div>
 					</div>
 
-					<!-- Log Forwarding -->
-					<div class="flex items-start gap-3 p-3 rounded-lg border {enableForwarding ? 'border-datadog-orange bg-datadog-orange/5' : 'border-border'}">
-						<input 
-							type="checkbox" 
-							id="forwarding"
-							bind:checked={enableForwarding}
-							class="mt-1 h-4 w-4 rounded border-border accent-datadog-orange"
-						/>
-						<div class="flex-1 min-w-0">
-							<label for="forwarding" class="font-medium text-sm cursor-pointer">Logs Forwarding to Custom Destinations</label>
-							<p class="text-xs text-muted-foreground mt-0.5">Forward logs to S3, Azure, GCS, or other destinations</p>
-							{#if enableForwarding}
-								<div class="mt-2 flex items-center gap-2">
-									<Input 
-										type="number" 
-										bind:value={forwardingGB} 
-										min="1" 
-										class="w-24 font-mono text-sm"
-									/>
-									<span class="text-xs text-muted-foreground">GB/month</span>
-									{#if forwardingPrice > 0}
-										<span class="text-xs text-datadog-orange ml-auto">{formatCurrency(forwardingCost)}/mo</span>
-									{/if}
-								</div>
-							{/if}
-						</div>
-					</div>
-				</div>
-			{/if}
-		</div>
-
-		<!-- Results Section -->
-		<div class="rounded-xl border border-border bg-muted/30 p-5 space-y-4">
-			<h3 class="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Calculation Results</h3>
-			
-			<!-- Volume Stats -->
-			<div class="grid gap-4 sm:grid-cols-3">
-				<div class="rounded-lg bg-background p-4 border border-border">
-					<div class="text-xs text-muted-foreground mb-1">Total Logs</div>
-					<div class="font-mono text-lg font-bold">{formatNumber(Math.round(totalLogsPerMonth))}</div>
-					<div class="text-xs text-muted-foreground">per month</div>
-				</div>
-				<div class="rounded-lg bg-background p-4 border border-border">
-					<div class="text-xs text-muted-foreground mb-1">Indexed Logs</div>
-					<div class="font-mono text-lg font-bold text-datadog-purple">{formatNumber(Math.round(indexedLogsCount))}</div>
-					<div class="text-xs text-muted-foreground">{indexedLogsInMillions.toFixed(2)}M events</div>
-				</div>
-				<div class="rounded-lg bg-background p-4 border border-border">
-					<div class="text-xs text-muted-foreground mb-1">Retention</div>
-					<div class="font-mono text-lg font-bold">{retentionDays} days</div>
-					<div class="text-xs text-muted-foreground">indexed storage</div>
-				</div>
-			</div>
-
-			<!-- Cost Breakdown -->
-			<div class="space-y-3">
-				<h4 class="text-sm font-medium">Estimated Monthly Cost</h4>
-				
-				<!-- Ingestion Cost -->
-				<div class="flex items-center justify-between py-2 border-b border-border">
-					<div class="flex items-center gap-2">
-						<div class="w-3 h-3 rounded bg-datadog-blue"></div>
-						<span class="text-sm">Log Ingestion ({ingestedLogsGB} GB)</span>
-					</div>
-					<div class="text-right">
-						<span class="font-mono font-medium">{formatCurrency(ingestionCost)}</span>
-						<span class="text-xs text-muted-foreground ml-2">({ingestionCostPercent.toFixed(0)}%)</span>
-					</div>
-				</div>
-
-				<!-- Indexed Cost -->
-				<div class="flex items-center justify-between py-2 border-b border-border">
-					<div class="flex items-center gap-2">
-						<div class="w-3 h-3 rounded bg-datadog-purple"></div>
-						<span class="text-sm">Indexed Logs ({indexedLogsInMillions.toFixed(2)}M × {retentionDays}d)</span>
-					</div>
-					<div class="text-right">
-						<span class="font-mono font-medium">{formatCurrency(indexedCost)}</span>
-						<span class="text-xs text-muted-foreground ml-2">({indexedCostPercent.toFixed(0)}%)</span>
-					</div>
-				</div>
-
-				<!-- Additional Costs -->
-				{#if enableFlexStarter}
-					<div class="flex items-center justify-between py-2 border-b border-border">
-						<div class="flex items-center gap-2">
-							<div class="w-3 h-3 rounded bg-datadog-green"></div>
-							<span class="text-sm">Flex Logs Starter ({flexStarterEvents}M events)</span>
-						</div>
-						<div class="text-right">
-							<span class="font-mono font-medium">{formatCurrency(flexStarterCost)}</span>
-						</div>
-					</div>
-				{/if}
-				
-				{#if enableFlexStorage}
-					<div class="flex items-center justify-between py-2 border-b border-border">
-						<div class="flex items-center gap-2">
-							<div class="w-3 h-3 rounded bg-datadog-green"></div>
-							<span class="text-sm">Flex Logs Storage ({flexStorageEvents}M events)</span>
-						</div>
-						<div class="text-right">
-							<span class="font-mono font-medium">{formatCurrency(flexStorageCost)}</span>
-						</div>
-					</div>
-				{/if}
-				
-				{#if enableForwarding}
-					<div class="flex items-center justify-between py-2 border-b border-border">
-						<div class="flex items-center gap-2">
-							<div class="w-3 h-3 rounded bg-datadog-orange"></div>
-							<span class="text-sm">Log Forwarding ({forwardingGB} GB)</span>
-						</div>
-						<div class="text-right">
-							<span class="font-mono font-medium">{formatCurrency(forwardingCost)}</span>
-						</div>
-					</div>
-				{/if}
-
-				<!-- Total -->
-				<div class="flex items-center justify-between pt-2">
-					<span class="font-semibold">Total Monthly</span>
-					<span class="font-mono text-xl font-bold text-datadog-green">{formatCurrency(totalMonthlyCost)}</span>
-				</div>
-				<div class="flex items-center justify-between text-muted-foreground">
-					<span class="text-sm">Annual Estimate</span>
-					<span class="font-mono">{formatCurrency(totalAnnualCost)}/year</span>
-				</div>
-			</div>
-
-			<!-- Cost Visualization -->
-			<div class="h-4 rounded-full overflow-hidden bg-muted flex">
-				{#if ingestionCostPercent > 0}
-					<div 
-						class="bg-datadog-blue transition-all duration-300" 
-						style="width: {ingestionCostPercent}%"
-						title="Ingestion: {ingestionCostPercent.toFixed(0)}%"
-					></div>
-				{/if}
-				{#if indexedCostPercent > 0}
-					<div 
-						class="bg-datadog-purple transition-all duration-300" 
-						style="width: {indexedCostPercent}%"
-						title="Indexed: {indexedCostPercent.toFixed(0)}%"
-					></div>
-				{/if}
-				{#if additionalCostPercent > 0}
-					<div 
-						class="bg-datadog-green transition-all duration-300" 
-						style="width: {additionalCostPercent}%"
-						title="Additional: {additionalCostPercent.toFixed(0)}%"
-					></div>
-				{/if}
-			</div>
-			<div class="flex justify-center flex-wrap gap-4 text-xs">
-				<div class="flex items-center gap-1.5">
-					<div class="w-2.5 h-2.5 rounded bg-datadog-blue"></div>
-					<span>Ingestion</span>
-				</div>
-				<div class="flex items-center gap-1.5">
-					<div class="w-2.5 h-2.5 rounded bg-datadog-purple"></div>
-					<span>Indexed</span>
-				</div>
-				{#if additionalCost > 0}
-					<div class="flex items-center gap-1.5">
-						<div class="w-2.5 h-2.5 rounded bg-datadog-green"></div>
-						<span>Flex/Forwarding</span>
-					</div>
-				{/if}
-			</div>
-		</div>
-
-		<!-- Tips -->
-		<div class="rounded-lg border border-datadog-orange/30 bg-datadog-orange/5 p-4">
-			<div class="flex gap-3">
-				<svg class="h-5 w-5 text-datadog-orange flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<circle cx="12" cy="12" r="10" />
-					<line x1="12" y1="16" x2="12" y2="12" />
-					<line x1="12" y1="8" x2="12.01" y2="8" />
-				</svg>
-				<div class="text-sm">
-					<p class="font-medium text-datadog-orange mb-1">Optimization Tips</p>
-					<ul class="text-muted-foreground space-y-1 list-disc list-inside">
-						<li>Use exclusion filters to reduce ingested volume</li>
-						<li>Index only logs needed for alerting and dashboards</li>
-						<li>Consider Flex Logs for long-term, cost-effective storage</li>
-						<li>Set up log pipelines to enrich and filter before indexing</li>
-					</ul>
+					{#if !ingestionProduct || !indexedProduct}
+						<p class="text-xs text-center text-amber-600 bg-amber-50 rounded-lg p-2">
+							⚠️ Some products not found. Sync pricing data.
+						</p>
+					{/if}
 				</div>
 			</div>
 		</div>
-
-		<!-- Add to Quote Button -->
-		<Button 
-			class="w-full gap-2 bg-datadog-purple hover:bg-datadog-purple/90"
-			on:click={addToQuote}
-			disabled={!ingestionProduct || !indexedProduct}
-		>
-			<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-				<path d="M12 5v14M5 12h14" />
-			</svg>
-			Add to Quote
-		</Button>
-
-		{#if !ingestionProduct || !indexedProduct}
-			<p class="text-xs text-center text-muted-foreground">
-				Some log products not found. Make sure pricing data is synced.
-			</p>
-		{/if}
 	</CardContent>
 </Card>
-
