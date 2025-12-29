@@ -1412,27 +1412,6 @@
 	</div>
 
 
-	<!-- Edit Mode Banner -->
-	{#if editingQuoteId}
-		<div transition:slide={{ duration: 200 }} class="mb-4 flex items-center gap-3 rounded-lg border border-datadog-green/50 bg-datadog-green/10 px-4 py-3">
-			<svg class="h-5 w-5 text-datadog-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-				<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-				<path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-			</svg>
-			<div class="flex-1">
-				<span class="font-medium text-datadog-green">Editing Quote</span>
-				<span class="text-sm text-muted-foreground ml-2">Make your changes and click Save to update</span>
-			</div>
-			<button
-				type="button"
-				class="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
-				on:click={() => { const id = editingQuoteId; editingQuoteId = null; editQuotePassword = null; goto(`/quote/${id}`); }}
-			>
-				Cancel
-			</button>
-		</div>
-	{/if}
-
 	<!-- Share URL Display -->
 	{#if shareUrl}
 		<div transition:slide={{ duration: 200 }} class="mb-4 flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3">
