@@ -21,6 +21,7 @@ from .allotments_scraper import (
 )
 from .redis_client import get_redis, is_redis_available
 from .templates import get_all_templates, get_template, ensure_templates, sync_templates_to_redis
+from .telemetry import setup_otlp_logging, shutdown_telemetry
 
 
 # Configure logging
@@ -67,6 +68,9 @@ def should_sync_on_startup() -> bool:
 async def lifespan(app: FastAPI):
     logger.info("🚀 PriceHound API starting up...")
     
+    # Setup OTLP logging first (before other initialization logs)
+    setup_otlp_logging()
+    
     # Log Redis status
     redis_status = "connected" if is_redis_available() else "disconnected"
     logger.info(f"📦 Redis status: {redis_status}")
@@ -105,6 +109,7 @@ async def lifespan(app: FastAPI):
     # Shutdown
     scheduler.shutdown()
     logger.info("👋 PriceHound API shutting down...")
+    shutdown_telemetry()  # Flush remaining logs to Datadog
 
 
 app = FastAPI(

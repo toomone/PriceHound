@@ -206,7 +206,8 @@ ddog-pricing-calculator/
 │   │   ├── quotes.py            # Quote CRUD operations
 │   │   ├── templates.py         # Template management
 │   │   ├── redis_client.py      # Redis connection & utilities
-│   │   └── config.py            # Environment configuration
+│   │   ├── config.py            # Environment configuration
+│   │   └── telemetry.py         # OTLP logging to Datadog
 │   ├── data/
 │   │   ├── pricing/             # Cached pricing by region
 │   │   ├── quotes/              # Stored quotes (file fallback)
@@ -266,6 +267,20 @@ The project includes a `render.yaml` Blueprint for easy deployment:
 |----------|-------------|---------|
 | `STORAGE_TYPE` | `redis` or `file` | `file` |
 | `REDIS_URL` | Redis connection string | — |
+
+#### Datadog OTLP Logging (Optional)
+
+Ship application logs directly to Datadog without an agent:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DD_API_KEY` | Datadog API key (required for OTLP) | — |
+| `DD_SITE` | Datadog site (`datadoghq.com`, `datadoghq.eu`, etc.) | `datadoghq.com` |
+| `DD_SERVICE` | Service name in Datadog | `pricehound` |
+| `DD_ENV` | Environment tag | `production` |
+| `DD_VERSION` | Version tag | `1.0.0` |
+
+If `DD_API_KEY` is not set, OTLP logging is disabled and logs only go to console.
 
 ---
 
