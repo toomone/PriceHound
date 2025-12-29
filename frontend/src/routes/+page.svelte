@@ -1545,7 +1545,7 @@
 						<!-- Sliding background indicator -->
 						<div 
 							class="absolute h-[calc(100%-8px)] top-1 rounded-md bg-foreground transition-all duration-200 ease-out"
-							style="width: {selectedPlan === 'Pro' ? '42px' : '82px'}; left: {selectedPlan === 'Pro' ? '4px' : '50px'};"
+							style="width: {selectedPlan === 'Pro' ? '44px' : '90px'}; left: {selectedPlan === 'Pro' ? '4px' : '52px'};"
 						></div>
 						<button
 							type="button"
