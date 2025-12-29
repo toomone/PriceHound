@@ -35,14 +35,16 @@
 </div>
 
 <style>
-	.faq-content :global(h1) {
+	:global(.faq-content h1) {
+		display: block;
 		font-size: 1.875rem;
 		font-weight: 700;
 		margin-bottom: 1.5rem;
 		color: hsl(var(--foreground));
 	}
 
-	.faq-content :global(h2) {
+	:global(.faq-content h2) {
+		display: block;
 		font-size: 1.25rem;
 		font-weight: 600;
 		margin-top: 2rem;
@@ -50,36 +52,39 @@
 		color: hsl(var(--foreground));
 	}
 
-	.faq-content :global(p) {
+	:global(.faq-content p) {
+		display: block;
 		margin-bottom: 1rem;
 		line-height: 1.7;
 		color: hsl(var(--muted-foreground));
 	}
 
-	.faq-content :global(ul) {
+	:global(.faq-content ul) {
+		display: block;
 		list-style-type: disc;
 		padding-left: 1.5rem;
 		margin-bottom: 1rem;
 	}
 
-	.faq-content :global(li) {
+	:global(.faq-content li) {
+		display: list-item;
 		margin-bottom: 0.5rem;
 		line-height: 1.6;
 		color: hsl(var(--muted-foreground));
 	}
 
-	.faq-content :global(strong) {
+	:global(.faq-content strong) {
 		color: hsl(var(--foreground));
 		font-weight: 600;
 	}
 
-	.faq-content :global(a) {
-		color: hsl(var(--datadog-purple));
+	:global(.faq-content a) {
+		color: hsl(270 60% 50%);
 		text-decoration: underline;
 		text-underline-offset: 2px;
 	}
 
-	.faq-content :global(a:hover) {
+	:global(.faq-content a:hover) {
 		opacity: 0.8;
 	}
 </style>
