@@ -1347,7 +1347,7 @@
 						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" />
 						</svg>
-						<span class="hidden sm:inline">Share</span>
+						<span class="hidden sm:inline">Share & Save</span>
 						<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M6 9l6 6 6-6" />
 						</svg>
@@ -1499,7 +1499,7 @@
 		<CardHeader>
 			<div class="flex flex-wrap items-start justify-between gap-4">
 				<div class="flex items-center gap-3">
-					<div class="flex h-9 w-9 items-center justify-center rounded-sm bg-white border border-border">
+					<div class="flex h-9 w-9 items-center justify-center rounded-sm bg-muted">
 						<svg class="h-5 w-5 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<circle cx="9" cy="21" r="1" />
 							<circle cx="20" cy="21" r="1" />
@@ -1544,14 +1544,14 @@
 					<div class="inline-flex items-center p-1 border-r border-input">
 						<button
 							type="button"
-							class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors {selectedPlan === 'Pro' ? 'bg-datadog-purple text-white' : 'hover:bg-muted'}"
+							class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors {selectedPlan === 'Pro' ? 'bg-foreground text-background' : 'hover:bg-muted'}"
 							on:click={() => selectedPlan = 'Pro'}
 						>
 							Pro
 						</button>
 						<button
 							type="button"
-							class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors {selectedPlan === 'Enterprise' ? 'bg-datadog-purple text-white' : 'hover:bg-muted'}"
+							class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors {selectedPlan === 'Enterprise' ? 'bg-foreground text-background' : 'hover:bg-muted'}"
 							on:click={() => selectedPlan = 'Enterprise'}
 						>
 							Enterprise
@@ -1817,7 +1817,7 @@
 		<Card class="mb-6 relative z-0">
 			<CardHeader>
 				<div class="flex items-center gap-3">
-					<div class="flex h-9 w-9 items-center justify-center rounded-sm bg-white border border-border">
+					<div class="flex h-9 w-9 items-center justify-center rounded-sm bg-muted">
 						<svg class="h-5 w-5 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
 						</svg>
@@ -1833,30 +1833,30 @@
 				<div class="grid gap-4 mb-6" style="grid-template-columns: repeat({[showAnnual, showMonthly, showOnDemand].filter(Boolean).length}, 1fr);">
 					{#if showAnnual}
 						<!-- Annual -->
-						<div class="relative rounded-xl border-2 border-datadog-green/50 bg-datadog-green/10 p-5 shadow-lg shadow-datadog-green/10">
+						<div class="relative rounded-sm border border-datadog-green/50 bg-datadog-green/5 p-4">
 							{#if bestValueOption?.key === 'annual' && dynamicSavings > 0}
-								<div class="absolute -top-2.5 right-3 rounded-full bg-datadog-green px-2.5 py-0.5 text-xs font-bold text-white shadow">
+								<div class="absolute -top-2 right-2 rounded-sm bg-datadog-green px-2 py-0.5 text-[10px] font-bold text-white">
 									Best Value
 								</div>
 							{/if}
-							<div class="text-sm font-medium text-datadog-green mb-2">Billed Annually</div>
-							<div class="text-3xl font-bold text-datadog-green mb-1">
+							<div class="text-xs font-medium text-datadog-green mb-1">Billed Annually</div>
+							<div class="text-xl font-bold text-datadog-green mb-0.5">
 								{formatCurrency(annualCosts.annually)}
-								<span class="text-sm font-normal text-muted-foreground">/year</span>
+								<span class="text-xs font-normal text-muted-foreground">/year</span>
 							</div>
-							<div class="text-sm text-muted-foreground mb-3">
+							<div class="text-xs text-muted-foreground mb-2">
 								{formatCurrency(totals.annually)}/month
 							</div>
 							{#if bestValueOption?.key === 'annual' && dynamicSavings > 0}
-								<div class="flex items-center gap-1.5 text-sm font-medium text-datadog-green">
-									<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<div class="flex items-center gap-1 text-xs font-medium text-datadog-green">
+									<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 										<path d="M12 5v14M5 12l7 7 7-7" />
 									</svg>
 									Save {formatCurrency(dynamicSavings)}/yr
 								</div>
 							{:else if bestValueOption && bestValueOption.key !== 'annual'}
-								<div class="flex items-center gap-1.5 text-sm text-muted-foreground">
-									<svg class="h-4 w-4 text-datadog-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<div class="flex items-center gap-1 text-xs text-muted-foreground">
+									<svg class="h-3 w-3 text-datadog-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 										<path d="M12 19V5M5 12l7-7 7 7" />
 									</svg>
 									+{((annualCosts.annually - bestValueOption.cost) / bestValueOption.cost * 100).toFixed(0)}% vs {bestValueLabel}
@@ -1867,30 +1867,30 @@
 
 					{#if showMonthly}
 						<!-- Monthly -->
-						<div class="relative rounded-xl border border-datadog-blue/30 bg-datadog-blue/5 p-5">
+						<div class="relative rounded-sm border border-datadog-blue/30 bg-datadog-blue/5 p-4">
 							{#if bestValueOption?.key === 'monthly' && dynamicSavings > 0}
-								<div class="absolute -top-2.5 right-3 rounded-full bg-datadog-blue px-2.5 py-0.5 text-xs font-bold text-white shadow">
+								<div class="absolute -top-2 right-2 rounded-sm bg-datadog-blue px-2 py-0.5 text-[10px] font-bold text-white">
 									Best Value
 								</div>
 							{/if}
-							<div class="text-sm font-medium text-datadog-blue mb-2">Billed Monthly</div>
-							<div class="text-3xl font-bold text-datadog-blue mb-1">
+							<div class="text-xs font-medium text-datadog-blue mb-1">Billed Monthly</div>
+							<div class="text-xl font-bold text-datadog-blue mb-0.5">
 								{formatCurrency(annualCosts.monthly)}
-								<span class="text-sm font-normal text-muted-foreground">/year</span>
+								<span class="text-xs font-normal text-muted-foreground">/year</span>
 							</div>
-							<div class="text-sm text-muted-foreground mb-3">
+							<div class="text-xs text-muted-foreground mb-2">
 								{formatCurrency(totals.monthly)}/month
 							</div>
 							{#if bestValueOption?.key === 'monthly' && dynamicSavings > 0}
-								<div class="flex items-center gap-1.5 text-sm font-medium text-datadog-blue">
-									<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<div class="flex items-center gap-1 text-xs font-medium text-datadog-blue">
+									<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 										<path d="M12 5v14M5 12l7 7 7-7" />
 									</svg>
 									Save {formatCurrency(dynamicSavings)}/yr
 								</div>
 							{:else if bestValueOption && bestValueOption.key !== 'monthly'}
-								<div class="flex items-center gap-1.5 text-sm text-muted-foreground">
-									<svg class="h-4 w-4 text-datadog-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<div class="flex items-center gap-1 text-xs text-muted-foreground">
+									<svg class="h-3 w-3 text-datadog-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 										<path d="M12 19V5M5 12l7-7 7 7" />
 									</svg>
 									+{((annualCosts.monthly - bestValueOption.cost) / bestValueOption.cost * 100).toFixed(0)}% vs {bestValueLabel}
@@ -1901,30 +1901,30 @@
 
 					{#if showOnDemand}
 						<!-- On-Demand -->
-						<div class="relative rounded-xl border border-datadog-orange/30 bg-datadog-orange/5 p-5">
+						<div class="relative rounded-sm border border-datadog-orange/30 bg-datadog-orange/5 p-4">
 							{#if bestValueOption?.key === 'ondemand' && dynamicSavings > 0}
-								<div class="absolute -top-2.5 right-3 rounded-full bg-datadog-orange px-2.5 py-0.5 text-xs font-bold text-white shadow">
+								<div class="absolute -top-2 right-2 rounded-sm bg-datadog-orange px-2 py-0.5 text-[10px] font-bold text-white">
 									Best Value
 								</div>
 							{/if}
-							<div class="text-sm font-medium text-datadog-orange mb-2">On-Demand</div>
-							<div class="text-3xl font-bold text-datadog-orange mb-1">
+							<div class="text-xs font-medium text-datadog-orange mb-1">On-Demand</div>
+							<div class="text-xl font-bold text-datadog-orange mb-0.5">
 								{formatCurrency(annualCosts.on_demand)}
-								<span class="text-sm font-normal text-muted-foreground">/year</span>
+								<span class="text-xs font-normal text-muted-foreground">/year</span>
 							</div>
-							<div class="text-sm text-muted-foreground mb-3">
+							<div class="text-xs text-muted-foreground mb-2">
 								{formatCurrency(totals.on_demand)}/month
 							</div>
 							{#if bestValueOption?.key === 'ondemand' && dynamicSavings > 0}
-								<div class="flex items-center gap-1.5 text-sm font-medium text-datadog-orange">
-									<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<div class="flex items-center gap-1 text-xs font-medium text-datadog-orange">
+									<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 										<path d="M12 5v14M5 12l7 7 7-7" />
 									</svg>
 									Save {formatCurrency(dynamicSavings)}/yr
 								</div>
 							{:else if bestValueOption && bestValueOption.key !== 'ondemand'}
-								<div class="flex items-center gap-1.5 text-sm text-muted-foreground">
-									<svg class="h-4 w-4 text-destructive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<div class="flex items-center gap-1 text-xs text-muted-foreground">
+									<svg class="h-3 w-3 text-destructive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 										<path d="M12 19V5M5 12l7-7 7 7" />
 									</svg>
 									+{((annualCosts.on_demand - bestValueOption.cost) / bestValueOption.cost * 100).toFixed(0)}% vs {bestValueLabel}
@@ -1934,28 +1934,6 @@
 					{/if}
 				</div>
 
-				<!-- Savings Highlight -->
-				{#if dynamicSavings > 0 && bestValueOption && worstValueOption}
-					<div class="rounded-xl bg-gradient-to-r from-datadog-green/15 to-datadog-purple/15 border border-datadog-green/20 p-5">
-						<div class="flex flex-wrap items-center justify-between gap-4">
-							<div class="flex items-center gap-3">
-								<div class="flex h-12 w-12 items-center justify-center rounded-full bg-datadog-green/20">
-									<svg class="h-6 w-6 text-datadog-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-										<path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
-									</svg>
-								</div>
-								<div>
-									<div class="text-lg font-semibold">Potential Annual Savings</div>
-									<div class="text-sm text-muted-foreground">By choosing {bestValueLabel} billing over {worstValueLabel}</div>
-								</div>
-							</div>
-							<div class="text-right">
-								<div class="text-3xl font-bold text-datadog-green">{formatCurrency(dynamicSavings)}</div>
-								<div class="text-sm text-muted-foreground">per year ({dynamicSavingsPercent.toFixed(1)}% savings)</div>
-							</div>
-						</div>
-					</div>
-				{/if}
 			</CardContent>
 		</Card>
 	{/if}
@@ -2097,7 +2075,7 @@
 			</button>
 
 			<div class="flex items-center gap-3 mb-6">
-				<div class="flex h-9 w-9 items-center justify-center rounded-sm bg-white border border-border">
+				<div class="flex h-9 w-9 items-center justify-center rounded-sm bg-muted">
 					<svg class="h-5 w-5 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
 						<path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
@@ -2218,7 +2196,7 @@
 			</button>
 
 			<div class="flex items-center gap-3 mb-6">
-				<div class="flex h-9 w-9 items-center justify-center rounded-sm bg-white border border-border">
+				<div class="flex h-9 w-9 items-center justify-center rounded-sm bg-muted">
 					<svg class="h-5 w-5 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
 						<path d="M7 11V7a5 5 0 0110 0v4" />
