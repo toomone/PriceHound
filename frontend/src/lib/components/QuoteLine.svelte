@@ -120,9 +120,9 @@
 				<div class="mb-1.5 h-4"></div>
 				<ProductSearch {products} {selectedProduct} on:select={handleProductSelect} />
 				{#if selectedProduct}
-					<Badge variant="outline" class="mt-2 text-xs">
+					<span class="mt-2 inline-flex items-center px-2 py-0.5 rounded-sm text-xs text-muted-foreground bg-zinc-100 dark:bg-zinc-800">
 						{selectedProduct.billing_unit}
-					</Badge>
+					</span>
 				{/if}
 			</div>
 
