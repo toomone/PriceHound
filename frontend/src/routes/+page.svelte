@@ -1544,14 +1544,14 @@
 					<div class="inline-flex items-center p-1 border-r border-input gap-0.5">
 						<button
 							type="button"
-							class="px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 {selectedPlan === 'Pro' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}"
+							class="px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-300 ease-out {selectedPlan === 'Pro' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}"
 							on:click={() => selectedPlan = 'Pro'}
 						>
 							Pro
 						</button>
 						<button
 							type="button"
-							class="px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 {selectedPlan === 'Enterprise' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}"
+							class="px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-300 ease-out {selectedPlan === 'Enterprise' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}"
 							on:click={() => selectedPlan = 'Enterprise'}
 						>
 							Enterprise
