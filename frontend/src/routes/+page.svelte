@@ -1524,7 +1524,7 @@
 								on:click={() => editingQuoteName = true}
 							>
 								<CardTitle class="group-hover:text-datadog-purple transition-colors">
-									{quoteName || 'Quote for your project'}
+									{quoteName || 'Name the customer quote here'}
 								</CardTitle>
 								<svg class="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 									<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
@@ -1532,7 +1532,7 @@
 								</svg>
 							</div>
 						{/if}
-						<CardDescription>Add products and specify quantities</CardDescription>
+						<CardDescription>All products and related quantities</CardDescription>
 					</div>
 				</div>
 				

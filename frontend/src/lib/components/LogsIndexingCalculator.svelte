@@ -114,7 +114,7 @@
 		<!-- ROW 2: Summary -->
 		<div class="flex items-center justify-between px-6 py-3 border-b border-border">
 			<!-- Left: Selected quantities -->
-			<div class="flex items-center gap-4 text-xs text-muted-foreground">
+			<div class="flex items-center gap-4 text-[13px] text-muted-foreground">
 				<span class="font-medium">Selected:</span>
 				<span><span class="font-mono font-medium text-foreground">{ingestedLogsGB}</span> GB</span>
 				<span>·</span>
@@ -157,7 +157,7 @@
 			<div class="p-6 flex flex-col justify-center">
 				{#if currentStep === 'volume'}
 					<h3 class="text-lg font-semibold mb-2">Log Volume</h3>
-					<p class="text-sm text-muted-foreground">
+					<p class="text-xs text-muted-foreground">
 						Enter your monthly log ingestion volume and average log size to calculate the number of log events.
 					</p>
 					<div class="mt-4 p-3 bg-datadog-blue/5 border-l-2 border-datadog-blue">
@@ -167,12 +167,12 @@
 					</div>
 				{:else if currentStep === 'retention'}
 					<h3 class="text-lg font-semibold mb-2">Retention Period</h3>
-					<p class="text-sm text-muted-foreground">
+					<p class="text-xs text-muted-foreground">
 						Choose how long indexed logs should remain searchable. Longer retention costs more per event.
 					</p>
 				{:else if currentStep === 'indexing'}
 					<h3 class="text-lg font-semibold mb-2">Indexing Strategy</h3>
-					<p class="text-sm text-muted-foreground">
+					<p class="text-xs text-muted-foreground">
 						Select what percentage of logs to index for search. Index only what you need to query.
 					</p>
 					<div class="mt-4 p-3 bg-datadog-purple/5 border-l-2 border-datadog-purple">
@@ -182,7 +182,7 @@
 					</div>
 				{:else if currentStep === 'extras'}
 					<h3 class="text-lg font-semibold mb-2">Additional Options</h3>
-					<p class="text-sm text-muted-foreground">
+					<p class="text-xs text-muted-foreground">
 						Optional features for advanced use cases. Skip if not needed.
 					</p>
 				{/if}
