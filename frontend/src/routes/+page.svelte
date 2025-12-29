@@ -1342,7 +1342,7 @@
 						type="button"
 						on:click={() => shareMenuOpen = !shareMenuOpen}
 						disabled={validLines.length === 0}
-						class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-foreground text-background hover:bg-foreground/80 rounded-r-lg"
+						class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg"
 					>
 						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" />
