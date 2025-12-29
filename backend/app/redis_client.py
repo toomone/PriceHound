@@ -187,6 +187,40 @@ class RedisClient:
             return True
         except:
             return False
+    
+    def get_index_count(self, index_key: str) -> int:
+        """Get the count of members in a sorted set index."""
+        if not self.is_connected:
+            return 0
+        try:
+            return self._client.zcard(index_key)
+        except:
+            return 0
+    
+    def get_oldest_from_index(self, index_key: str, count: int = 10) -> list[str]:
+        """Get the oldest N members from a sorted set index (lowest scores first)."""
+        if not self.is_connected:
+            return []
+        try:
+            return self._client.zrange(index_key, 0, count - 1)
+        except:
+            return []
+    
+    def get_memory_usage(self) -> dict:
+        """Get Redis memory usage info for storage monitoring."""
+        if not self.is_connected:
+            return {}
+        try:
+            info = self._client.info('memory')
+            return {
+                'used_memory': info.get('used_memory', 0),
+                'used_memory_human': info.get('used_memory_human', '0B'),
+                'maxmemory': info.get('maxmemory', 0),
+                'maxmemory_human': info.get('maxmemory_human', '0B'),
+            }
+        except Exception as e:
+            logger.error(f"Redis get_memory_usage error: {e}")
+            return {}
 
 
 # Global instance

@@ -12,6 +12,16 @@ from .scraper import load_pricing_data, parse_price
 from .redis_client import get_redis, is_redis_available, RedisKeys
 from .config import get_storage_type
 
+# Quote TTL configuration
+QUOTE_TTL_DAYS = 30  # Quotes expire after 30 days
+QUOTE_TTL_SECONDS = QUOTE_TTL_DAYS * 24 * 60 * 60
+
+# Maximum number of quotes to keep (for garbage collection)
+MAX_QUOTES = 5000
+
+# Memory warning threshold (in bytes) - warn when 80% full
+MEMORY_WARNING_THRESHOLD = 0.80
+
 
 def hash_password(password: str) -> str:
     """Hash a password using SHA-256 with a salt."""
@@ -105,17 +115,53 @@ def get_all_prices_for_product(product_id: str, product_name: str, region: str =
     }
 
 
+def _check_redis_memory() -> None:
+    """Check Redis memory usage and log warnings if needed."""
+    redis = get_redis()
+    memory_info = redis.get_memory_usage()
+    if not memory_info:
+        return
+    
+    used = memory_info.get('used_memory', 0)
+    max_mem = memory_info.get('maxmemory', 0)
+    if max_mem <= 0:
+        return
+    
+    usage_ratio = used / max_mem
+    used_human = memory_info.get('used_memory_human', 'N/A')
+    max_human = memory_info.get('maxmemory_human', 'N/A')
+    
+    if usage_ratio >= 0.95:
+        logger.error(
+            f"🚨 REDIS STORAGE CRITICAL: Database is {usage_ratio*100:.1f}% full "
+            f"({used_human} / {max_human})! Running automatic cleanup..."
+        )
+        cleanup_old_quotes(max_quotes=MAX_QUOTES // 2)  # Aggressive cleanup
+    elif usage_ratio >= MEMORY_WARNING_THRESHOLD:
+        logger.warning(
+            f"⚠️ REDIS STORAGE WARNING: Database is {usage_ratio*100:.1f}% full "
+            f"({used_human} / {max_human}). Consider cleaning up old quotes!"
+        )
+
+
 def save_quote_file(quote: Quote) -> None:
     """Save a quote to configured storage (Redis OR file)."""
     quote_data = quote.model_dump()
     
     if is_redis_available():
-        # Save to Redis
         redis = get_redis()
-        redis.set_json(RedisKeys.quote(quote.id), quote_data)
+        
+        # Check memory usage before saving
+        _check_redis_memory()
+        
+        # Save to Redis with TTL
+        redis.set_json(RedisKeys.quote(quote.id), quote_data, ttl=QUOTE_TTL_SECONDS)
         # Add to index for listing
         redis.add_to_index(RedisKeys.QUOTES_INDEX, quote.id)
-        logger.info(f"✅ Saved quote {quote.id} to Redis")
+        logger.info(f"✅ Saved quote {quote.id} to Redis (TTL: {QUOTE_TTL_DAYS} days)")
+        
+        # Run periodic cleanup to remove excess quotes
+        cleanup_old_quotes()
     else:
         # Save to file
         QUOTES_DIR.mkdir(parents=True, exist_ok=True)
@@ -387,3 +433,81 @@ def list_quotes() -> list[Quote]:
     # Sort by created_at descending
     quotes.sort(key=lambda q: q.created_at, reverse=True)
     return quotes
+
+
+def cleanup_old_quotes(max_quotes: int = MAX_QUOTES) -> int:
+    """Remove oldest quotes to stay under the limit. Returns count of deleted quotes.
+    
+    This function:
+    1. Checks the current quote count
+    2. If over limit, deletes the oldest quotes
+    3. Also cleans up orphaned index entries (quotes that expired via TTL)
+    """
+    if not is_redis_available():
+        return 0
+    
+    redis = get_redis()
+    quote_count = redis.get_index_count(RedisKeys.QUOTES_INDEX)
+    
+    # First, clean up orphaned index entries (quotes deleted by TTL but still in index)
+    all_quote_ids = redis.get_index(RedisKeys.QUOTES_INDEX)
+    orphaned = 0
+    for quote_id in all_quote_ids:
+        if not redis.exists(RedisKeys.quote(quote_id)):
+            redis.remove_from_index(RedisKeys.QUOTES_INDEX, quote_id)
+            orphaned += 1
+    
+    if orphaned > 0:
+        logger.info(f"🧹 Cleaned up {orphaned} expired quote index entries")
+        quote_count = redis.get_index_count(RedisKeys.QUOTES_INDEX)
+    
+    # Then, if still over limit, delete oldest quotes
+    if quote_count <= max_quotes:
+        return orphaned
+    
+    excess = quote_count - max_quotes
+    oldest_quote_ids = redis.get_oldest_from_index(RedisKeys.QUOTES_INDEX, excess)
+    
+    deleted = 0
+    for quote_id in oldest_quote_ids:
+        if delete_quote(quote_id):
+            deleted += 1
+            logger.info(f"🗑️ Garbage collected old quote: {quote_id}")
+    
+    if deleted > 0:
+        logger.info(f"🧹 Cleaned up {deleted} old quotes (was {quote_count}, now {quote_count - deleted})")
+    
+    return orphaned + deleted
+
+
+def get_quotes_stats() -> dict:
+    """Get statistics about quotes storage for monitoring."""
+    if is_redis_available():
+        redis = get_redis()
+        memory = redis.get_memory_usage()
+        quote_count = redis.get_index_count(RedisKeys.QUOTES_INDEX)
+        
+        # Calculate usage percentage if maxmemory is set
+        usage_percent = None
+        if memory.get('maxmemory', 0) > 0:
+            usage_percent = (memory.get('used_memory', 0) / memory['maxmemory']) * 100
+        
+        return {
+            'quote_count': quote_count,
+            'max_quotes': MAX_QUOTES,
+            'ttl_days': QUOTE_TTL_DAYS,
+            'storage': 'redis',
+            'memory': {
+                'used': memory.get('used_memory_human', 'N/A'),
+                'max': memory.get('maxmemory_human', 'N/A'),
+                'usage_percent': round(usage_percent, 1) if usage_percent else None
+            }
+        }
+    else:
+        quote_files = list(QUOTES_DIR.glob("quote-*.json")) if QUOTES_DIR.exists() else []
+        return {
+            'quote_count': len(quote_files),
+            'max_quotes': MAX_QUOTES,
+            'ttl_days': None,
+            'storage': 'file'
+        }

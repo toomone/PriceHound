@@ -256,6 +256,23 @@ async def get_all_quotes():
     return list_quotes()
 
 
+@app.get("/api/quotes/stats")
+async def get_quote_storage_stats():
+    """Get quote storage statistics including memory usage and quote count."""
+    from .quotes import get_quotes_stats
+    return get_quotes_stats()
+
+
+@app.post("/api/quotes/cleanup")
+async def cleanup_quotes_endpoint(max_quotes: int = Query(default=5000, description="Maximum quotes to keep")):
+    """Manually trigger quote cleanup to free up storage space."""
+    from .quotes import cleanup_old_quotes
+    logger.info(f"🧹 Manual quote cleanup requested (max: {max_quotes})")
+    deleted = cleanup_old_quotes(max_quotes)
+    logger.info(f"✅ Cleanup complete: {deleted} quotes removed")
+    return {"deleted": deleted, "message": f"Cleaned up {deleted} quotes"}
+
+
 @app.post("/api/quotes", response_model=Quote)
 async def create_new_quote(quote_data: QuoteCreate):
     """Create a new quote with optional password protection."""
