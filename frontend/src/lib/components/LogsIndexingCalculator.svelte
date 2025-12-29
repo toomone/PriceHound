@@ -409,30 +409,30 @@
 						<div class="font-mono text-right">{formatCurrency(indexedCost)}</div>
 					</div>
 					{#if enableFlexStarter}
-						<div class="flex items-start justify-between">
+						<div>
 							<div class="flex items-center gap-2">
 								<div class="w-2 h-2 bg-emerald-500"></div>
 								<span>Flex Starter</span>
 							</div>
-							<span class="font-mono text-right">{formatCurrency(flexStarterCost)}</span>
+							<div class="font-mono text-right">{formatCurrency(flexStarterCost)}</div>
 						</div>
 					{/if}
 					{#if enableFlexStorage}
-						<div class="flex items-start justify-between">
+						<div>
 							<div class="flex items-center gap-2">
 								<div class="w-2 h-2 bg-emerald-500"></div>
 								<span>Flex Storage</span>
 							</div>
-							<span class="font-mono text-right">{formatCurrency(flexStorageCost)}</span>
+							<div class="font-mono text-right">{formatCurrency(flexStorageCost)}</div>
 						</div>
 					{/if}
 					{#if enableForwarding}
-						<div class="flex items-start justify-between">
+						<div>
 							<div class="flex items-center gap-2">
 								<div class="w-2 h-2 bg-emerald-500"></div>
 								<span>Forwarding</span>
 							</div>
-							<span class="font-mono text-right">{formatCurrency(forwardingCost)}</span>
+							<div class="font-mono text-right">{formatCurrency(forwardingCost)}</div>
 						</div>
 					{/if}
 				</div>
