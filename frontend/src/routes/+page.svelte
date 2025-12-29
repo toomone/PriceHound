@@ -1025,7 +1025,7 @@
 				` : ''}
 
 				<div class="footer">
-					<p>Pricing data sourced from datadoghq.com/pricing/list/ and others official pages</p>
+					<p>PriceHound Datadog Pricing Calcultator uses data sourced from datadoghq.com/pricing/list/ and others official pages</p>
 					${shareUrl ? `<p>Quote URL: ${shareUrl}</p>` : ''}
 				</div>
 			</body>
@@ -1976,12 +1976,14 @@
 	{/if}
 
 	<!-- Footer -->
-	<footer class="mt-8 text-center text-sm text-muted-foreground">
+	<footer class="mt-8 text-center text-xs text-muted-foreground">
 		<p>
-			Pricing data sourced from 
+			PriceHound Datadog Pricing Calculator uses data sourced from
 			<a href="https://www.datadoghq.com/pricing/list/" target="_blank" rel="noopener noreferrer" class="text-datadog-purple hover:underline">
 				Datadog Pricing
 			</a>
+			<span class="mx-2">·</span>
+			<a href="/faq" class="text-datadog-purple hover:underline">FAQ</a>
 		</p>
 	</footer>
 </div>
