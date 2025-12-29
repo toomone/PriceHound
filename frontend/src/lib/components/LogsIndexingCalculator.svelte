@@ -13,6 +13,7 @@
 
 	// Wizard state
 	let currentStep = 'volume';
+	let showAdvancedOptions = false;
 
 	// User inputs
 	let ingestedLogsGB = 100;
@@ -111,20 +112,20 @@
 		</div>
 
 		<!-- ROW 2: Summary -->
-		<div class="flex items-center justify-between px-6 py-4 border-b border-border">
+		<div class="flex items-center justify-between px-6 py-3 border-b border-border">
 			<!-- Left: Selected quantities -->
-			<div class="flex items-center gap-6 text-sm">
-				<span class="font-medium text-muted-foreground">Selected:</span>
-				<span><span class="font-mono">{ingestedLogsGB}</span> GB</span>
-				<span class="text-muted-foreground">·</span>
-				<span><span class="font-mono">{retentionDays}</span> days</span>
-				<span class="text-muted-foreground">·</span>
-				<span><span class="font-mono">{indexingPercentage}%</span> indexed</span>
-				<span class="text-muted-foreground">·</span>
-				<span><span class="font-mono">{indexedLogsInMillions.toFixed(1)}M</span> logs</span>
+			<div class="flex items-center gap-4 text-xs text-muted-foreground">
+				<span class="font-medium">Selected:</span>
+				<span><span class="font-mono font-medium text-foreground">{ingestedLogsGB}</span> GB</span>
+				<span>·</span>
+				<span><span class="font-mono font-medium text-foreground">{retentionDays}</span> days</span>
+				<span>·</span>
+				<span><span class="font-mono font-medium text-foreground">{indexingPercentage}%</span> indexed</span>
+				<span>·</span>
+				<span><span class="font-mono font-medium text-foreground">{indexedLogsInMillions.toFixed(1)}M</span> logs</span>
 				{#if enableFlexStarter || enableFlexStorage || enableForwarding}
-					<span class="text-muted-foreground">·</span>
-					<span class="text-datadog-blue">+ extras</span>
+					<span>·</span>
+					<span class="text-datadog-blue font-medium">+ extras</span>
 				{/if}
 			</div>
 
@@ -206,21 +207,44 @@
 								class="font-mono text-lg max-w-xs"
 							/>
 						</div>
-						<div class="space-y-2">
-							<label for="avgLogSize" class="text-sm font-medium">
-								Average log entry size (KB)
-							</label>
-							<Input 
-								id="avgLogSize"
-								type="number" 
-								bind:value={avgLogSizeKB} 
-								min="0.1" 
-								step="0.1"
-								class="font-mono text-lg max-w-xs"
-							/>
-							<p class="text-xs text-muted-foreground">
-								Typical: JSON ~1-2KB, plain text ~0.5KB
-							</p>
+
+						<!-- Advanced Options (Collapsible) -->
+						<div class="border-t border-border pt-4">
+							<button
+								type="button"
+								class="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+								on:click={() => showAdvancedOptions = !showAdvancedOptions}
+							>
+								<svg 
+									class="w-4 h-4 transition-transform {showAdvancedOptions ? 'rotate-90' : ''}" 
+									viewBox="0 0 24 24" 
+									fill="none" 
+									stroke="currentColor" 
+									stroke-width="2"
+								>
+									<path d="M9 18l6-6-6-6"/>
+								</svg>
+								Advanced options
+							</button>
+							
+							{#if showAdvancedOptions}
+								<div class="mt-4 space-y-2" transition:slide={{ duration: 150 }}>
+									<label for="avgLogSize" class="text-sm font-medium">
+										Average log entry size (KB)
+									</label>
+									<Input 
+										id="avgLogSize"
+										type="number" 
+										bind:value={avgLogSizeKB} 
+										min="0.1" 
+										step="0.1"
+										class="font-mono max-w-xs"
+									/>
+									<p class="text-xs text-muted-foreground">
+										Typical: JSON ~1-2KB, plain text ~0.5KB
+									</p>
+								</div>
+							{/if}
 						</div>
 					</div>
 
