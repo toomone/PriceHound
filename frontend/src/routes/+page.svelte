@@ -2008,6 +2008,7 @@
 
 <!-- Sticky Footer Summary -->
 {#if validLines.length > 0 && !summaryVisible}
+	{@const productCount = validLines.filter(l => !l.isAllotment).length}
 	<div 
 		transition:fly={{ y: 50, duration: 200 }}
 		class="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-sm shadow-lg"
@@ -2022,7 +2023,7 @@
 					</div>
 					<span class="text-muted-foreground">·</span>
 					<div class="text-sm text-muted-foreground">
-						{validLines.length} {validLines.length === 1 ? 'product' : 'products'}
+						{productCount} {productCount === 1 ? 'product' : 'products'}
 					</div>
 				</div>
 				
