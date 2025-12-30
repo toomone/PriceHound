@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@datadog/browser-rum':
+        specifier: ^6.25.1
+        version: 6.25.1
       bits-ui:
         specifier: ^0.21.0
         version: 0.21.16(svelte@4.2.20)
@@ -95,6 +98,20 @@ packages:
   '@dagrejs/graphlib@2.2.4':
     resolution: {integrity: sha512-mepCf/e9+SKYy1d02/UkvSy6+6MoyXhVxP8lLDfA7BPE1X1d4dR0sZznmbM8/XVJ1GPM+Svnx7Xj6ZweByWUkw==}
     engines: {node: '>17.0.0'}
+
+  '@datadog/browser-core@6.25.1':
+    resolution: {integrity: sha512-Mir/4g/EjtknQaP4QIOFNWwd6rnjvmw5SJKaFNUAQ94d59RKsbAy8hu2sfMSOaQ5TmHjf/6Qmrd0LfRK1FTt+Q==}
+
+  '@datadog/browser-rum-core@6.25.1':
+    resolution: {integrity: sha512-xt867A7cZTnO2DvSKUD7QrnMGfS8rXm777x//uq6PbliuPa2+/B23OhTot14riUWV2kXiJ+dzQC08Ibj9i0Xwg==}
+
+  '@datadog/browser-rum@6.25.1':
+    resolution: {integrity: sha512-8yx8++wSZZ0RkrTT2VzF9V639veGvnStnrZRsVS2kXWht4ZLQ7fxk3RXIGEUB9fHC4B0XIn9U3uod/Z+qCrSQw==}
+    peerDependencies:
+      '@datadog/browser-logs': 6.25.1
+    peerDependenciesMeta:
+      '@datadog/browser-logs':
+        optional: true
 
   '@esbuild/aix-ppc64@0.21.5':
     resolution: {integrity: sha512-1SDgH6ZSPTlggy1yI6+Dbkiz8xzpHJEVAlF/AM1tHPLsf5STom9rwtjE4hKAF20FfXXNTFqEYXyJNWh1GiZedQ==}
@@ -1189,6 +1206,17 @@ snapshots:
       '@dagrejs/graphlib': 2.2.4
 
   '@dagrejs/graphlib@2.2.4': {}
+
+  '@datadog/browser-core@6.25.1': {}
+
+  '@datadog/browser-rum-core@6.25.1':
+    dependencies:
+      '@datadog/browser-core': 6.25.1
+
+  '@datadog/browser-rum@6.25.1':
+    dependencies:
+      '@datadog/browser-core': 6.25.1
+      '@datadog/browser-rum-core': 6.25.1
 
   '@esbuild/aix-ppc64@0.21.5':
     optional: true

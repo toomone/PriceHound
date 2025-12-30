@@ -24,6 +24,7 @@
     "vite": "^5.0.0"
   },
   "dependencies": {
+    "@datadog/browser-rum": "^6.25.1",
     "bits-ui": "^0.21.0",
     "clsx": "^2.1.0",
     "driver.js": "^1.4.0",

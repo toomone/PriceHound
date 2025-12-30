@@ -53,5 +53,7 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "20"
+      - key: PUBLIC_DD_ENV
+        value: prod
     autoDeploy: true
 
