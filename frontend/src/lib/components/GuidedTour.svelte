@@ -157,12 +157,20 @@
 		font-weight: 500 !important;
 		font-size: 0.875rem !important;
 		padding: 0.5rem 1rem !important;
-		transition: all 0.2s !important;
+		transition: background-color 0.2s, border-color 0.2s !important;
+		outline: none !important;
+		box-shadow: none !important;
 	}
 
 	:global(.driver-popover-prev-btn:hover),
 	:global(.driver-popover-next-btn:hover) {
 		background: hsl(var(--accent)) !important;
+	}
+
+	:global(.driver-popover-prev-btn:focus),
+	:global(.driver-popover-next-btn:focus) {
+		outline: none !important;
+		box-shadow: none !important;
 	}
 
 	:global(.driver-popover-next-btn) {
@@ -173,6 +181,27 @@
 
 	:global(.driver-popover-next-btn:hover) {
 		background: hsl(var(--foreground) / 0.9) !important;
+	}
+
+	:global(.driver-popover-next-btn:focus),
+	:global(.driver-popover-next-btn:active) {
+		background: hsl(var(--foreground)) !important;
+		outline: none !important;
+		box-shadow: none !important;
+	}
+
+	:global(.driver-popover button) {
+		outline: none !important;
+		box-shadow: none !important;
+		text-shadow: none !important;
+		-webkit-font-smoothing: antialiased !important;
+		-moz-osx-font-smoothing: grayscale !important;
+	}
+
+	:global(.driver-popover button::before),
+	:global(.driver-popover button::after) {
+		content: none !important;
+		display: none !important;
 	}
 
 	:global(.driver-popover-close-btn) {
