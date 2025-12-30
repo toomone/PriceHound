@@ -1402,7 +1402,7 @@
 										<path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
 									</svg>
 								{/if}
-								<span>{saving ? 'Saving...' : editingQuoteId ? 'Save Changes' : 'Create Public URL'}</span>
+								<span>{saving ? 'Saving...' : editingQuoteId ? 'Save Changes' : 'Create Public URL (15 days)'}</span>
 							</button>
 							<button
 								type="button"
@@ -1457,7 +1457,7 @@
 				{#if editingQuoteId}
 					<span class="text-xs font-medium text-datadog-green bg-datadog-green/10 px-2 py-0.5 rounded">Editing</span>
 				{/if}
-				<span class="text-sm text-muted-foreground">Public URL:</span>
+				<span class="text-sm text-muted-foreground">Public URL <span class="text-xs opacity-70">(expires in 15 days)</span>:</span>
 				<a 
 					href={displayUrl} 
 					target="_blank"
@@ -2368,7 +2368,7 @@
 							<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
 							<path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
 						</svg>
-						{editPassword ? 'Create Protected URL' : 'Create Public URL'}
+						{editPassword ? 'Create Protected URL (15 days)' : 'Create Public URL (15 days)'}
 					{/if}
 				</Button>
 			</div>
