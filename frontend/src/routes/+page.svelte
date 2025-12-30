@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { fade, slide, fly } from 'svelte/transition';
 	import { flip } from 'svelte/animate';
 	import { page } from '$app/stores';
@@ -89,6 +89,11 @@
 	
 	// Category order for sorting products
 	let categoryOrder: Record<string, number> = {};
+	
+	// Sticky footer visibility
+	let summaryVisible = true;
+	let summaryElement: HTMLElement;
+	let summaryObserver: IntersectionObserver | null = null;
 	
 	// Filter products based on selected plan and sort by category
 	// Products without a plan field are treated as "All" (available to all plans)
@@ -290,6 +295,34 @@
 			} catch (e) {
 				console.error('Failed to parse clone data:', e);
 			}
+		}
+		
+		// Setup Intersection Observer for sticky footer
+		summaryObserver = new IntersectionObserver(
+			([entry]) => {
+				summaryVisible = entry.isIntersecting;
+			},
+			{ threshold: 0.1 }
+		);
+	});
+	
+	// Track if we've already started observing
+	let isObserving = false;
+	
+	// Observe the summary element when it becomes available
+	$: if (summaryElement && summaryObserver && !isObserving) {
+		summaryObserver.observe(summaryElement);
+		isObserving = true;
+	}
+	
+	// Reset observation state when element is removed
+	$: if (!summaryElement && isObserving) {
+		isObserving = false;
+	}
+	
+	onDestroy(() => {
+		if (summaryObserver) {
+			summaryObserver.disconnect();
 		}
 	});
 
@@ -1822,6 +1855,7 @@
 
 	<!-- Summary Section -->
 	{#if validLines.length > 0}
+		<div bind:this={summaryElement}>
 		<Card class="mb-6 relative z-0">
 			<CardHeader>
 				<div class="flex items-center gap-3">
@@ -1953,6 +1987,7 @@
 
 			</CardContent>
 		</Card>
+		</div>
 	{/if}
 
 	<!-- Footer -->
@@ -1970,6 +2005,55 @@
 	<!-- Guided Tour -->
 	<GuidedTour />
 </div>
+
+<!-- Sticky Footer Summary -->
+{#if validLines.length > 0 && !summaryVisible}
+	<div 
+		transition:fly={{ y: 50, duration: 200 }}
+		class="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-sm shadow-lg"
+	>
+		<div class="max-w-4xl mx-auto px-4 py-3">
+			<div class="flex items-center justify-between gap-4">
+				<!-- Cost info -->
+				<div class="flex items-center gap-6">
+					<div>
+						<div class="text-xs text-muted-foreground mb-0.5">Annual Cost</div>
+						<div class="text-lg font-bold text-datadog-green">
+							{formatCurrency(annualCosts.annually)}
+							<span class="text-xs font-normal text-muted-foreground">/yr</span>
+						</div>
+					</div>
+					<div class="hidden sm:block border-l border-border h-8"></div>
+					<div class="hidden sm:block">
+						<div class="text-xs text-muted-foreground mb-0.5">Products</div>
+						<div class="text-sm font-medium">{validLines.length} items</div>
+					</div>
+					{#if showMonthly}
+						<div class="hidden md:block border-l border-border h-8"></div>
+						<div class="hidden md:block">
+							<div class="text-xs text-muted-foreground mb-0.5">Monthly</div>
+							<div class="text-sm font-medium text-datadog-blue">
+								{formatCurrency(totals.monthly)}/mo
+							</div>
+						</div>
+					{/if}
+				</div>
+				
+				<!-- Action button -->
+				<Button 
+					size="sm" 
+					variant="outline"
+					on:click={() => summaryElement?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+				>
+					<svg class="h-4 w-4 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M12 19V5M5 12l7-7 7 7" />
+					</svg>
+					View Summary
+				</Button>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <!-- Import Modal -->
 {#if importModalOpen}
