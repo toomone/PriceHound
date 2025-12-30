@@ -1497,7 +1497,7 @@
 		<CardHeader>
 			<div class="flex flex-wrap items-start justify-between gap-4">
 				<div class="flex items-center gap-3">
-					<div class="flex h-9 w-9 items-center justify-center rounded-sm bg-muted">
+					<div class="flex h-9 w-9 items-center justify-center rounded-sm bg-muted shrink-0">
 						<svg class="h-5 w-5 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<circle cx="9" cy="21" r="1" />
 							<circle cx="20" cy="21" r="1" />
@@ -1534,7 +1534,7 @@
 							<!-- Description toggle button -->
 							<button
 								type="button"
-								class="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors {quoteDescription || showDescriptionEditor ? 'text-foreground bg-muted' : ''}"
+								class="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0 {quoteDescription || showDescriptionEditor ? 'text-foreground bg-muted' : ''}"
 								title="{quoteDescription ? 'Edit description' : 'Add description'}"
 								on:click={() => showDescriptionEditor = !showDescriptionEditor}
 							>
@@ -1547,18 +1547,6 @@
 							</button>
 						</div>
 						<CardDescription>All products and related quantities</CardDescription>
-						
-						<!-- Collapsible description editor -->
-						{#if showDescriptionEditor}
-							<div class="mt-4 -mx-6 px-6 py-4 border-t border-border bg-muted/30" transition:slide={{ duration: 200 }}>
-								<Textarea
-									bind:value={quoteDescription}
-									placeholder="Add a description for this quote (e.g., project name, purpose, notes...)"
-									class="w-full min-h-[120px] resize-y"
-									rows={5}
-								/>
-							</div>
-						{/if}
 					</div>
 				</div>
 				
@@ -1657,6 +1645,19 @@
 				</div>
 			</div>
 		</CardHeader>
+		
+		<!-- Collapsible description section - full width -->
+		{#if showDescriptionEditor}
+			<div class="px-6 py-4 border-t border-border bg-muted/30" transition:slide={{ duration: 200 }}>
+				<Textarea
+					bind:value={quoteDescription}
+					placeholder="Add a description for this quote (e.g., project name, purpose, notes...)"
+					class="w-full min-h-[120px] resize-y"
+					rows={5}
+				/>
+			</div>
+		{/if}
+		
 		<CardContent>
 			{#if loading}
 				<div class="flex items-center justify-center py-12">
