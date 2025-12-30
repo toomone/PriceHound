@@ -1554,8 +1554,8 @@
 								<Textarea
 									bind:value={quoteDescription}
 									placeholder="Add a description for this quote (e.g., project name, purpose, notes...)"
-									class="min-h-[100px] resize-y"
-									rows={4}
+									class="min-h-[150px] resize-y"
+									rows={6}
 								/>
 							</div>
 						{/if}
