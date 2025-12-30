@@ -11,13 +11,13 @@ from .models import PricingItem, Quote, QuoteCreate, QuoteUpdate, SyncResponse, 
 from .scraper import (
     load_pricing_data, load_metadata, sync_pricing, ensure_pricing_data,
     get_all_regions, get_regions_status, sync_all_regions, DEFAULT_REGION, REGIONS,
-    get_categories, sync_categories, get_category_order
+    get_categories, sync_categories, get_category_order, load_pricing_changes
 )
 from .quotes import create_quote, get_quote, update_quote, delete_quote, list_quotes, verify_quote_password
 from .allotments_scraper import (
     load_allotments_data, load_allotments_metadata, sync_allotments, 
     ensure_allotments_data, get_allotments_for_product, save_manual_allotments,
-    get_manual_allotments
+    get_manual_allotments, load_allotment_changes
 )
 from .redis_client import get_redis, is_redis_available
 from .templates import get_all_templates, get_template, ensure_templates, sync_templates_to_redis
@@ -401,6 +401,104 @@ async def init_allotments():
     count = len(get_manual_allotments())
     logger.info(f"✅ Manual allotments initialized: {count} items")
     return {"success": True, "message": f"Initialized {len(get_manual_allotments())} manual allotments"}
+
+
+# ================================
+# Change History Endpoints
+# ================================
+
+@app.get("/api/changes")
+async def get_all_changes(
+    limit: int = Query(default=100, description="Maximum number of changes to return"),
+    change_type: Optional[str] = Query(default=None, description="Filter by change type (price_change, product_added, product_removed, allotment_change, allotment_added, allotment_removed)"),
+    region: Optional[str] = Query(default=None, description="Filter by region (for pricing changes)")
+):
+    """Get combined change history for both pricing and allotments.
+    
+    Returns changes sorted by timestamp (newest first).
+    """
+    # Load both change histories
+    pricing_changes = load_pricing_changes()
+    allotment_changes = load_allotment_changes()
+    
+    # Combine and sort by timestamp (newest first)
+    all_changes = pricing_changes + allotment_changes
+    all_changes.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+    
+    # Apply filters
+    if change_type:
+        all_changes = [c for c in all_changes if c.get("type") == change_type]
+    
+    if region:
+        all_changes = [c for c in all_changes if c.get("region") == region or "region" not in c]
+    
+    # Apply limit
+    return all_changes[:limit]
+
+
+@app.get("/api/changes/pricing")
+async def get_pricing_changes(
+    limit: int = Query(default=100, description="Maximum number of changes to return"),
+    region: Optional[str] = Query(default=None, description="Filter by region")
+):
+    """Get pricing change history.
+    
+    Returns changes sorted by timestamp (newest first).
+    """
+    changes = load_pricing_changes()
+    
+    # Sort by timestamp (newest first)
+    changes.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+    
+    # Apply region filter
+    if region:
+        changes = [c for c in changes if c.get("region") == region]
+    
+    return changes[:limit]
+
+
+@app.get("/api/changes/allotments")
+async def get_allotments_changes(
+    limit: int = Query(default=100, description="Maximum number of changes to return")
+):
+    """Get allotment change history.
+    
+    Returns changes sorted by timestamp (newest first).
+    """
+    changes = load_allotment_changes()
+    
+    # Sort by timestamp (newest first)
+    changes.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+    
+    return changes[:limit]
+
+
+@app.get("/api/changes/summary")
+async def get_changes_summary():
+    """Get a summary of recent changes.
+    
+    Returns counts by type and the most recent changes.
+    """
+    pricing_changes = load_pricing_changes()
+    allotment_changes = load_allotment_changes()
+    
+    # Count by type
+    type_counts = {}
+    for change in pricing_changes + allotment_changes:
+        change_type = change.get("type", "unknown")
+        type_counts[change_type] = type_counts.get(change_type, 0) + 1
+    
+    # Get most recent changes (last 10)
+    all_changes = pricing_changes + allotment_changes
+    all_changes.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+    recent_changes = all_changes[:10]
+    
+    return {
+        "total_pricing_changes": len(pricing_changes),
+        "total_allotment_changes": len(allotment_changes),
+        "changes_by_type": type_counts,
+        "recent_changes": recent_changes
+    }
 
 
 # Template endpoints

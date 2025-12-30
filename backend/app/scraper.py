@@ -43,6 +43,7 @@ def extract_plan_from_product(product_name: str) -> str:
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 PRICING_DIR = DATA_DIR / "pricing"
+PRICING_CHANGES_FILE = PRICING_DIR / "changes.json"
 
 # Datadog regions/sites matching the pricing page selector
 # Site values match the dropdown on https://www.datadoghq.com/pricing/list/
@@ -408,10 +409,134 @@ def scrape_pricing_data(region: str = DEFAULT_REGION, force_category_refresh: bo
     return unique_data
 
 
+def detect_pricing_changes(old_data: list[dict], new_data: list[dict], region: str) -> list[dict]:
+    """Compare old and new pricing data and return list of changes.
+    
+    Args:
+        old_data: Previous pricing data
+        new_data: New pricing data to compare
+        region: Region being compared
+    
+    Returns:
+        List of change records with type, product, field, old/new values
+    """
+    changes = []
+    timestamp = datetime.now(timezone.utc).isoformat()
+    
+    # Build lookup by product ID
+    old_by_id = {item.get("id"): item for item in old_data if item.get("id")}
+    new_by_id = {item.get("id"): item for item in new_data if item.get("id")}
+    
+    # Check for price changes and new products
+    for product_id, new_item in new_by_id.items():
+        old_item = old_by_id.get(product_id)
+        
+        if not old_item:
+            # New product added
+            changes.append({
+                "timestamp": timestamp,
+                "region": region,
+                "type": "product_added",
+                "product": new_item.get("product"),
+                "product_id": product_id,
+                "category": new_item.get("category"),
+                "data": {
+                    "billed_annually": new_item.get("billed_annually"),
+                    "billed_month_to_month": new_item.get("billed_month_to_month"),
+                    "on_demand": new_item.get("on_demand")
+                }
+            })
+        else:
+            # Check for price changes in each billing type
+            price_fields = ["billed_annually", "billed_month_to_month", "on_demand"]
+            for field in price_fields:
+                old_value = old_item.get(field)
+                new_value = new_item.get(field)
+                
+                if old_value != new_value:
+                    changes.append({
+                        "timestamp": timestamp,
+                        "region": region,
+                        "type": "price_change",
+                        "product": new_item.get("product"),
+                        "product_id": product_id,
+                        "category": new_item.get("category"),
+                        "field": field,
+                        "old_value": old_value,
+                        "new_value": new_value
+                    })
+    
+    # Check for removed products
+    for product_id, old_item in old_by_id.items():
+        if product_id not in new_by_id:
+            changes.append({
+                "timestamp": timestamp,
+                "region": region,
+                "type": "product_removed",
+                "product": old_item.get("product"),
+                "product_id": product_id,
+                "category": old_item.get("category"),
+                "data": {
+                    "billed_annually": old_item.get("billed_annually"),
+                    "billed_month_to_month": old_item.get("billed_month_to_month"),
+                    "on_demand": old_item.get("on_demand")
+                }
+            })
+    
+    return changes
+
+
+def load_pricing_changes() -> list[dict]:
+    """Load pricing change history from file."""
+    if not PRICING_CHANGES_FILE.exists():
+        return []
+    try:
+        with open(PRICING_CHANGES_FILE, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        logger.error(f"Error loading pricing changes: {e}")
+        return []
+
+
+def save_pricing_changes(changes: list[dict]) -> None:
+    """Append new changes to the pricing change history file."""
+    if not changes:
+        return
+    
+    PRICING_DIR.mkdir(parents=True, exist_ok=True)
+    
+    # Load existing changes
+    existing_changes = load_pricing_changes()
+    
+    # Append new changes
+    existing_changes.extend(changes)
+    
+    # Keep only the last 1000 changes to prevent unbounded growth
+    if len(existing_changes) > 1000:
+        existing_changes = existing_changes[-1000:]
+    
+    # Save to file
+    with open(PRICING_CHANGES_FILE, 'w') as f:
+        json.dump(existing_changes, f, indent=2)
+    
+    logger.info(f"📝 Saved {len(changes)} pricing changes to history (total: {len(existing_changes)})")
+
+
 def save_pricing_data(data: list[dict], region: str = DEFAULT_REGION) -> None:
-    """Save pricing data to configured storage (Redis OR file)."""
+    """Save pricing data to configured storage (Redis OR file).
+    
+    Also detects and logs any price changes compared to previous data.
+    """
     region_info = REGIONS.get(region, REGIONS[DEFAULT_REGION])
     site = region_info["site"]
+    
+    # Detect changes before overwriting
+    old_data = load_pricing_data(region)
+    if old_data:
+        changes = detect_pricing_changes(old_data, data, region)
+        if changes:
+            save_pricing_changes(changes)
+            logger.info(f"🔔 Detected {len(changes)} pricing changes for {region}")
     
     metadata = {
         "region": region,

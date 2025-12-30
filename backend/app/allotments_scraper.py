@@ -18,6 +18,7 @@ logger = logging.getLogger("pricehound.allotments")
 DATA_DIR = Path(__file__).parent.parent / "data"
 ALLOTMENTS_FILE = DATA_DIR / "allotments.json"
 ALLOTMENTS_METADATA_FILE = DATA_DIR / "allotments_metadata.json"
+ALLOTMENTS_CHANGES_FILE = DATA_DIR / "allotments_changes.json"
 
 ALLOTMENTS_URL = "https://www.datadoghq.com/pricing/allotments/"
 
@@ -215,10 +216,137 @@ def scrape_allotments_data() -> list[dict]:
     return unique_allotments
 
 
+def detect_allotment_changes(old_data: list[dict], new_data: list[dict]) -> list[dict]:
+    """Compare old and new allotments data and return list of changes.
+    
+    Args:
+        old_data: Previous allotments data
+        new_data: New allotments data to compare
+    
+    Returns:
+        List of change records
+    """
+    changes = []
+    timestamp = datetime.utcnow().isoformat()
+    
+    # Build lookup by (parent_product, allotted_product) tuple
+    def make_key(item):
+        return (item.get("parent_product", ""), item.get("allotted_product", ""))
+    
+    old_by_key = {make_key(item): item for item in old_data}
+    new_by_key = {make_key(item): item for item in new_data}
+    
+    # Check for changes and new allotments
+    for key, new_item in new_by_key.items():
+        old_item = old_by_key.get(key)
+        
+        if not old_item:
+            # New allotment added
+            changes.append({
+                "timestamp": timestamp,
+                "type": "allotment_added",
+                "parent_product": new_item.get("parent_product"),
+                "allotted_product": new_item.get("allotted_product"),
+                "data": {
+                    "quantity_per_parent": new_item.get("quantity_per_parent"),
+                    "monthly_on_demand": new_item.get("monthly_on_demand"),
+                    "hourly_on_demand": new_item.get("hourly_on_demand")
+                }
+            })
+        else:
+            # Check for quantity changes
+            fields_to_check = ["quantity_per_parent", "monthly_on_demand", "hourly_on_demand"]
+            for field in fields_to_check:
+                old_value = old_item.get(field)
+                new_value = new_item.get(field)
+                
+                # Also check in monthly_parsed
+                if field == "quantity_per_parent" and old_value is None:
+                    old_parsed = old_item.get("monthly_parsed", {})
+                    new_parsed = new_item.get("monthly_parsed", {})
+                    old_value = old_parsed.get("quantity")
+                    new_value = new_parsed.get("quantity")
+                
+                if old_value != new_value and (old_value is not None or new_value is not None):
+                    changes.append({
+                        "timestamp": timestamp,
+                        "type": "allotment_change",
+                        "parent_product": new_item.get("parent_product"),
+                        "allotted_product": new_item.get("allotted_product"),
+                        "field": field,
+                        "old_value": old_value,
+                        "new_value": new_value
+                    })
+    
+    # Check for removed allotments
+    for key, old_item in old_by_key.items():
+        if key not in new_by_key:
+            changes.append({
+                "timestamp": timestamp,
+                "type": "allotment_removed",
+                "parent_product": old_item.get("parent_product"),
+                "allotted_product": old_item.get("allotted_product"),
+                "data": {
+                    "quantity_per_parent": old_item.get("quantity_per_parent"),
+                    "monthly_on_demand": old_item.get("monthly_on_demand"),
+                    "hourly_on_demand": old_item.get("hourly_on_demand")
+                }
+            })
+    
+    return changes
+
+
+def load_allotment_changes() -> list[dict]:
+    """Load allotment change history from file."""
+    if not ALLOTMENTS_CHANGES_FILE.exists():
+        return []
+    try:
+        with open(ALLOTMENTS_CHANGES_FILE, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        logger.error(f"Error loading allotment changes: {e}")
+        return []
+
+
+def save_allotment_changes(changes: list[dict]) -> None:
+    """Append new changes to the allotment change history file."""
+    if not changes:
+        return
+    
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    
+    # Load existing changes
+    existing_changes = load_allotment_changes()
+    
+    # Append new changes
+    existing_changes.extend(changes)
+    
+    # Keep only the last 500 changes to prevent unbounded growth
+    if len(existing_changes) > 500:
+        existing_changes = existing_changes[-500:]
+    
+    # Save to file
+    with open(ALLOTMENTS_CHANGES_FILE, 'w') as f:
+        json.dump(existing_changes, f, indent=2)
+    
+    logger.info(f"📝 Saved {len(changes)} allotment changes to history (total: {len(existing_changes)})")
+
+
 def save_allotments_data(data: list[dict]) -> None:
-    """Save allotments data to Redis (primary) and file (backup), enriched with product IDs."""
+    """Save allotments data to Redis (primary) and file (backup), enriched with product IDs.
+    
+    Also detects and logs any allotment changes compared to previous data.
+    """
     # Enrich allotments with product IDs
     enriched_data = enrich_allotments_with_product_ids(data)
+    
+    # Detect changes before overwriting
+    old_data = load_allotments_data()
+    if old_data:
+        changes = detect_allotment_changes(old_data, enriched_data)
+        if changes:
+            save_allotment_changes(changes)
+            logger.info(f"🔔 Detected {len(changes)} allotment changes")
     
     metadata = {
         "last_sync": datetime.utcnow().isoformat(),
@@ -635,9 +763,20 @@ def get_manual_allotments() -> list[dict]:
 
 
 def save_manual_allotments() -> None:
-    """Save manual allotments to Redis (primary) and file (backup), enriched with product IDs."""
+    """Save manual allotments to Redis (primary) and file (backup), enriched with product IDs.
+    
+    Also detects and logs any allotment changes compared to previous data.
+    """
     # Enrich manual allotments with product IDs
     enriched_data = enrich_allotments_with_product_ids(MANUAL_ALLOTMENTS)
+    
+    # Detect changes before overwriting
+    old_data = load_allotments_data()
+    if old_data:
+        changes = detect_allotment_changes(old_data, enriched_data)
+        if changes:
+            save_allotment_changes(changes)
+            logger.info(f"🔔 Detected {len(changes)} allotment changes")
     
     metadata = {
         "last_sync": datetime.utcnow().isoformat(),
