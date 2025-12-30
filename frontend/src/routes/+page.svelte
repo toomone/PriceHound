@@ -2014,29 +2014,16 @@
 	>
 		<div class="max-w-4xl mx-auto px-4 py-3">
 			<div class="flex items-center justify-between gap-4">
-				<!-- Cost info -->
-				<div class="flex items-center gap-6">
-					<div>
-						<div class="text-xs text-muted-foreground mb-0.5">Annual Cost</div>
-						<div class="text-lg font-bold text-datadog-green">
-							{formatCurrency(annualCosts.annually)}
-							<span class="text-xs font-normal text-muted-foreground">/yr</span>
-						</div>
+				<!-- Cost info - side by side -->
+				<div class="flex items-center gap-3">
+					<div class="text-lg font-bold text-datadog-green">
+						{formatCurrency(annualCosts.annually)}
+						<span class="text-xs font-normal text-muted-foreground">/yr</span>
 					</div>
-					<div class="hidden sm:block border-l border-border h-8"></div>
-					<div class="hidden sm:block">
-						<div class="text-xs text-muted-foreground mb-0.5">Products</div>
-						<div class="text-sm font-medium">{validLines.length} items</div>
+					<span class="text-muted-foreground">·</span>
+					<div class="text-sm text-muted-foreground">
+						{validLines.length} {validLines.length === 1 ? 'product' : 'products'}
 					</div>
-					{#if showMonthly}
-						<div class="hidden md:block border-l border-border h-8"></div>
-						<div class="hidden md:block">
-							<div class="text-xs text-muted-foreground mb-0.5">Monthly</div>
-							<div class="text-sm font-medium text-datadog-blue">
-								{formatCurrency(totals.monthly)}/mo
-							</div>
-						</div>
-					{/if}
 				</div>
 				
 				<!-- Action button -->
@@ -2045,10 +2032,10 @@
 					variant="outline"
 					on:click={() => summaryElement?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
 				>
-					<svg class="h-4 w-4 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M12 19V5M5 12l7-7 7 7" />
-					</svg>
 					View Summary
+					<svg class="h-4 w-4 ml-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M12 5v14M5 12l7 7 7-7" />
+					</svg>
 				</Button>
 			</div>
 		</div>
