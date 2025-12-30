@@ -1276,7 +1276,7 @@
 			<!-- Left: Region & Info -->
 			<div class="flex items-center gap-3">
 				<!-- Region Selector -->
-				<div class="flex items-center gap-2">
+				<div id="region-selector" class="flex items-center gap-2">
 					<svg class="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<circle cx="12" cy="12" r="10" />
 						<path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />

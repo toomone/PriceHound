@@ -12,6 +12,15 @@
 	// Tour steps configuration
 	const steps: DriveStep[] = [
 		{
+			element: '#region-selector',
+			popover: {
+				title: 'Select Your Region',
+				description: 'Choose the Datadog region where your data is hosted. Pricing may vary by region.',
+				side: 'bottom',
+				align: 'start'
+			}
+		},
+		{
 			element: '#product-search',
 			popover: {
 				title: 'Search Products',
