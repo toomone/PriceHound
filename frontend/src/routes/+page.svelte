@@ -1802,22 +1802,13 @@
 									</span>
 								</div>
 								<p class="text-xs text-muted-foreground text-left line-clamp-2 mb-3 flex-1">{template.description}</p>
-								<div class="flex gap-2 mt-auto">
-									<button
-										type="button"
-										class="flex-1 px-3 py-1.5 text-xs font-medium rounded-sm border border-border hover:bg-background transition-colors"
-										on:click={() => previewTemplate = template}
-									>
-										Preview
-									</button>
-									<button
-										type="button"
-										class="flex-1 px-3 py-1.5 text-xs font-medium rounded-sm bg-foreground text-background hover:bg-foreground/80 transition-colors"
-										on:click={() => applyTemplate(template)}
-									>
-										Add
-									</button>
-								</div>
+								<button
+									type="button"
+									class="w-full mt-auto px-3 py-1.5 text-xs font-medium rounded-sm border border-border hover:bg-background transition-colors"
+									on:click={() => previewTemplate = template}
+								>
+									Preview Products
+								</button>
 							</div>
 						{/each}
 					</div>
@@ -2122,9 +2113,20 @@
 				<h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">Products</h3>
 				<ul class="space-y-2">
 					{#each previewTemplate.items as item}
-						<li class="flex items-center justify-between py-2 px-3 rounded-sm bg-muted/50">
-							<span class="text-sm">{item.product}</span>
-							<span class="text-sm font-mono text-muted-foreground">× {item.quantity.toLocaleString()}</span>
+						{@const matchedProduct = products.find(p => 
+							p.product.toLowerCase().includes(item.product.toLowerCase()) ||
+							item.product.toLowerCase().includes(p.product.toLowerCase())
+						)}
+						<li class="flex items-center justify-between py-2 px-3 rounded-sm bg-muted/50 gap-4">
+							<span class="text-sm flex-1">{item.product}</span>
+							<div class="text-right shrink-0">
+								<span class="text-sm font-mono">× {item.quantity.toLocaleString()}</span>
+								{#if matchedProduct?.billing_unit}
+									<div class="text-xs text-muted-foreground">
+										{item.quantity.toLocaleString()} {matchedProduct.billing_unit}
+									</div>
+								{/if}
+							</div>
 						</li>
 					{/each}
 				</ul>
