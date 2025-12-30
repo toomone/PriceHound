@@ -26,6 +26,7 @@
 	export let lineAllotments: AllotmentItem[] = []; // Allotments for this line
 	export let hideCategory: boolean = false; // Hide category label when grouped
 	export let isGrouped: boolean = false; // Part of a category group (reduces visual weight)
+	export let searchId: string | undefined = undefined; // ID for the product search field (for guided tour)
 
 	const dispatch = createEventDispatcher<{
 		update: { product: Product | null; quantity: number };
@@ -118,7 +119,7 @@
 			<!-- Product Search -->
 			<div class="flex-1 min-w-0">
 				<div class="mb-1.5 h-4"></div>
-				<ProductSearch {products} {selectedProduct} on:select={handleProductSelect} />
+				<ProductSearch {products} {selectedProduct} id={searchId} on:select={handleProductSelect} />
 				{#if selectedProduct}
 					<span class="mt-2 inline-flex items-center px-2 py-0.5 rounded-sm text-xs text-muted-foreground bg-zinc-100 dark:bg-zinc-800">
 						{selectedProduct.billing_unit}

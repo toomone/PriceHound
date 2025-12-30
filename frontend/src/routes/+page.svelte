@@ -12,6 +12,7 @@
 	import QuoteLine from '$lib/components/QuoteLine.svelte';
 	import LogsIndexingCalculator from '$lib/components/LogsIndexingCalculator.svelte';
 	import ModeToggle from '$lib/components/ModeToggle.svelte';
+	import GuidedTour from '$lib/components/GuidedTour.svelte';
 	import { fetchProducts, fetchMetadata, createQuote, updateQuote, fetchQuote, verifyQuotePassword, fetchRegions, fetchAllotments, initAllotments, syncPricing, fetchTemplates, fetchCategoryOrder, type Product, type PricingMetadata, type Region, type Allotment, type Template } from '$lib/api';
 	import { formatCurrency, parsePrice, formatNumber, isPercentagePrice, parsePercentage } from '$lib/utils';
 
@@ -1325,7 +1326,7 @@
 				</button>
 
 				<!-- Share Button with Dropdown -->
-				<div class="share-menu-container relative">
+				<div id="share-button" class="share-menu-container relative">
 					<button
 						type="button"
 						on:click={() => shareMenuOpen = !shareMenuOpen}
@@ -1731,6 +1732,7 @@
 								allotmentInfo={null}
 								totalAllottedForProduct={getTotalAllottedForProduct(line.product?.product)}
 								{lineAllotments}
+								searchId={index === 0 ? 'product-search' : undefined}
 								on:update={(e) => updateLine(line.id, e.detail.product, e.detail.quantity)}
 								on:remove={() => removeLine(line.id)}
 							/>
@@ -1739,7 +1741,7 @@
 				</div>
 
 				<div class="mt-4">
-					<div class="inline-flex rounded-sm border border-border overflow-hidden">
+					<div id="action-buttons" class="inline-flex rounded-sm border border-border overflow-hidden">
 						<button
 							type="button"
 							class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-muted"
@@ -1752,7 +1754,7 @@
 						</button>
 						<button
 							type="button"
-							class="inline-flex items-center gap-2 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted border-l border-border transition-colors {showLogsCalculator ? 'bg-muted text-foreground' : ''}"
+							class="inline-flex items-center gap-2 px-3 py-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted border-l border-border transition-colors {showLogsCalculator ? 'bg-muted text-foreground' : ''}"
 							on:click={() => showLogsCalculator = !showLogsCalculator}
 							title="Log Indexing Estimator"
 						>
@@ -1767,7 +1769,7 @@
 						{#if templates.length > 0}
 							<button
 								type="button"
-								class="inline-flex items-center gap-2 px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted border-l border-border transition-colors"
+								class="inline-flex items-center gap-2 px-3 py-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted border-l border-border transition-colors"
 								on:click={() => showTemplates = !showTemplates}
 							>
 								<svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1954,6 +1956,9 @@
 			<a href="/faq" class="text-datadog-purple hover:underline">FAQ</a>
 		</p>
 	</footer>
+
+	<!-- Guided Tour -->
+	<GuidedTour />
 </div>
 
 <!-- Import Modal -->

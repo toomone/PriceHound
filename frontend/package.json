@@ -26,6 +26,7 @@
   "dependencies": {
     "bits-ui": "^0.21.0",
     "clsx": "^2.1.0",
+    "driver.js": "^1.4.0",
     "escape-html": "^1.0.3",
     "lucide-svelte": "^0.303.0",
     "mode-watcher": "^0.3.1",

@@ -6,6 +6,7 @@
 	export let products: Product[] = [];
 	export let selectedProduct: Product | null = null;
 	export let placeholder: string = 'Search products...';
+	export let id: string | undefined = undefined;
 
 	let searchQuery = selectedProduct?.product || '';
 	let isOpen = false;
@@ -128,7 +129,7 @@
 	}
 </script>
 
-<div class="relative w-full">
+<div class="relative w-full" {id}>
 	<input
 		bind:this={inputElement}
 		type="text"

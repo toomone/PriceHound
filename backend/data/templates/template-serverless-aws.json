@@ -5,7 +5,7 @@
   "region": "us",
   "billing_type": "annually",
   "items": [
-    {"product": "Serverless Functions APM", "quantity": 5000000},
+    {"product": "Serverless Functions APM", "quantity": 500},
     {"product": "Serverless Workload Monitoring - Functions", "quantity": 50},
     {"product": "Data Streams Monitoring", "quantity": 10},
     {"product": "Database Monitoring", "quantity": 3},
