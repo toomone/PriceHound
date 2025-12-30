@@ -6,7 +6,7 @@ import re
 import hashlib
 import logging
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .redis_client import get_redis, is_redis_available, RedisKeys
 from .config import get_storage_type
@@ -417,7 +417,7 @@ def save_pricing_data(data: list[dict], region: str = DEFAULT_REGION) -> None:
         "region": region,
         "region_name": region_info["name"],
         "site": site,
-        "last_sync": datetime.utcnow().isoformat(),
+        "last_sync": datetime.now(timezone.utc).isoformat(),
         "products_count": len(data),
         "source_url": f"{PRICING_BASE_URL}?site={site}"
     }
@@ -451,13 +451,13 @@ def load_pricing_data(region: str = DEFAULT_REGION) -> list[dict]:
         # Load from Redis
         data = get_redis().get_json(RedisKeys.pricing(region))
         return data if data else []
-    else:
-        # Load from file
-        pricing_file = get_pricing_file(region)
-        if not pricing_file.exists():
-            return []
-        with open(pricing_file, 'r') as f:
-            return json.load(f)
+    
+    # Load from file
+    pricing_file = get_pricing_file(region)
+    if not pricing_file.exists():
+        return []
+    with open(pricing_file, 'r') as f:
+        return json.load(f)
 
 
 def load_metadata(region: str = DEFAULT_REGION) -> dict:
@@ -466,12 +466,12 @@ def load_metadata(region: str = DEFAULT_REGION) -> dict:
         # Load from Redis
         metadata = get_redis().get_json(RedisKeys.pricing_metadata(region))
         return metadata if metadata else {}
-    else:
-        # Load from file
-        metadata_file = get_metadata_file(region)
-        if not metadata_file.exists():
-            return {}
-        with open(metadata_file, 'r') as f:
+    
+    # Load from file
+    metadata_file = get_metadata_file(region)
+    if not metadata_file.exists():
+        return {}
+    with open(metadata_file, 'r') as f:
             return json.load(f)
 
 
@@ -514,8 +514,8 @@ def sync_pricing(region: str = DEFAULT_REGION, force_category_refresh: bool = Tr
             region_name = REGIONS[region]["name"]
             storage = get_storage_type()
             return True, f"Successfully synced {len(data)} products for {region_name} (storage: {storage})", len(data)
-        else:
-            return False, "No pricing data found", 0
+        
+        return False, "No pricing data found", 0
     except Exception as e:
         return False, f"Error syncing pricing: {str(e)}", 0
 
