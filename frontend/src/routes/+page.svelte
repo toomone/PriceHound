@@ -1289,7 +1289,7 @@
 		"@type": "WebApplication",
 		"name": "PriceHound",
 		"description": "Free Datadog pricing calculator and usage forecaster. Estimate costs, compare plans, and create shareable quotes.",
-		"url": "https://pricehound.io",
+		"url": "https://pricehound.onrender.com",
 		"applicationCategory": "BusinessApplication",
 		"operatingSystem": "Web Browser",
 		"offers": {
