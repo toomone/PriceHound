@@ -21,15 +21,30 @@ from .allotments_scraper import (
 )
 from .redis_client import get_redis, is_redis_available
 from .templates import get_all_templates, get_template, ensure_templates, sync_templates_to_redis
-from .telemetry import setup_otlp_logging, shutdown_telemetry
+from .telemetry import setup_otlp_logging, setup_ddtrace, shutdown_telemetry
 
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s | %(levelname)s | %(message)s',
+# Custom formatter that includes trace correlation when available
+class TraceFormatter(logging.Formatter):
+    """Log formatter that includes dd.trace_id and dd.span_id when available."""
+    
+    def format(self, record):
+        # Get trace context from record (injected by ddtrace) or use defaults
+        trace_id = getattr(record, 'dd.trace_id', '0')
+        span_id = getattr(record, 'dd.span_id', '0')
+        
+        # Add trace context to the message
+        record.trace_context = f"[dd.trace_id={trace_id} dd.span_id={span_id}]"
+        return super().format(record)
+
+# Configure logging with trace correlation support
+handler = logging.StreamHandler()
+handler.setFormatter(TraceFormatter(
+    fmt='%(asctime)s | %(levelname)s | %(trace_context)s | %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
-)
+))
+logging.root.handlers = [handler]
+logging.root.setLevel(logging.INFO)
 logger = logging.getLogger("pricehound")
 
 # Background scheduler for automatic syncing
@@ -68,7 +83,10 @@ def should_sync_on_startup() -> bool:
 async def lifespan(app: FastAPI):
     logger.info("🚀 PriceHound API starting up...")
     
-    # Setup OTLP logging first (before other initialization logs)
+    # Setup ddtrace first (before other initialization to capture all spans)
+    setup_ddtrace()
+    
+    # Setup OTLP logging (before other initialization logs)
     setup_otlp_logging()
     
     # Log Redis status

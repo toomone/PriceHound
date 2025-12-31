@@ -1,12 +1,16 @@
 """
-OpenTelemetry logging configuration for agentless log shipping to Datadog.
+Telemetry configuration for agentless log and trace shipping to Datadog.
 
-This module provides OTLP-based log export to Datadog without requiring
-a local Datadog Agent. Logs are sent directly to Datadog's HTTP intake API.
+This module provides:
+- OTLP-based log export to Datadog (via OpenTelemetry)
+- APM tracing via ddtrace in agentless mode
+
+Both work without requiring a local Datadog Agent - data is sent directly
+to Datadog's HTTP intake APIs.
 
 Usage:
     Set environment variables:
-        DD_API_KEY: Your Datadog API key (required for OTLP export)
+        DD_API_KEY: Your Datadog API key (required)
         DD_SITE: Datadog site (default: datadoghq.com)
         DD_SERVICE: Service name (default: pricehound)
         DD_ENV: Environment (default: production)
@@ -20,6 +24,7 @@ logger = logging.getLogger("pricehound.telemetry")
 
 # Track if telemetry is initialized
 _telemetry_initialized = False
+_tracing_initialized = False
 _logger_provider = None
 
 
@@ -107,30 +112,101 @@ def setup_otlp_logging() -> bool:
         return False
 
 
+def setup_ddtrace() -> bool:
+    """Configure ddtrace for APM tracing to Datadog.
+    
+    Note: ddtrace requires a Datadog Agent for trace collection.
+    Set DD_AGENT_HOST to enable tracing (e.g., localhost for local agent).
+    Without an agent, traces will not be sent but instrumentation still works locally.
+    
+    Returns:
+        True if ddtrace was successfully configured, False otherwise.
+    """
+    global _tracing_initialized
+    
+    if _tracing_initialized:
+        logger.debug("ddtrace already initialized")
+        return True
+    
+    dd_agent_host = os.getenv("DD_AGENT_HOST")
+    
+    # Service metadata from environment
+    service_name = os.getenv("DD_SERVICE", "pricehound")
+    service_version = os.getenv("DD_VERSION", "1.0.0")
+    environment = os.getenv("DD_ENV", "production")
+    
+    if not dd_agent_host:
+        logger.info("ℹ️ DD_AGENT_HOST not set - ddtrace disabled (set DD_AGENT_HOST to enable APM traces)")
+        logger.info("   Logs are still sent via OTLP if DD_API_KEY is configured")
+        return False
+    
+    # Log the trace endpoint
+    trace_url = os.getenv("DD_TRACE_AGENT_URL", f"http://{dd_agent_host}:8126")
+    logger.info(f"🔗 Trace endpoint: {trace_url}")
+    
+    try:
+        import ddtrace
+        from ddtrace import patch_all
+        
+        # Enable log injection for trace correlation (adds trace_id, span_id to logs)
+        ddtrace.config.logs_injection = True
+        
+        # Auto-instrument supported libraries (FastAPI, requests, redis, etc.)
+        patch_all()
+        
+        _tracing_initialized = True
+        logger.info(f"✅ ddtrace enabled → agent at {dd_agent_host} (service: {service_name}, env: {environment})")
+        return True
+        
+    except ImportError as e:
+        logger.error(f"❌ ddtrace package not installed: {e}")
+        logger.error("   Install with: pip install ddtrace")
+        return False
+    except Exception as e:
+        logger.error(f"❌ Failed to setup ddtrace: {e}")
+        return False
+
+
 def shutdown_telemetry() -> None:
     """Gracefully shutdown telemetry exporters.
     
     This should be called on application shutdown to ensure
-    all buffered logs are flushed to Datadog.
+    all buffered logs and traces are flushed to Datadog.
     """
-    global _telemetry_initialized, _logger_provider
+    global _telemetry_initialized, _tracing_initialized, _logger_provider
     
-    if not _telemetry_initialized or _logger_provider is None:
-        return
+    # Shutdown OTLP logging
+    if _telemetry_initialized and _logger_provider is not None:
+        try:
+            logger.info("🔄 Flushing remaining logs to Datadog...")
+            if hasattr(_logger_provider, 'shutdown'):
+                _logger_provider.shutdown()
+            logger.info("✅ OTLP logging shutdown complete")
+        except Exception as e:
+            logger.error(f"⚠️ Error during OTLP logging shutdown: {e}")
+        finally:
+            _telemetry_initialized = False
+            _logger_provider = None
     
-    try:
-        logger.info("🔄 Flushing remaining logs to Datadog...")
-        if hasattr(_logger_provider, 'shutdown'):
-            _logger_provider.shutdown()
-        logger.info("✅ Telemetry shutdown complete")
-    except Exception as e:
-        logger.error(f"⚠️ Error during telemetry shutdown: {e}")
-    finally:
-        _telemetry_initialized = False
-        _logger_provider = None
+    # Shutdown ddtrace
+    if _tracing_initialized:
+        try:
+            from ddtrace import tracer
+            logger.info("🔄 Flushing remaining traces to Datadog...")
+            tracer.shutdown()
+            logger.info("✅ ddtrace shutdown complete")
+        except Exception as e:
+            logger.error(f"⚠️ Error during ddtrace shutdown: {e}")
+        finally:
+            _tracing_initialized = False
 
 
 def is_telemetry_enabled() -> bool:
     """Check if OTLP telemetry is currently enabled."""
     return _telemetry_initialized
+
+
+def is_tracing_enabled() -> bool:
+    """Check if ddtrace tracing is currently enabled."""
+    return _tracing_initialized
 

@@ -238,3 +238,42 @@ export async function fetchTemplate(templateId: string): Promise<Template> {
 	return response.json();
 }
 
+// Change tracking types
+export interface PriceChange {
+	timestamp: string;
+	region?: string;
+	type: 'price_change' | 'product_added' | 'product_removed' | 'allotment_change' | 'allotment_added' | 'allotment_removed';
+	product?: string;
+	product_id?: string;
+	category?: string;
+	field?: string;
+	old_value?: string | number | null;
+	new_value?: string | number | null;
+	parent_product?: string;
+	allotted_product?: string;
+	data?: Record<string, unknown>;
+}
+
+export interface ChangesSummary {
+	total_pricing_changes: number;
+	total_allotment_changes: number;
+	changes_by_type: Record<string, number>;
+	recent_changes: PriceChange[];
+}
+
+export async function fetchChanges(limit: number = 100, changeType?: string, region?: string): Promise<PriceChange[]> {
+	const params = new URLSearchParams({ limit: limit.toString() });
+	if (changeType) params.append('change_type', changeType);
+	if (region) params.append('region', region);
+	
+	const response = await fetch(`${API_BASE}/changes?${params}`);
+	if (!response.ok) throw new Error('Failed to fetch changes');
+	return response.json();
+}
+
+export async function fetchChangesSummary(): Promise<ChangesSummary> {
+	const response = await fetch(`${API_BASE}/changes/summary`);
+	if (!response.ok) throw new Error('Failed to fetch changes summary');
+	return response.json();
+}
+

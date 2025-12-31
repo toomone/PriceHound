@@ -31,7 +31,7 @@ Always verify pricing with Datadog before making purchasing decisions.
 - We are not authorized to sell or resell Datadog services
 - Datadog trademarks and product names belong to Datadog, Inc.
 
-PriceHound simply aggregates publicly available pricing information from [datadoghq.com/pricing](https://www.datadoghq.com/pricing/) to provide a convenient estimation tool.
+PriceHound simply aggregates publicly available pricing information from <a href="https://www.datadoghq.com/pricing/" target="_blank" rel="noopener noreferrer">datadoghq.com/pricing</a> to provide a convenient estimation tool.
 
 ## How accurate is the pricing data?
 

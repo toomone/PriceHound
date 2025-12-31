@@ -7,6 +7,7 @@ import hashlib
 import logging
 from pathlib import Path
 from datetime import datetime, timezone
+from io import StringIO
 
 from .redis_client import get_redis, is_redis_available, RedisKeys
 from .config import get_storage_type
@@ -342,7 +343,7 @@ def scrape_pricing_data(region: str = DEFAULT_REGION, force_category_refresh: bo
     for table in tables:
         # Try to parse with pandas
         try:
-            df = pd.read_html(str(table))[0]
+            df = pd.read_html(StringIO(str(table)))[0]
             
             # Process the dataframe based on column structure
             if len(df.columns) >= 4:
