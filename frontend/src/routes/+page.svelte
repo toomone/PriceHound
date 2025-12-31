@@ -17,6 +17,7 @@
 	import CostDistributionChart from '$lib/components/CostDistributionChart.svelte';
 	import { fetchProducts, fetchMetadata, createQuote, updateQuote, fetchQuote, verifyQuotePassword, fetchRegions, fetchAllotments, initAllotments, syncPricing, fetchTemplates, fetchCategoryOrder, type Product, type PricingMetadata, type Region, type Allotment, type Template } from '$lib/api';
 	import { formatCurrency, parsePrice, formatNumber, isPercentagePrice, parsePercentage } from '$lib/utils';
+	import { APP_VERSION } from '$lib/version';
 
 	interface LineItem {
 		id: string;
@@ -2008,6 +2009,8 @@
 			<a href="/faq" class="text-datadog-purple hover:underline">FAQ</a>
 			<span class="mx-2">·</span>
 			<a href="/changes" class="text-datadog-purple hover:underline">Price Changes</a>
+			<span class="mx-2">·</span>
+			<span class="text-muted-foreground/60">v{APP_VERSION}</span>
 		</p>
 	</footer>
 
