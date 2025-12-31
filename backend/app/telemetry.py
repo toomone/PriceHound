@@ -28,6 +28,31 @@ _tracing_initialized = False
 _logger_provider = None
 
 
+class DatadogLogProcessor:
+    """Custom processor to normalize log levels for Datadog (lowercase).
+    
+    Datadog expects log levels like 'info', 'warning', 'error' (lowercase),
+    but OpenTelemetry sends 'INFO', 'WARNING', 'ERROR' (uppercase).
+    This processor normalizes them before export.
+    """
+    
+    def __init__(self, next_processor):
+        self._next_processor = next_processor
+    
+    def on_emit(self, log_data):
+        # Convert severity text to lowercase for Datadog
+        if hasattr(log_data, 'severity_text') and log_data.severity_text:
+            # Modify the severity_text attribute directly
+            log_data.severity_text = log_data.severity_text.lower()
+        self._next_processor.on_emit(log_data)
+    
+    def shutdown(self):
+        self._next_processor.shutdown()
+    
+    def force_flush(self, timeout_millis=30000):
+        return self._next_processor.force_flush(timeout_millis)
+
+
 def setup_otlp_logging() -> bool:
     """Configure OpenTelemetry to ship logs to Datadog via OTLP.
     
@@ -85,9 +110,12 @@ def setup_otlp_logging() -> bool:
         
         # Set up logger provider with batch processing
         _logger_provider = LoggerProvider(resource=resource)
-        _logger_provider.add_log_record_processor(
-            BatchLogRecordProcessor(exporter)
-        )
+        
+        # Wrap batch processor with Datadog normalizer (lowercase log levels)
+        batch_processor = BatchLogRecordProcessor(exporter)
+        datadog_processor = DatadogLogProcessor(batch_processor)
+        _logger_provider.add_log_record_processor(datadog_processor)
+        
         _logs.set_logger_provider(_logger_provider)
         
         # Create handler and attach to root logger
