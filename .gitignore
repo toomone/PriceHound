@@ -53,6 +53,9 @@ yarn-error.log*
 .env.local
 .env.*.local
 
+# Data files (scraped pricing data, quotes, etc.)
+backend/data/**/*.json
+
 # Testing
 .coverage
 htmlcov/
