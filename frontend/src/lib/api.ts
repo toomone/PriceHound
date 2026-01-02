@@ -5,6 +5,7 @@ export interface Product {
 	product: string;
 	category: string; // 'Infrastructure', 'Logs', 'Security', etc.
 	plan: string; // 'Pro', 'Enterprise', or 'All'
+	product_type?: 'main' | 'addon'; // 'main' = base product, 'addon' = usage-based add-on
 	billing_unit: string;
 	billed_annually: string | null;
 	billed_month_to_month: string | null;

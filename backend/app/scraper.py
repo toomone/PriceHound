@@ -190,6 +190,50 @@ def match_product_to_category(product_name: str, categories: list[dict] = None) 
     return "Specific"
 
 
+def classify_product_type(product_name: str, plan: str, billing_unit: str) -> str:
+    """Classify product as 'main' or 'addon'.
+    
+    Main products are base subscriptions (Infrastructure Pro, APM, etc.)
+    Addons are usage-based items (Custom Metrics, containers, etc.)
+    
+    Args:
+        product_name: The product name
+        plan: The plan tier (Pro, Enterprise, All)
+        billing_unit: The billing unit description
+    
+    Returns:
+        'main' or 'addon'
+    """
+    name_lower = product_name.lower()
+    unit_lower = billing_unit.lower()
+    
+    # Main product indicators
+    if plan in ['Pro', 'Enterprise']:
+        return 'main'
+    
+    # Host-based products are typically main products
+    if 'per host' in unit_lower or 'per apm host' in unit_lower:
+        return 'main'
+    
+    # Session-based products (RUM) are main products
+    if 'per session' in unit_lower or 'per 1k sessions' in unit_lower:
+        return 'main'
+    
+    # Specific main product keywords
+    main_keywords = [
+        'log management', 'rum', 'browser rum', 'mobile rum',
+        'siem', 'cloud siem', 'cspm', 'ciem',
+        'synthetic', 'synthetics',
+        'incident management', 'on-call',
+        'ci visibility', 'test visibility'
+    ]
+    if any(kw in name_lower for kw in main_keywords):
+        return 'main'
+    
+    # Default to addon for usage-based items
+    return 'addon'
+
+
 def scrape_product_categories() -> list[dict]:
     """Scrape product categories from the main Datadog pricing page sidebar.
     
@@ -370,12 +414,16 @@ def scrape_pricing_data(region: str = DEFAULT_REGION, force_category_refresh: bo
                         # Match product to category
                         category = match_product_to_category(clean_product, categories)
                         
+                        plan = extract_plan_from_product(clean_product)
+                        product_type = classify_product_type(clean_product, plan, clean_billing_unit)
+                        
                         item = {
                             "id": generate_product_id(clean_product, clean_billing_unit),
                             "region": region,
                             "product": clean_product,
                             "category": category,
-                            "plan": extract_plan_from_product(clean_product),
+                            "plan": plan,
+                            "product_type": product_type,
                             "billing_unit": clean_billing_unit,
                             "billed_annually": str(row.iloc[2]).strip() if len(row) > 2 and pd.notna(row.iloc[2]) else None,
                             "billed_month_to_month": str(row.iloc[3]).strip() if len(row) > 3 and pd.notna(row.iloc[3]) else None,
