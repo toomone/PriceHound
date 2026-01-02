@@ -254,10 +254,7 @@
 					{#each lineAllotments as allotment}
 						<li class="flex items-center gap-2 text-xs text-muted-foreground">
 							<span class="w-1 h-1 rounded-full bg-muted-foreground/40"></span>
-							<span class="truncate">{allotment.product?.product || 'Unknown'}</span>
-							<span class="ml-auto font-mono text-[10px] text-muted-foreground/70 shrink-0">
-								{formatNumber(allotment.includedQuantity || 0)} {allotment.allotmentInfo?.allotted_unit || 'units'}
-							</span>
+							<span>{allotment.product?.product || 'Unknown'}: <span class="font-mono text-[10px]">{formatNumber(allotment.includedQuantity || 0)} {allotment.allotmentInfo?.allotted_unit || 'units'}</span></span>
 						</li>
 					{/each}
 				</ul>
