@@ -1436,7 +1436,7 @@
 							{#if !editingQuoteId}
 								{@const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)}
 								<span class="px-3 pb-2 text-xs text-muted-foreground">
-									Available until {expiryDate.toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'short', year: '2-digit' })}
+									Avail. until {expiryDate.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: '2-digit' })}
 								</span>
 							{/if}
 						</div>
