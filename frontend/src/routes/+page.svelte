@@ -18,6 +18,7 @@
 	import { fetchProducts, fetchMetadata, createQuote, updateQuote, fetchQuote, verifyQuotePassword, fetchRegions, fetchAllotments, initAllotments, syncPricing, fetchTemplates, fetchCategoryOrder, type Product, type PricingMetadata, type Region, type Allotment, type Template } from '$lib/api';
 	import { formatCurrency, parsePrice, formatNumber, isPercentagePrice, parsePercentage } from '$lib/utils';
 	import { APP_VERSION } from '$lib/version';
+	import { trackQuoteShared, trackJsonImported, trackJsonExported, trackCsvExported, trackPdfDownloaded, trackPricingSync } from '$lib/rum';
 
 	interface LineItem {
 		id: string;
@@ -88,6 +89,12 @@
 	let showTemplates = false;
 	let loadingTemplates = false;
 	let previewTemplate: Template | null = null;
+	let selectedTemplateItems: Set<number> = new Set();
+	
+	// Initialize all items as selected when previewing a template
+	$: if (previewTemplate) {
+		selectedTemplateItems = new Set(previewTemplate.items.map((_, i) => i));
+	}
 	
 	// Category order for sorting products
 	let categoryOrder: Record<string, number> = {};
@@ -358,8 +365,32 @@
 		}
 	}
 
+	function toggleTemplateItem(index: number) {
+		const newSet = new Set(selectedTemplateItems);
+		if (newSet.has(index)) {
+			newSet.delete(index);
+		} else {
+			newSet.add(index);
+		}
+		selectedTemplateItems = newSet; // create new reference to trigger reactivity
+	}
+
+	function toggleAllTemplateItems() {
+		if (selectedTemplateItems.size === previewTemplate?.items.length) {
+			selectedTemplateItems = new Set();
+		} else {
+			selectedTemplateItems = new Set(previewTemplate?.items.map((_, i) => i) || []);
+		}
+	}
+
 	async function applyTemplate(template: Template) {
-		// Keep existing lines and append template items
+		// Filter to only selected items
+		const selectedItems = template.items.filter((_, i) => selectedTemplateItems.has(i));
+		
+		if (selectedItems.length === 0) {
+			toast.error('Please select at least one product');
+			return;
+		}
 		
 		// Change region if different
 		if (template.region !== selectedRegion) {
@@ -367,9 +398,9 @@
 			await loadProducts();
 		}
 		
-		// Map template items to lines
+		// Map selected template items to lines
 		const newLines: LineItem[] = [];
-		for (const item of template.items) {
+		for (const item of selectedItems) {
 			// Find matching product by name
 			const matchedProduct = products.find(p => 
 				p.product.toLowerCase().includes(item.product.toLowerCase()) ||
@@ -636,6 +667,11 @@
 			await syncPricing(selectedRegion);
 			await loadProducts();
 			toast.success('Pricing data synced successfully!');
+			
+			// Track pricing sync in RUM
+			trackPricingSync({
+				region: selectedRegion
+			});
 		} catch (e) {
 			toast.error('Failed to sync pricing data.');
 		} finally {
@@ -885,6 +921,13 @@
 				toast.success(quote.is_protected ? 'Quote saved with password protection!' : 'Quote saved!', {
 					description: 'Your public URL is ready to share'
 				});
+				
+				// Track quote creation in RUM
+				trackQuoteShared({
+					region: selectedRegion,
+					itemCount: items.length,
+					protected: !!editPassword
+				});
 			}
 		} catch (e: any) {
 			toast.error(e.message || 'Failed to save quote');
@@ -911,6 +954,12 @@
 			};
 		}
 		shareMenuOpen = false;
+		
+		// Track PDF download in RUM
+		trackPdfDownloaded({
+			region: selectedRegion,
+			itemCount: validLines.length
+		});
 	}
 
 	function downloadCSV() {
@@ -955,6 +1004,12 @@
 		
 		shareMenuOpen = false;
 		toast.success('CSV exported successfully!');
+		
+		// Track CSV export in RUM
+		trackCsvExported({
+			region: selectedRegion,
+			itemCount: validLines.length
+		});
 	}
 
 	function generatePrintContent() {
@@ -1131,6 +1186,12 @@
 		
 		shareMenuOpen = false;
 		toast.success('JSON exported successfully!');
+		
+		// Track JSON export in RUM
+		trackJsonExported({
+			region: selectedRegion,
+			itemCount: validLines.filter(l => !l.isAllotment).length
+		});
 	}
 
 	function handleDragOver(event: DragEvent) {
@@ -1281,6 +1342,12 @@
 
 			importModalOpen = false;
 			toast.success(`Imported ${data.items.length} products successfully!`);
+			
+			// Track JSON import in RUM
+			trackJsonImported({
+				region: selectedRegion,
+				itemCount: data.items.length
+			});
 		} catch (e) {
 			toast.error('Failed to parse JSON file');
 		}
@@ -2248,9 +2315,20 @@
 
 			<!-- Product List -->
 			<div class="flex-1 overflow-y-auto p-6">
-				<h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">Products</h3>
+				<div class="flex items-center justify-between mb-3">
+					<h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Products</h3>
+					<label class="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors">
+						<input 
+							type="checkbox" 
+							checked={selectedTemplateItems.size === previewTemplate.items.length}
+							on:change={toggleAllTemplateItems}
+							class="h-3.5 w-3.5 rounded border-border accent-foreground"
+						/>
+						Keep all
+					</label>
+				</div>
 				<ul class="space-y-2">
-					{#each previewTemplate.items as item}
+					{#each previewTemplate.items as item, index}
 						{@const matchedProduct = products.find(p => 
 							p.product.toLowerCase().includes(item.product.toLowerCase()) ||
 							item.product.toLowerCase().includes(p.product.toLowerCase())
@@ -2264,8 +2342,15 @@
 							 multiplierMatch[2]?.toUpperCase() === 'B' ? 1000000000 : 1) : 1}
 						{@const totalVolume = item.quantity * multiplier}
 						{@const unitName = billingUnit.replace(/per\s+[\d,]+[KMB]?\s*/i, '').replace(/,?\s*per month.*$/i, '').trim()}
-						<li class="flex items-center justify-between py-2 px-3 rounded-sm bg-muted/50 gap-4">
-							<span class="text-sm flex-1">{item.product}</span>
+						{@const isSelected = selectedTemplateItems.has(index)}
+						<li class="flex items-center gap-3 py-2 px-3 rounded-sm transition-colors {isSelected ? 'bg-muted/50' : 'bg-muted/20 opacity-60'}">
+							<input 
+								type="checkbox" 
+								checked={isSelected}
+								on:change={() => toggleTemplateItem(index)}
+								class="h-4 w-4 rounded border-border accent-foreground shrink-0"
+							/>
+							<span class="text-sm flex-1 {isSelected ? '' : 'line-through'}">{item.product}</span>
 							<div class="text-right shrink-0">
 								<span class="text-sm font-mono">× {item.quantity.toLocaleString()}</span>
 								{#if billingUnit && multiplier > 1}
@@ -2294,10 +2379,11 @@
 				</button>
 				<button
 					type="button"
-					class="flex-1 px-4 py-2.5 text-sm font-medium rounded-sm bg-foreground text-background hover:bg-foreground/80 transition-colors"
-					on:click={() => { applyTemplate(previewTemplate); previewTemplate = null; }}
+					class="flex-1 px-4 py-2.5 text-sm font-medium rounded-sm bg-foreground text-background hover:bg-foreground/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+					disabled={selectedTemplateItems.size === 0}
+					on:click={() => { if (previewTemplate) applyTemplate(previewTemplate); previewTemplate = null; }}
 				>
-					Add to Quote
+					Add {selectedTemplateItems.size} to Quote
 				</button>
 			</div>
 		</div>

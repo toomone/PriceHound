@@ -1,8 +1,9 @@
 """
-Telemetry configuration for agentless log and trace shipping to Datadog.
+Telemetry configuration for agentless log, trace, and metric shipping to Datadog.
 
 This module provides:
 - OTLP-based log export to Datadog (via OpenTelemetry)
+- OTLP-based metrics export to Datadog (via OpenTelemetry)
 - APM tracing via ddtrace in agentless mode
 
 Both work without requiring a local Datadog Agent - data is sent directly
@@ -14,18 +15,26 @@ Usage:
         DD_SITE: Datadog site (default: datadoghq.com)
         DD_SERVICE: Service name (default: pricehound)
         DD_ENV: Environment (default: production)
-        DD_VERSION: Version (default: 1.0.0)
+        DD_VERSION: Version (default: APP_VERSION from version.py)
 """
 import os
 import logging
-from typing import Optional
+from typing import Optional, Dict, Any
+
+from .version import APP_VERSION
 
 logger = logging.getLogger("pricehound.telemetry")
 
 # Track if telemetry is initialized
 _telemetry_initialized = False
 _tracing_initialized = False
+_metrics_initialized = False
 _logger_provider = None
+_meter_provider = None
+_meter = None
+
+# Metric counters
+_counters: Dict[str, Any] = {}
 
 
 class DatadogLogProcessor:
@@ -82,7 +91,7 @@ def setup_otlp_logging() -> bool:
         
         # Service metadata from environment
         service_name = os.getenv("DD_SERVICE", "pricehound")
-        service_version = os.getenv("DD_VERSION", "1.0.0")
+        service_version = os.getenv("DD_VERSION", APP_VERSION)
         environment = os.getenv("DD_ENV", "production")
         hostname = os.getenv("RENDER_SERVICE_NAME", os.getenv("HOSTNAME", "local"))
         
@@ -140,6 +149,123 @@ def setup_otlp_logging() -> bool:
         return False
 
 
+def setup_otlp_metrics() -> bool:
+    """Configure OpenTelemetry to ship metrics to Datadog via OTLP.
+    
+    Returns:
+        True if OTLP metrics was successfully configured, False otherwise.
+    """
+    global _metrics_initialized, _meter_provider, _meter, _counters
+    
+    if _metrics_initialized:
+        logger.debug("OTLP metrics already initialized")
+        return True
+    
+    dd_api_key = os.getenv("DD_API_KEY")
+    dd_site = os.getenv("DD_SITE", "datadoghq.com")
+    
+    if not dd_api_key:
+        logger.warning("⚠️ DD_API_KEY not set - OTLP metrics disabled")
+        return False
+    
+    try:
+        from opentelemetry import metrics
+        from opentelemetry.sdk.metrics import MeterProvider, Counter, UpDownCounter, Histogram, ObservableCounter, ObservableUpDownCounter, ObservableGauge
+        from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader, AggregationTemporality
+        from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
+        from opentelemetry.sdk.resources import Resource
+        
+        # Service metadata from environment
+        service_name = os.getenv("DD_SERVICE", "pricehound")
+        service_version = os.getenv("DD_VERSION", APP_VERSION)
+        environment = os.getenv("DD_ENV", "production")
+        
+        # Define resource attributes (service metadata)
+        resource = Resource.create({
+            "service.name": service_name,
+            "service.version": service_version,
+            "deployment.environment": environment,
+        })
+        
+        # Datadog OTLP intake endpoint for metrics
+        otlp_endpoint = f"https://otlp.{dd_site}/v1/metrics"
+        
+        logger.info(f"🔗 OTLP metrics endpoint: {otlp_endpoint}")
+        
+        # Datadog requires Delta temporality for counters (not Cumulative)
+        temporality_delta = {
+            Counter: AggregationTemporality.DELTA,
+            UpDownCounter: AggregationTemporality.DELTA,
+            Histogram: AggregationTemporality.DELTA,
+            ObservableCounter: AggregationTemporality.DELTA,
+            ObservableUpDownCounter: AggregationTemporality.DELTA,
+            ObservableGauge: AggregationTemporality.DELTA,
+        }
+        
+        # Create OTLP exporter with Datadog API key header and Delta temporality
+        exporter = OTLPMetricExporter(
+            endpoint=otlp_endpoint,
+            headers={"DD-API-KEY": dd_api_key},
+            preferred_temporality=temporality_delta
+        )
+        
+        # Export metrics every 60 seconds
+        reader = PeriodicExportingMetricReader(exporter, export_interval_millis=60000)
+        _meter_provider = MeterProvider(resource=resource, metric_readers=[reader])
+        metrics.set_meter_provider(_meter_provider)
+        _meter = metrics.get_meter("pricehound")
+        
+        # Create counters for various events
+        _counters["quotes_created"] = _meter.create_counter(
+            "pricehound.quotes.created",
+            description="Number of quotes created (public URLs)"
+        )
+        _counters["quotes_viewed"] = _meter.create_counter(
+            "pricehound.quotes.viewed",
+            description="Number of times shared quotes are viewed"
+        )
+        _counters["pricing_sync"] = _meter.create_counter(
+            "pricehound.sync.pricing",
+            description="Number of pricing sync operations"
+        )
+        
+        _metrics_initialized = True
+        logger.info(f"✅ OTLP metrics enabled → {dd_site} (service: {service_name}, env: {environment})")
+        return True
+        
+    except ImportError as e:
+        logger.error(f"❌ OpenTelemetry metrics packages not installed: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"❌ Failed to setup OTLP metrics: {e}")
+        return False
+
+
+def record_quote_created(region: str, protected: bool = False) -> None:
+    """Record a quote creation metric."""
+    if _metrics_initialized and "quotes_created" in _counters:
+        _counters["quotes_created"].add(1, {
+            "region": region,
+            "protected": str(protected).lower()
+        })
+
+
+def record_quote_viewed(region: str) -> None:
+    """Record a quote view metric."""
+    if _metrics_initialized and "quotes_viewed" in _counters:
+        _counters["quotes_viewed"].add(1, {"region": region})
+
+
+def record_pricing_sync(region: str, products_count: int, success: bool = True) -> None:
+    """Record a pricing sync metric."""
+    if _metrics_initialized and "pricing_sync" in _counters:
+        _counters["pricing_sync"].add(1, {
+            "region": region,
+            "products_count": str(products_count),
+            "success": str(success).lower()
+        })
+
+
 def setup_ddtrace() -> bool:
     """Configure ddtrace for APM tracing to Datadog.
     
@@ -160,7 +286,7 @@ def setup_ddtrace() -> bool:
     
     # Service metadata from environment
     service_name = os.getenv("DD_SERVICE", "pricehound")
-    service_version = os.getenv("DD_VERSION", "1.0.0")
+    service_version = os.getenv("DD_VERSION", APP_VERSION)
     environment = os.getenv("DD_ENV", "production")
     
     if not dd_agent_host:
@@ -199,9 +325,10 @@ def shutdown_telemetry() -> None:
     """Gracefully shutdown telemetry exporters.
     
     This should be called on application shutdown to ensure
-    all buffered logs and traces are flushed to Datadog.
+    all buffered logs, metrics, and traces are flushed to Datadog.
     """
-    global _telemetry_initialized, _tracing_initialized, _logger_provider
+    global _telemetry_initialized, _tracing_initialized, _metrics_initialized
+    global _logger_provider, _meter_provider
     
     # Shutdown OTLP logging
     if _telemetry_initialized and _logger_provider is not None:
@@ -215,6 +342,19 @@ def shutdown_telemetry() -> None:
         finally:
             _telemetry_initialized = False
             _logger_provider = None
+    
+    # Shutdown OTLP metrics
+    if _metrics_initialized and _meter_provider is not None:
+        try:
+            logger.info("🔄 Flushing remaining metrics to Datadog...")
+            if hasattr(_meter_provider, 'shutdown'):
+                _meter_provider.shutdown()
+            logger.info("✅ OTLP metrics shutdown complete")
+        except Exception as e:
+            logger.error(f"⚠️ Error during OTLP metrics shutdown: {e}")
+        finally:
+            _metrics_initialized = False
+            _meter_provider = None
     
     # Shutdown ddtrace
     if _tracing_initialized:
@@ -230,8 +370,13 @@ def shutdown_telemetry() -> None:
 
 
 def is_telemetry_enabled() -> bool:
-    """Check if OTLP telemetry is currently enabled."""
+    """Check if OTLP logging is currently enabled."""
     return _telemetry_initialized
+
+
+def is_metrics_enabled() -> bool:
+    """Check if OTLP metrics is currently enabled."""
+    return _metrics_initialized
 
 
 def is_tracing_enabled() -> bool:

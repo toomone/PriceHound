@@ -21,7 +21,10 @@ from .allotments_scraper import (
 )
 from .redis_client import get_redis, is_redis_available
 from .templates import get_all_templates, get_template, ensure_templates, sync_templates_to_redis
-from .telemetry import setup_otlp_logging, setup_ddtrace, shutdown_telemetry
+from .telemetry import (
+    setup_otlp_logging, setup_otlp_metrics, setup_ddtrace, shutdown_telemetry,
+    record_quote_created, record_quote_viewed, record_pricing_sync
+)
 
 
 # Custom formatter that includes trace correlation when available
@@ -58,6 +61,14 @@ def sync_all_pricing_job():
         results = sync_all_regions()
         success_count = sum(1 for r in results if r.get('success', False))
         logger.info(f"✅ Sync complete: {success_count}/{len(results)} regions updated")
+        
+        # Record metrics for each region synced
+        for result in results:
+            record_pricing_sync(
+                region=result.get('region', 'unknown'),
+                products_count=result.get('count', 0),
+                success=result.get('success', False)
+            )
     except Exception as e:
         logger.error(f"❌ Sync failed: {e}")
 
@@ -88,6 +99,9 @@ async def lifespan(app: FastAPI):
     
     # Setup OTLP logging (before other initialization logs)
     setup_otlp_logging()
+    
+    # Setup OTLP metrics
+    setup_otlp_metrics()
     
     # Log Redis status
     redis_status = "connected" if is_redis_available() else "disconnected"
@@ -240,6 +254,10 @@ async def sync_pricing_data(region: str = Query(default=DEFAULT_REGION, descript
         logger.info(f"✅ Sync successful: {count} products for {region}")
     else:
         logger.warning(f"⚠️ Sync failed for {region}: {message}")
+    
+    # Record metric for pricing sync
+    record_pricing_sync(region=region, products_count=count, success=success)
+    
     return SyncResponse(success=success, message=message, products_count=count)
 
 
@@ -250,6 +268,15 @@ async def sync_all_pricing_data():
     results = sync_all_regions()
     success_count = sum(1 for r in results if r.get('success', False))
     logger.info(f"✅ Sync-all complete: {success_count}/{len(results)} regions")
+    
+    # Record metrics for each region synced
+    for result in results:
+        record_pricing_sync(
+            region=result.get('region', 'unknown'),
+            products_count=result.get('count', 0),
+            success=result.get('success', False)
+        )
+    
     return {"results": results}
 
 
@@ -310,6 +337,10 @@ async def create_new_quote(quote_data: QuoteCreate):
         description=quote_data.description
     )
     logger.info(f"✅ Quote created: id={quote.id}, total=${quote.total:.2f}, protected={quote.is_protected}")
+    
+    # Record metric for quote creation
+    record_quote_created(region=quote_data.region, protected=quote_data.edit_password is not None)
+    
     return quote
 
 
@@ -322,6 +353,10 @@ async def get_quote_by_id(quote_id: str):
         logger.warning(f"⚠️ Quote not found: {quote_id}")
         raise HTTPException(status_code=404, detail="Quote not found")
     logger.info(f"✅ Quote found: {quote_id}, items={len(quote.items)}")
+    
+    # Record metric for quote view
+    record_quote_viewed(region=quote.region)
+    
     return quote
 
 

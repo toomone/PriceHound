@@ -10,6 +10,7 @@
 	import { fetchQuote, verifyQuotePassword, type Quote } from '$lib/api';
 	import { formatCurrency, formatNumber } from '$lib/utils';
 	import ModeToggle from '$lib/components/ModeToggle.svelte';
+	import { trackQuoteOpened } from '$lib/rum';
 
 	let quote: Quote | null = null;
 	let loading = true;
@@ -50,6 +51,14 @@
 		error = '';
 		try {
 			quote = await fetchQuote(quoteId);
+			
+			// Track quote view in RUM
+			if (quote) {
+				trackQuoteOpened({
+					region: quote.region,
+					quoteId: quoteId
+				});
+			}
 		} catch (e) {
 			error = 'Quote not found or has expired';
 		} finally {
