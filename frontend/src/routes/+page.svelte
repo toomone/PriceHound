@@ -2290,7 +2290,7 @@
 		<div 
 			in:fly={{ y: 30, duration: 250, delay: 50 }}
 			out:fly={{ y: -20, duration: 150 }}
-			class="relative w-full max-w-lg max-h-[80vh] overflow-hidden rounded-lg border border-border bg-card shadow-2xl flex flex-col"
+			class="relative w-full max-w-xl max-h-[80vh] overflow-hidden rounded-lg border border-border bg-card shadow-2xl flex flex-col"
 		>
 			<!-- Header -->
 			<div class="p-6 border-b border-border">
@@ -2361,20 +2361,21 @@
 								on:change={() => toggleTemplateItem(index)}
 								class="h-4 w-4 rounded border-border accent-foreground shrink-0"
 							/>
-							<span class="text-sm flex-1 {isSelected ? '' : 'line-through'}">{item.product}</span>
-							{#if productDesc}
-								<span class="group relative shrink-0">
-									<svg class="h-4 w-4 text-muted-foreground/50 hover:text-muted-foreground cursor-help transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-										<circle cx="12" cy="12" r="10" />
-										<path d="M12 16v-4M12 8h.01" />
-									</svg>
-									<span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs text-background bg-foreground rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none w-64 text-center z-50">
-										{productDesc}
+							<span class="text-xs flex-1 flex items-center gap-1.5 {isSelected ? '' : 'line-through text-muted-foreground'}">
+								{item.product}
+								{#if productDesc}
+									<span class="group relative inline-flex">
+										<svg class="h-3.5 w-3.5 text-muted-foreground/60 hover:text-muted-foreground cursor-help transition-colors" viewBox="0 0 24 24" fill="currentColor">
+											<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+										</svg>
+										<span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs text-background bg-foreground rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none w-64 text-center z-50">
+											{productDesc}
+										</span>
 									</span>
-								</span>
-							{/if}
+								{/if}
+							</span>
 							<div class="text-right shrink-0">
-								<span class="text-sm font-mono">× {item.quantity.toLocaleString()}</span>
+								<span class="text-xs font-mono">× {item.quantity.toLocaleString()}</span>
 								{#if billingUnit && multiplier > 1}
 									<div class="text-xs text-muted-foreground">
 										= {totalVolume.toLocaleString()} {unitName}
