@@ -123,25 +123,14 @@
 
 		<!-- ROW 2: Summary -->
 		<div class="flex items-center justify-between px-6 py-3 border-b border-border">
-			<!-- Left: Selected quantities -->
-			<div class="flex items-center gap-4 text-[13px] text-muted-foreground">
-				<span class="font-medium">Selected:</span>
-				<span><span class="font-mono font-medium text-foreground">{ingestedLogsGB}</span> GB</span>
-				<span>·</span>
-				<span><span class="font-mono font-medium text-foreground">{retentionDays}</span> days</span>
-				<span>·</span>
-				<span><span class="font-mono font-medium text-foreground">{indexingPercentage}%</span> indexed</span>
-				<span>·</span>
-				<span><span class="font-mono font-medium text-foreground">{indexedLogsInMillions.toFixed(1)}M</span> logs</span>
-				{#if enableFlexStarter || enableFlexStorage || enableForwarding}
-					<span>·</span>
-					<span class="font-medium">+ extras</span>
-				{/if}
-			</div>
+			<!-- Left: Natural language summary -->
+			<p class="text-[13px] text-muted-foreground">
+				From <span class="font-mono font-medium text-foreground">{ingestedLogsGB} GB</span>/mo retained <span class="font-mono font-medium text-foreground">{retentionDays} days</span>, indexing <span class="font-mono font-medium text-foreground">{indexingPercentage}%</span> gives you <span class="font-mono font-medium text-foreground">{indexedLogsInMillions.toFixed(1)}M</span> searchable log events{#if enableFlexStarter || enableFlexStorage || enableForwarding} + extras{/if}.
+			</p>
 
 			<!-- Right: Total -->
-			<div class="text-right">
-					<div class="text-2xl font-bold font-mono">
+			<div class="text-right shrink-0 ml-4">
+				<div class="text-2xl font-bold font-mono">
 					{formatCurrency(totalMonthlyCost)}
 				</div>
 				<div class="text-xs text-muted-foreground">per month</div>
