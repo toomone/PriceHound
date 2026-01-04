@@ -2337,24 +2337,17 @@
 						Keep all
 					</label>
 				</div>
-				<ul class="space-y-2">
+				<ul class="divide-y divide-border/50">
 					{#each previewTemplate.items as item, index}
 						{@const matchedProduct = products.find(p => 
 							p.product.toLowerCase().includes(item.product.toLowerCase()) ||
 							item.product.toLowerCase().includes(p.product.toLowerCase())
 						)}
-						{@const billingUnit = matchedProduct?.billing_unit || ''}
-						{@const multiplierMatch = billingUnit.match(/per\s+([\d,]+(?:\.\d+)?)\s*([KMB]?)\s*/i)}
-						{@const multiplier = multiplierMatch ? 
-							parseFloat(multiplierMatch[1].replace(/,/g, '')) * 
-							(multiplierMatch[2]?.toUpperCase() === 'K' ? 1000 : 
-							 multiplierMatch[2]?.toUpperCase() === 'M' ? 1000000 : 
-							 multiplierMatch[2]?.toUpperCase() === 'B' ? 1000000000 : 1) : 1}
-						{@const totalVolume = item.quantity * multiplier}
-						{@const unitName = billingUnit.replace(/per\s+[\d,]+[KMB]?\s*/i, '').replace(/,?\s*per month.*$/i, '').trim()}
 						{@const isSelected = selectedTemplateItems.has(index)}
 						{@const productDesc = getProductDescription(matchedProduct?.id)}
-						<li class="flex items-center gap-3 py-2 px-3 rounded-sm transition-colors {isSelected ? 'bg-muted/50' : 'bg-muted/20 opacity-60'}">
+						{@const unitPrice = matchedProduct?.billed_annually ? parseFloat(matchedProduct.billed_annually.replace(/[$,]/g, '')) : 0}
+						{@const lineTotal = unitPrice * item.quantity}
+						<li class="flex items-center gap-3 py-2 transition-colors {isSelected ? '' : 'opacity-40'}">
 							<input 
 								type="checkbox" 
 								checked={isSelected}
@@ -2374,18 +2367,14 @@
 									</span>
 								{/if}
 							</span>
-							<div class="text-right shrink-0">
-								<span class="text-xs font-mono">× {item.quantity.toLocaleString()}</span>
-								{#if billingUnit && multiplier > 1}
-									<div class="text-xs text-muted-foreground">
-										= {totalVolume.toLocaleString()} {unitName}
-									</div>
-								{:else if billingUnit}
-									<div class="text-xs text-muted-foreground">
-										{unitName}
-									</div>
+							<span class="text-xs text-muted-foreground shrink-0">× {item.quantity.toLocaleString()}</span>
+							<span class="text-xs font-mono shrink-0 w-20 text-right {isSelected ? '' : 'text-muted-foreground'}">
+								{#if lineTotal > 0}
+									${lineTotal.toLocaleString()}
+								{:else}
+									—
 								{/if}
-							</div>
+							</span>
 						</li>
 					{/each}
 				</ul>
