@@ -402,12 +402,7 @@
 			return;
 		}
 		
-		// Change region if different
-		if (template.region !== selectedRegion) {
-			selectedRegion = template.region;
-			await loadProducts();
-		}
-		
+		// Templates are region agnostic - use current region's products
 		// Map selected template items to lines
 		const newLines: LineItem[] = [];
 		for (const item of selectedItems) {
@@ -2326,7 +2321,12 @@
 			<!-- Product List -->
 			<div class="flex-1 overflow-y-auto p-6">
 				<div class="flex items-center justify-between mb-3">
-					<h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Products</h3>
+					<div class="flex items-center gap-3">
+						<h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Products</h3>
+						<span class="text-[10px] px-2 py-0.5 rounded-full {showAnnual ? 'bg-datadog-green/20 text-datadog-green' : showMonthly ? 'bg-datadog-blue/20 text-datadog-blue' : 'bg-datadog-orange/20 text-datadog-orange'}">
+							{showAnnual ? 'Annual' : showMonthly ? 'Monthly' : 'On-demand'} pricing
+						</span>
+					</div>
 					<label class="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors">
 						<input 
 							type="checkbox" 

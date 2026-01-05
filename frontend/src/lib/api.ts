@@ -94,8 +94,6 @@ export interface Template {
 	id: string;
 	name: string;
 	description: string;
-	region: string;
-	billing_type: string;
 	items: TemplateItem[];
 	created_at: string;
 }
