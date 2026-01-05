@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { cn } from '$lib/utils';
 	import { createEventDispatcher } from 'svelte';
+	import { slide } from 'svelte/transition';
 	import type { Product } from '$lib/api';
 	import productDescriptions from '$lib/product-descriptions.json';
 
@@ -170,7 +171,7 @@
 					<button
 						type="button"
 						class={cn(
-							'group/item relative flex w-full cursor-pointer select-none items-start rounded-md px-3 py-2 text-sm outline-none transition-colors text-left',
+							'relative flex w-full cursor-pointer select-none items-start rounded-md px-3 py-2 text-sm outline-none transition-colors text-left',
 							index === highlightedIndex
 								? 'bg-accent text-accent-foreground'
 								: 'hover:bg-accent/50 hover:text-accent-foreground'
@@ -181,8 +182,13 @@
 						<div class="flex flex-col items-start gap-0.5 w-full">
 							<span class="font-medium text-left">{product.product}</span>
 							<span class="text-xs text-muted-foreground text-left">{product.billing_unit}</span>
-							{#if productDesc}
-								<span class="text-[10px] text-muted-foreground/70 text-left hidden group-hover/item:block mt-1 leading-relaxed">{productDesc}</span>
+							{#if productDesc && index === highlightedIndex}
+								<span 
+									transition:slide={{ duration: 150 }}
+									class="text-[10px] text-muted-foreground/70 text-left mt-1 leading-relaxed"
+								>
+									{productDesc}
+								</span>
 							{/if}
 						</div>
 					</button>
