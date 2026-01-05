@@ -1,0 +1,18 @@
+{
+  "id": "saas-platform",
+  "name": "SaaS Platform",
+  "description": "Complete SaaS observability: Infrastructure, APM, Logs, RUM for web app, Database Monitoring, and On-Call for incident response",
+  "items": [
+    {"product": "Infrastructure Pro", "quantity": 15},
+    {"product": "Container Monitoring", "quantity": 100},
+    {"product": "APM Pro (APM and Data Streams Monitoring)", "quantity": 8},
+    {"product": "Database Monitoring", "quantity": 3},
+    {"product": "Real User Monitoring (RUM) - Measure", "quantity": 300},
+    {"product": "Logs - Ingestion", "quantity": 80},
+    {"product": "Logs - Indexed Log Events", "quantity": 25},
+    {"product": "On-Call", "quantity": 8},
+    {"product": "Synthetic Browser Tests", "quantity": 5}
+  ],
+  "created_at": "2025-01-01T00:00:00.000000"
+}
+

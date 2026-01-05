@@ -1,0 +1,14 @@
+{
+  "id": "startup-essentials",
+  "name": "Startup Essentials",
+  "description": "Cost-effective starter pack: Basic infrastructure monitoring, minimal APM, essential logs, and API uptime checks",
+  "items": [
+    {"product": "Infrastructure Pro", "quantity": 5},
+    {"product": "APM Pro (APM and Data Streams Monitoring)", "quantity": 2},
+    {"product": "Logs - Ingestion", "quantity": 10},
+    {"product": "Logs - Indexed Log Events", "quantity": 3},
+    {"product": "Synthetic API Tests", "quantity": 5}
+  ],
+  "created_at": "2025-01-01T00:00:00.000000"
+}
+

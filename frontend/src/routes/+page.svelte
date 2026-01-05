@@ -94,12 +94,20 @@
 	// Tools visibility
 	let showLogsCalculator = false;
 	
-	// Templates
+	// Templates / Example Stacks
 	let templates: Template[] = [];
 	let showTemplates = false;
 	let loadingTemplates = false;
 	let previewTemplate: Template | null = null;
 	let selectedTemplateItems: Set<number> = new Set();
+	let stackFilter = '';
+	
+	// Filtered templates based on search
+	$: filteredTemplates = templates.filter(t => 
+		stackFilter === '' || 
+		t.name.toLowerCase().includes(stackFilter.toLowerCase()) ||
+		t.description.toLowerCase().includes(stackFilter.toLowerCase())
+	);
 	
 	// Initialize all items as selected when previewing a template
 	$: if (previewTemplate) {
@@ -1784,6 +1792,97 @@
 					</svg>
 				</div>
 			{:else}
+				<!-- Example Stacks Section - shown when quote is empty -->
+				{#if validLines.length === 0}
+					<div class="mb-6 p-5 rounded-xl border border-border bg-gradient-to-br from-muted/30 to-muted/10" transition:slide={{ duration: 200 }}>
+						<div class="flex items-center justify-between mb-4">
+							<div>
+								<h3 class="text-sm font-semibold flex items-center gap-2">
+									<svg class="h-4 w-4 text-datadog-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+									</svg>
+									Get Started
+								</h3>
+								<p class="text-xs text-muted-foreground mt-0.5">Pick an example stack or build from scratch</p>
+							</div>
+							<div class="relative">
+								<svg class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<circle cx="11" cy="11" r="8" />
+									<path d="m21 21-4.35-4.35" />
+								</svg>
+								<input
+									type="text"
+									bind:value={stackFilter}
+									placeholder="Filter stacks..."
+									class="h-8 w-40 rounded-md border border-border bg-background pl-8 pr-3 text-xs placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-ring"
+								/>
+							</div>
+						</div>
+						
+						<!-- Stacks Grid -->
+						<div class="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+							<!-- Start from Scratch -->
+							<button
+								type="button"
+								class="shrink-0 w-36 p-3 rounded-lg border-2 border-dashed border-border hover:border-foreground/30 bg-background hover:bg-muted/30 transition-all text-left group"
+								on:click={() => {
+									const searchInput = document.querySelector('input[placeholder="Search products..."]');
+									if (searchInput instanceof HTMLInputElement) searchInput.focus();
+								}}
+							>
+								<div class="flex items-center justify-center h-8 w-8 rounded-md bg-muted mb-2 group-hover:bg-foreground/10 transition-colors">
+									<svg class="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M12 5v14M5 12h14" />
+									</svg>
+								</div>
+								<div class="text-xs font-medium">Start from scratch</div>
+								<div class="text-[10px] text-muted-foreground mt-0.5">Build your own</div>
+							</button>
+							
+							<!-- Logs Calculator -->
+							<button
+								type="button"
+								class="shrink-0 w-36 p-3 rounded-lg border border-border hover:border-datadog-purple/50 bg-background hover:bg-datadog-purple/5 transition-all text-left group"
+								on:click={() => showLogsCalculator = true}
+							>
+								<div class="flex items-center justify-center h-8 w-8 rounded-md bg-datadog-purple/10 mb-2">
+									<svg class="h-4 w-4 text-datadog-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<rect x="4" y="2" width="16" height="20" rx="2" />
+										<path d="M8 6h8M8 10h8M8 14h4" />
+									</svg>
+								</div>
+								<div class="text-xs font-medium">Logs Calculator</div>
+								<div class="text-[10px] text-muted-foreground mt-0.5">Estimate log costs</div>
+							</button>
+							
+							<!-- Example Stacks -->
+							{#each filteredTemplates as template (template.id)}
+								<button
+									type="button"
+									class="shrink-0 w-36 p-3 rounded-lg border border-border hover:border-foreground/30 bg-background hover:bg-muted/30 transition-all text-left"
+									on:click={() => previewTemplate = template}
+								>
+									<div class="flex items-center justify-center h-8 w-8 rounded-md bg-muted mb-2">
+										<svg class="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+											<path d="M22 12l-10 5-10-5" />
+											<path d="M22 7l-10 5-10-5 10-5 10 5z" />
+											<path d="M2 17l10 5 10-5" />
+										</svg>
+									</div>
+									<div class="text-xs font-medium truncate">{template.name}</div>
+									<div class="text-[10px] text-muted-foreground mt-0.5">{template.items.length} products</div>
+								</button>
+							{/each}
+							
+							{#if filteredTemplates.length === 0 && stackFilter !== ''}
+								<div class="shrink-0 w-36 p-3 flex items-center justify-center text-xs text-muted-foreground">
+									No stacks match "{stackFilter}"
+								</div>
+							{/if}
+						</div>
+					</div>
+				{/if}
+				
 				<div class="space-y-4 overflow-visible">
 					<!-- Grouped lines by category -->
 					{#each groupedLines.sortedCategories as category (category)}
@@ -1910,7 +2009,7 @@
 							type="button"
 							class="inline-flex items-center gap-2 px-3 py-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted border-l border-border transition-colors {showLogsCalculator ? 'bg-muted text-foreground' : ''}"
 							on:click={() => showLogsCalculator = !showLogsCalculator}
-							title="Log Indexing Estimator"
+							title="Logging Without Limits"
 						>
 							<svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 								<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
@@ -1918,7 +2017,7 @@
 								<line x1="16" y1="13" x2="8" y2="13" />
 								<line x1="16" y1="17" x2="8" y2="17" />
 							</svg>
-							<span class="hidden sm:inline">Log Indexing <br/> Estimator</span>
+							<span class="hidden sm:inline">Logging Without <br/> Limits</span>
 						</button>						
 						{#if templates.length > 0}
 							<button
@@ -2230,7 +2329,7 @@
 	</div>
 {/if}
 
-<!-- Log Indexing Estimator Modal -->
+<!-- Logging Without Limits Modal -->
 {#if showLogsCalculator}
 	<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 	<div 
