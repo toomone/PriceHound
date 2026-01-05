@@ -1819,12 +1819,12 @@
 							</div>
 						</div>
 						
-						<!-- Stacks Grid -->
-						<div class="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+						<!-- Stacks Grid - Vertical scroll -->
+						<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-64 overflow-y-auto pr-1">
 							<!-- Start from Scratch -->
 							<button
 								type="button"
-								class="shrink-0 w-36 p-3 rounded-lg border-2 border-dashed border-border hover:border-foreground/30 bg-background hover:bg-muted/30 transition-all text-left group"
+								class="p-3 rounded-lg border-2 border-dashed border-border hover:border-foreground/30 bg-background hover:bg-muted/30 transition-all text-left group"
 								on:click={() => {
 									const searchInput = document.querySelector('input[placeholder="Search products..."]');
 									if (searchInput instanceof HTMLInputElement) searchInput.focus();
@@ -1842,7 +1842,7 @@
 							<!-- Logs Calculator -->
 							<button
 								type="button"
-								class="shrink-0 w-36 p-3 rounded-lg border border-border hover:border-datadog-purple/50 bg-background hover:bg-datadog-purple/5 transition-all text-left group"
+								class="p-3 rounded-lg border border-border hover:border-datadog-purple/50 bg-background hover:bg-datadog-purple/5 transition-all text-left group"
 								on:click={() => showLogsCalculator = true}
 							>
 								<div class="flex items-center justify-center h-8 w-8 rounded-md bg-datadog-purple/10 mb-2">
@@ -1859,7 +1859,7 @@
 							{#each filteredTemplates as template (template.id)}
 								<button
 									type="button"
-									class="shrink-0 w-36 p-3 rounded-lg border border-border hover:border-foreground/30 bg-background hover:bg-muted/30 transition-all text-left"
+									class="p-3 rounded-lg border border-border hover:border-foreground/30 bg-background hover:bg-muted/30 transition-all text-left"
 									on:click={() => previewTemplate = template}
 								>
 									<div class="flex items-center justify-center h-8 w-8 rounded-md bg-muted mb-2">
@@ -1875,7 +1875,7 @@
 							{/each}
 							
 							{#if filteredTemplates.length === 0 && stackFilter !== ''}
-								<div class="shrink-0 w-36 p-3 flex items-center justify-center text-xs text-muted-foreground">
+								<div class="col-span-full p-3 flex items-center justify-center text-xs text-muted-foreground">
 									No stacks match "{stackFilter}"
 								</div>
 							{/if}
