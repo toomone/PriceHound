@@ -1650,62 +1650,62 @@
 				<!-- Start from Scratch -->
 				<button
 					type="button"
-					class="flex items-start gap-3 p-2.5 rounded-md border-2 border-dashed border-border hover:border-foreground/30 bg-background hover:bg-muted/30 transition-all text-left group min-h-[4rem]"
+					class="flex flex-col p-2.5 rounded-md border-2 border-dashed border-border hover:border-foreground/30 bg-background hover:bg-muted/30 transition-all text-left group min-h-[4rem]"
 					on:click={() => {
 						const searchInput = document.querySelector('input[placeholder="Search products..."]');
 						if (searchInput instanceof HTMLInputElement) searchInput.focus();
 					}}
 				>
-					<div class="flex items-center justify-center h-8 w-8 rounded-md bg-muted shrink-0 group-hover:bg-foreground/10 transition-colors">
-						<svg class="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<path d="M12 5v14M5 12h14" />
-						</svg>
-					</div>
-					<div class="min-w-0">
+					<div class="flex items-center gap-2">
+						<div class="flex items-center justify-center h-6 w-6 rounded-md bg-muted shrink-0 group-hover:bg-foreground/10 transition-colors">
+							<svg class="h-3.5 w-3.5 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M12 5v14M5 12h14" />
+							</svg>
+						</div>
 						<div class="text-xs font-medium">Start from scratch</div>
-						<div class="text-[10px] text-muted-foreground leading-tight mt-0.5">Build your own quote</div>
 					</div>
+					<div class="text-[10px] text-muted-foreground leading-tight mt-1.5">Build your own quote</div>
 				</button>
 				
 				<!-- Logs Calculator -->
 				<button
 					type="button"
-					class="flex items-start gap-3 p-2.5 rounded-md border border-border hover:border-datadog-purple/50 bg-background hover:bg-datadog-purple/5 transition-all text-left group min-h-[4rem]"
+					class="flex flex-col p-2.5 rounded-md border border-border hover:border-datadog-purple/50 bg-background hover:bg-datadog-purple/5 transition-all text-left group min-h-[4rem]"
 					on:click={() => showLogsCalculator = true}
 				>
-					<div class="flex items-center justify-center h-8 w-8 rounded-md bg-datadog-purple/10 shrink-0">
-						<svg class="h-4 w-4 text-datadog-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<rect x="4" y="2" width="16" height="20" rx="2" />
-							<path d="M8 6h8M8 10h8M8 14h4" />
-						</svg>
-					</div>
-					<div class="min-w-0">
+					<div class="flex items-center gap-2">
+						<div class="flex items-center justify-center h-6 w-6 rounded-md bg-datadog-purple/10 shrink-0">
+							<svg class="h-3.5 w-3.5 text-datadog-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<rect x="4" y="2" width="16" height="20" rx="2" />
+								<path d="M8 6h8M8 10h8M8 14h4" />
+							</svg>
+						</div>
 						<div class="text-xs font-medium">Logs Calculator</div>
-						<div class="text-[10px] text-muted-foreground leading-tight mt-0.5">Estimate indexing costs</div>
 					</div>
+					<div class="text-[10px] text-muted-foreground leading-tight mt-1.5">Estimate indexing costs</div>
 				</button>
 				
 				<!-- Example Stacks -->
 				{#each filteredTemplates as template (template.id)}
 					<button
 						type="button"
-						class="relative flex items-start gap-3 p-2.5 rounded-md border border-border hover:border-foreground/30 bg-background hover:bg-muted/30 transition-all text-left min-h-[4rem]"
+						class="relative flex flex-col p-2.5 rounded-md border border-border hover:border-foreground/30 bg-background hover:bg-muted/30 transition-all text-left min-h-[4rem]"
 						on:click={() => previewTemplate = template}
 					>
 						<span class="absolute top-2 right-2 flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-datadog-purple text-[10px] font-medium text-white">
 							{template.items.length}
 						</span>
-						<div class="flex items-center justify-center h-8 w-8 rounded-md bg-muted shrink-0">
-							<svg class="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<path d="M22 12l-10 5-10-5" />
-								<path d="M22 7l-10 5-10-5 10-5 10 5z" />
-								<path d="M2 17l10 5 10-5" />
-							</svg>
-						</div>
-						<div class="min-w-0 pr-6">
+						<div class="flex items-center gap-2 pr-6">
+							<div class="flex items-center justify-center h-6 w-6 rounded-md bg-muted shrink-0">
+								<svg class="h-3.5 w-3.5 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M22 12l-10 5-10-5" />
+									<path d="M22 7l-10 5-10-5 10-5 10 5z" />
+									<path d="M2 17l10 5 10-5" />
+								</svg>
+							</div>
 							<div class="text-xs font-medium">{template.name}</div>
-							<div class="text-[10px] text-muted-foreground leading-tight mt-0.5">{template.description || 'Example stack'}</div>
 						</div>
+						<div class="text-[10px] text-muted-foreground leading-tight mt-1.5">{template.description || 'Example stack'}</div>
 					</button>
 				{/each}
 				
