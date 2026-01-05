@@ -1689,9 +1689,12 @@
 				{#each filteredTemplates as template (template.id)}
 					<button
 						type="button"
-						class="flex items-center gap-3 p-2.5 rounded-md border border-border hover:border-foreground/30 bg-background hover:bg-muted/30 transition-all text-left"
+						class="relative flex items-center gap-3 p-2.5 rounded-md border border-border hover:border-foreground/30 bg-background hover:bg-muted/30 transition-all text-left"
 						on:click={() => previewTemplate = template}
 					>
+						<span class="absolute -top-1.5 -right-1.5 flex items-center justify-center h-5 w-5 rounded-full bg-datadog-purple text-[10px] font-medium text-white">
+							{template.items.length}
+						</span>
 						<div class="flex items-center justify-center h-8 w-8 rounded-md bg-muted shrink-0">
 							<svg class="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 								<path d="M22 12l-10 5-10-5" />
@@ -1701,7 +1704,7 @@
 						</div>
 						<div class="min-w-0">
 							<div class="text-xs font-medium truncate">{template.name}</div>
-							<div class="text-[10px] text-muted-foreground truncate">{template.items.length} products</div>
+							<div class="text-[10px] text-muted-foreground truncate">{template.description || 'Example stack'}</div>
 						</div>
 					</button>
 				{/each}
