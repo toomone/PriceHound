@@ -103,7 +103,6 @@ class Template(BaseModel):
     id: str
     name: str
     description: str
-    billing_type: str = "annually"
     items: list[TemplateItem]
     created_at: str
 

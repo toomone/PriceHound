@@ -2,7 +2,6 @@
   "id": "serverless-aws",
   "name": "Serverless AWS Architecture",
   "description": "Cloud-native serverless on AWS: Lambda APM, Data Streams Monitoring (Kafka), RDS Database Monitoring, On-Call, and CI/CD Visibility",
-  "billing_type": "annually",
   "items": [
     {"product": "Serverless Functions APM", "quantity": 50},
     {"product": "Serverless Workload Monitoring - Functions", "quantity": 50},

@@ -2345,7 +2345,8 @@
 						)}
 						{@const isSelected = selectedTemplateItems.has(index)}
 						{@const productDesc = getProductDescription(matchedProduct?.id)}
-						{@const unitPrice = matchedProduct?.billed_annually ? parseFloat(matchedProduct.billed_annually.replace(/[$,]/g, '')) : 0}
+						{@const priceField = showAnnual ? matchedProduct?.billed_annually : showMonthly ? matchedProduct?.billed_month_to_month : matchedProduct?.on_demand}
+						{@const unitPrice = priceField ? parseFloat(priceField.replace(/[$,]/g, '')) : 0}
 						{@const lineTotal = unitPrice * item.quantity}
 						{@const billingUnit = matchedProduct?.billing_unit || ''}
 						{@const multiplierMatch = billingUnit.match(/per\s+([\d,]+(?:\.\d+)?)\s*([KMB]?)\s/i) || billingUnit.match(/per\s+(million)\s/i) || billingUnit.match(/\((\d+)\s*([KMGTB]?B)\)/i)}
@@ -2413,7 +2414,8 @@
 							p.product.toLowerCase().includes(item.product.toLowerCase()) ||
 							item.product.toLowerCase().includes(p.product.toLowerCase())
 						);
-						const price = matched?.billed_annually ? parseFloat(matched.billed_annually.replace(/[$,]/g, '')) : 0;
+						const priceStr = showAnnual ? matched?.billed_annually : showMonthly ? matched?.billed_month_to_month : matched?.on_demand;
+						const price = priceStr ? parseFloat(priceStr.replace(/[$,]/g, '')) : 0;
 						return sum + (price * item.quantity);
 					}, 0)}
 					<div class="mt-3 pt-3 border-t border-border/50 flex justify-end">
