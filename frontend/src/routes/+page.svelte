@@ -1646,11 +1646,11 @@
 			</div>
 			
 			<!-- Stacks Grid - One row visible, scroll for more -->
-			<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-[5.5rem] overflow-y-auto pr-1">
+			<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-[7rem] overflow-y-auto pr-1">
 				<!-- Start from Scratch -->
 				<button
 					type="button"
-					class="flex flex-col p-2.5 rounded-md border-2 border-dashed border-border hover:border-foreground/30 bg-background hover:bg-muted/30 transition-all text-left group min-h-[4rem]"
+					class="flex flex-col p-2.5 rounded-md border-2 border-dashed border-border hover:border-foreground/30 bg-background hover:bg-muted/30 transition-all text-left group min-h-[5.5rem]"
 					on:click={() => {
 						const searchInput = document.querySelector('input[placeholder="Search products..."]');
 						if (searchInput instanceof HTMLInputElement) searchInput.focus();
@@ -1670,7 +1670,7 @@
 				<!-- Logs Calculator -->
 				<button
 					type="button"
-					class="flex flex-col p-2.5 rounded-md border border-border hover:border-datadog-purple/50 bg-background hover:bg-datadog-purple/5 transition-all text-left group min-h-[4rem]"
+					class="flex flex-col p-2.5 rounded-md border border-border hover:border-datadog-purple/50 bg-background hover:bg-datadog-purple/5 transition-all text-left group min-h-[5.5rem]"
 					on:click={() => showLogsCalculator = true}
 				>
 					<div class="flex items-center gap-2">
@@ -1689,7 +1689,7 @@
 				{#each filteredTemplates as template (template.id)}
 					<button
 						type="button"
-						class="relative flex flex-col p-2.5 rounded-md border border-border hover:border-foreground/30 bg-background hover:bg-muted/30 transition-all text-left min-h-[4rem]"
+						class="relative flex flex-col p-2.5 rounded-md border border-border hover:border-foreground/30 bg-background hover:bg-muted/30 transition-all text-left min-h-[5.5rem]"
 						on:click={() => previewTemplate = template}
 					>
 						<span class="absolute top-2 right-2 flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-datadog-purple text-[10px] font-medium text-white">
@@ -1705,7 +1705,7 @@
 							</div>
 							<div class="text-xs font-medium">{template.name}</div>
 						</div>
-						<div class="text-[10px] text-muted-foreground leading-tight mt-1.5">{template.description || 'Example stack'}</div>
+						<div class="text-[10px] text-muted-foreground leading-tight mt-1.5 line-clamp-3">{template.description || 'Example stack'}</div>
 					</button>
 				{/each}
 				
