@@ -2377,8 +2377,18 @@
 									</span>
 								{/if}
 							</span>
-							<span class="text-xs text-muted-foreground shrink-0">
-								× {item.quantity.toLocaleString()}{#if multiplier > 1} <span class="text-muted-foreground/70">= {totalVolume.toLocaleString()} {unitName}</span>{/if}
+							<span class="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
+								× {item.quantity.toLocaleString()}
+								{#if multiplier > 1}
+									<span class="group/calc relative inline-flex">
+										<svg class="h-3.5 w-3.5 text-muted-foreground/40 hover:text-muted-foreground transition-colors" viewBox="0 0 24 24" fill="currentColor">
+											<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+										</svg>
+										<span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs text-background bg-foreground rounded-md shadow-lg opacity-0 group-hover/calc:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 after:content-[''] after:absolute after:top-full after:left-1/2 after:-translate-x-1/2 after:border-4 after:border-transparent after:border-t-foreground">
+											= {totalVolume.toLocaleString()} {unitName}
+										</span>
+									</span>
+								{/if}
 							</span>
 							<span class="text-xs font-mono shrink-0 w-20 text-right {isSelected ? '' : 'text-muted-foreground'}">
 								{#if lineTotal > 0}
