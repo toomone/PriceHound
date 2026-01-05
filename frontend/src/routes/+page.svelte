@@ -2404,6 +2404,26 @@
 						</li>
 					{/each}
 				</ul>
+				
+				<!-- Total -->
+				{#if previewTemplate}
+					{@const templateTotal = previewTemplate.items.reduce((sum, item, index) => {
+						if (!selectedTemplateItems.has(index)) return sum;
+						const matched = products.find(p => 
+							p.product.toLowerCase().includes(item.product.toLowerCase()) ||
+							item.product.toLowerCase().includes(p.product.toLowerCase())
+						);
+						const price = matched?.billed_annually ? parseFloat(matched.billed_annually.replace(/[$,]/g, '')) : 0;
+						return sum + (price * item.quantity);
+					}, 0)}
+					<div class="mt-3 pt-3 border-t border-border/50 flex justify-end">
+						<div class="text-right">
+							<span class="text-xs text-muted-foreground">Total</span>
+							<span class="text-sm font-mono font-bold ml-2">${templateTotal.toLocaleString()}</span>
+							<span class="text-xs text-muted-foreground">/mo</span>
+						</div>
+					</div>
+				{/if}
 			</div>
 
 			<!-- Footer -->
