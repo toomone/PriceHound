@@ -5,14 +5,14 @@
   "items": [
     {"product": "Infrastructure Enterprise", "quantity": 50},
     {"product": "Container Monitoring", "quantity": 500},
-    {"product": "APM Enterprise (APM and Data Streams Monitoring)", "quantity": 25},
+    {"product": "APM Enterprise (APM, Data Streams Monitoring, Continuous Profiler)", "quantity": 25},
     {"product": "Database Monitoring", "quantity": 10},
     {"product": "Real User Monitoring (RUM) - Measure", "quantity": 2000},
     {"product": "Session Replay (Add-On for RUM and Prodct Analytics)", "quantity": 500},
     {"product": "Logs - Ingestion", "quantity": 500},
     {"product": "Logs - Indexed Log Events", "quantity": 100},
     {"product": "Cloud Network Monitoring", "quantity": 50},
-    {"product": "Cloud Security Management Pro (CSPM + CIEM)", "quantity": 50},
+    {"product": "Cloud Security Management (CSM) Pro", "quantity": 50},
     {"product": "On-Call", "quantity": 20}
   ],
   "created_at": "2025-01-01T00:00:00.000000"

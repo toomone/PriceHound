@@ -3,10 +3,10 @@
   "name": "Security & Compliance",
   "description": "Cloud security posture: CSPM for misconfiguration detection, ASM for application security, SIEM for threat detection, and Workload Protection",
   "items": [
-    {"product": "Cloud Security Management Pro (CSPM + CIEM)", "quantity": 20},
-    {"product": "Application Security Management (ASM)", "quantity": 5},
+    {"product": "Cloud Security Management (CSM) Pro", "quantity": 20},
+    {"product": "App and API Protection", "quantity": 5},
     {"product": "Cloud SIEM", "quantity": 10},
-    {"product": "Cloud Workload Security", "quantity": 15},
+    {"product": "Workload Protection", "quantity": 15},
     {"product": "Logs - Ingestion", "quantity": 50},
     {"product": "Logs - Indexed Log Events", "quantity": 15}
   ],
