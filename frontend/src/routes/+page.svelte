@@ -1667,7 +1667,7 @@
 					<div class="text-[10px] text-muted-foreground leading-tight mt-1.5">Build your own quote</div>
 				</button>
 				
-				<!-- Logs Calculator -->
+				<!-- Logging Without Limits Helper -->
 				<button
 					type="button"
 					class="flex flex-col p-2.5 rounded-md border border-border hover:border-datadog-purple/50 bg-background hover:bg-datadog-purple/5 transition-all text-left group min-h-[5.5rem]"
@@ -1680,9 +1680,9 @@
 								<path d="M8 6h8M8 10h8M8 14h4" />
 							</svg>
 						</div>
-						<div class="text-xs font-medium">Logs Calculator</div>
+						<div class="text-xs font-medium">Logging Without Limits</div>
 					</div>
-					<div class="text-[10px] text-muted-foreground leading-tight mt-1.5">Estimate indexing costs</div>
+					<div class="text-[10px] text-muted-foreground leading-tight mt-1.5">Plan your log pipeline</div>
 				</button>
 				
 				<!-- Example Stacks -->
