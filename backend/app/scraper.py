@@ -81,17 +81,17 @@ DEFAULT_REGION = "us"
 # These are used as fallback if scraping the sidebar fails
 DEFAULT_CATEGORIES = [
     {
-        "name": "Infrastructure",
-        "order": 1,
-        "keywords": ["infrastructure", "container", "custom metrics", "ingested custom metrics", 
-                     "serverless", "network", "cloud cost", "fargate", "azure app", "google cloud run"]
-    },
-    {
         "name": "Applications",
         "order": 2,
         "keywords": ["apm", "database", "data streams", "profiler", "continuous profiler", 
                      "dynamic instrumentation", "universal service monitoring", "llm observability",
-                     "data jobs"]
+                     "data jobs", "data observability"]
+    },
+    {
+        "name": "Infrastructure",
+        "order": 1,
+        "keywords": ["infrastructure", "container", "custom metrics", "ingested custom metrics", 
+                     "serverless", "network", "cloud cost", "fargate", "azure app", "google cloud run"]
     },
     {
         "name": "Logs",
