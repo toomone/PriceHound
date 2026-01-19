@@ -536,7 +536,16 @@ def detect_pricing_changes(old_data: list[dict], new_data: list[dict], region: s
 
 
 def load_pricing_changes() -> list[dict]:
-    """Load pricing change history from file."""
+    """Load pricing change history from storage (Redis or file)."""
+    # Try Redis first
+    if is_redis_available():
+        redis = get_redis()
+        changes = redis.get_json(RedisKeys.PRICING_CHANGES)
+        if changes is not None:
+            return changes
+        return []
+    
+    # Fall back to file
     if not PRICING_CHANGES_FILE.exists():
         return []
     try:
@@ -548,11 +557,9 @@ def load_pricing_changes() -> list[dict]:
 
 
 def save_pricing_changes(changes: list[dict]) -> None:
-    """Append new changes to the pricing change history file."""
+    """Append new changes to the pricing change history (Redis or file)."""
     if not changes:
         return
-    
-    PRICING_DIR.mkdir(parents=True, exist_ok=True)
     
     # Load existing changes
     existing_changes = load_pricing_changes()
@@ -564,11 +571,16 @@ def save_pricing_changes(changes: list[dict]) -> None:
     if len(existing_changes) > 1000:
         existing_changes = existing_changes[-1000:]
     
-    # Save to file
-    with open(PRICING_CHANGES_FILE, 'w') as f:
-        json.dump(existing_changes, f, indent=2)
-    
-    logger.info(f"📝 Saved {len(changes)} pricing changes to history (total: {len(existing_changes)})")
+    # Save to Redis or file
+    if is_redis_available():
+        redis = get_redis()
+        redis.set_json(RedisKeys.PRICING_CHANGES, existing_changes)
+        logger.info(f"📝 Saved {len(changes)} pricing changes to Redis (total: {len(existing_changes)})")
+    else:
+        PRICING_DIR.mkdir(parents=True, exist_ok=True)
+        with open(PRICING_CHANGES_FILE, 'w') as f:
+            json.dump(existing_changes, f, indent=2)
+        logger.info(f"📝 Saved {len(changes)} pricing changes to file (total: {len(existing_changes)})")
 
 
 def save_pricing_data(data: list[dict], region: str = DEFAULT_REGION) -> None:

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { fetchChanges, fetchChangesSummary, type PriceChange, type ChangesSummary } from '$lib/api';
+	import { fetchChanges, fetchChangesSummary, fetchRegions, type PriceChange, type ChangesSummary, type Region } from '$lib/api';
 	import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
 
@@ -9,6 +9,19 @@
 	let loading = true;
 	let error: string | null = null;
 	let selectedType: string | null = null;
+	
+	// Region state
+	let regions: Record<string, Region> = {};
+	let selectedRegion: string | null = null; // null means "All Regions"
+	
+	// Region flags mapping
+	const regionFlags: Record<string, string> = {
+		'us': '🇺🇸',
+		'us1-fed': '🇺🇸',
+		'eu1': '🇪🇺',
+		'ap1': '🇯🇵',
+		'ap2': '🇦🇺'
+	};
 
 	const typeLabels: Record<string, string> = {
 		'price_change': 'Price Change',
@@ -74,14 +87,18 @@
 		return labels[field] || field;
 	}
 
-	$: filteredChanges = selectedType 
-		? changes.filter(c => c.type === selectedType)
-		: changes;
+	$: filteredChanges = changes.filter(c => {
+		const typeMatch = selectedType ? c.type === selectedType : true;
+		const regionMatch = selectedRegion ? c.region === selectedRegion : true;
+		return typeMatch && regionMatch;
+	});
 
-	onMount(async () => {
+	async function loadChanges() {
+		loading = true;
+		error = null;
 		try {
 			[changes, summary] = await Promise.all([
-				fetchChanges(200),
+				fetchChanges(200, undefined, selectedRegion || undefined),
 				fetchChangesSummary()
 			]);
 		} catch (e) {
@@ -90,6 +107,19 @@
 		} finally {
 			loading = false;
 		}
+	}
+
+	async function handleRegionChange() {
+		await loadChanges();
+	}
+
+	onMount(async () => {
+		try {
+			regions = await fetchRegions();
+		} catch (e) {
+			console.error('Failed to load regions:', e);
+		}
+		await loadChanges();
 	});
 </script>
 
@@ -102,11 +132,31 @@
 
 <div class="space-y-6">
 	<!-- Header -->
-	<div>
-		<h1 class="text-3xl font-bold tracking-tight mb-2">Price & Allotment Changes</h1>
-		<p class="text-muted-foreground">
-			Track changes to Datadog pricing and allotments detected during automatic syncs.
-		</p>
+	<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+		<div>
+			<h1 class="text-3xl font-bold tracking-tight mb-2">Price & Allotment Changes</h1>
+			<p class="text-muted-foreground">
+				Track changes to Datadog pricing and allotments detected during automatic syncs.
+			</p>
+		</div>
+		
+		<!-- Region Selector -->
+		<div class="flex items-center gap-2 shrink-0">
+			<svg class="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<circle cx="12" cy="12" r="10" />
+				<path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
+			</svg>
+			<select
+				bind:value={selectedRegion}
+				on:change={handleRegionChange}
+				class="h-8 rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-datadog-purple cursor-pointer"
+			>
+				<option value={null}>🌍 All Regions</option>
+				{#each Object.entries(regions) as [id, region]}
+					<option value={id}>{regionFlags[id] || '🌍'} {region.name}</option>
+				{/each}
+			</select>
+		</div>
 	</div>
 
 	{#if loading}

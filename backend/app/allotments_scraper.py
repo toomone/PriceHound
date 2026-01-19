@@ -297,7 +297,16 @@ def detect_allotment_changes(old_data: list[dict], new_data: list[dict]) -> list
 
 
 def load_allotment_changes() -> list[dict]:
-    """Load allotment change history from file."""
+    """Load allotment change history from storage (Redis or file)."""
+    # Try Redis first
+    if is_redis_available():
+        redis = get_redis()
+        changes = redis.get_json(RedisKeys.ALLOTMENTS_CHANGES)
+        if changes is not None:
+            return changes
+        return []
+    
+    # Fall back to file
     if not ALLOTMENTS_CHANGES_FILE.exists():
         return []
     try:
@@ -309,11 +318,9 @@ def load_allotment_changes() -> list[dict]:
 
 
 def save_allotment_changes(changes: list[dict]) -> None:
-    """Append new changes to the allotment change history file."""
+    """Append new changes to the allotment change history (Redis or file)."""
     if not changes:
         return
-    
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
     
     # Load existing changes
     existing_changes = load_allotment_changes()
@@ -325,11 +332,16 @@ def save_allotment_changes(changes: list[dict]) -> None:
     if len(existing_changes) > 500:
         existing_changes = existing_changes[-500:]
     
-    # Save to file
-    with open(ALLOTMENTS_CHANGES_FILE, 'w') as f:
-        json.dump(existing_changes, f, indent=2)
-    
-    logger.info(f"📝 Saved {len(changes)} allotment changes to history (total: {len(existing_changes)})")
+    # Save to Redis or file
+    if is_redis_available():
+        redis = get_redis()
+        redis.set_json(RedisKeys.ALLOTMENTS_CHANGES, existing_changes)
+        logger.info(f"📝 Saved {len(changes)} allotment changes to Redis (total: {len(existing_changes)})")
+    else:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        with open(ALLOTMENTS_CHANGES_FILE, 'w') as f:
+            json.dump(existing_changes, f, indent=2)
+        logger.info(f"📝 Saved {len(changes)} allotment changes to file (total: {len(existing_changes)})")
 
 
 def save_allotments_data(data: list[dict]) -> None:
