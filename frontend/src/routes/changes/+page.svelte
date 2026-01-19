@@ -137,6 +137,7 @@
 			<h1 class="text-3xl font-bold tracking-tight mb-2">Price & Allotment Changes</h1>
 			<p class="text-muted-foreground">
 				Track changes to Datadog pricing and allotments detected during automatic syncs.
+				<span class="text-xs opacity-70 block mt-1">Collecting changes since December 2025</span>
 			</p>
 		</div>
 		
