@@ -1,11 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { fetchChanges, fetchChangesSummary, fetchRegions, type PriceChange, type ChangesSummary, type Region } from '$lib/api';
+	import { fetchChanges, fetchRegions, type PriceChange, type Region } from '$lib/api';
 	import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
 
 	let changes: PriceChange[] = [];
-	let summary: ChangesSummary | null = null;
 	let loading = true;
 	let error: string | null = null;
 	let selectedType: string | null = null;
@@ -87,20 +86,25 @@
 		return labels[field] || field;
 	}
 
-	$: filteredChanges = changes.filter(c => {
-		const typeMatch = selectedType ? c.type === selectedType : true;
-		const regionMatch = selectedRegion ? c.region === selectedRegion : true;
-		return typeMatch && regionMatch;
-	});
+	// Filter changes by type only (region filtering is done via API)
+	$: filteredChanges = selectedType 
+		? changes.filter(c => c.type === selectedType)
+		: changes;
+	
+	// Compute summary counts from filtered changes (respects region selection)
+	$: filteredSummary = {
+		total: filteredChanges.length,
+		price_changes: filteredChanges.filter(c => c.type === 'price_change').length,
+		product_added: filteredChanges.filter(c => c.type === 'product_added').length,
+		product_removed: filteredChanges.filter(c => c.type === 'product_removed').length,
+		allotment_changes: filteredChanges.filter(c => c.type === 'allotment_change' || c.type === 'allotment_added' || c.type === 'allotment_removed').length
+	};
 
 	async function loadChanges() {
 		loading = true;
 		error = null;
 		try {
-			[changes, summary] = await Promise.all([
-				fetchChanges(200, undefined, selectedRegion || undefined),
-				fetchChangesSummary()
-			]);
+			changes = await fetchChanges(200, undefined, selectedRegion || undefined);
 		} catch (e) {
 			error = 'Failed to load changes. The backend might not be running.';
 			console.error(e);
@@ -110,6 +114,10 @@
 	}
 
 	async function handleRegionChange() {
+		// Save region preference to localStorage
+		if (selectedRegion) {
+			localStorage.setItem('pricehound_region', selectedRegion);
+		}
 		await loadChanges();
 	}
 
@@ -119,6 +127,13 @@
 		} catch (e) {
 			console.error('Failed to load regions:', e);
 		}
+		
+		// Load saved region preference from localStorage
+		const savedRegion = localStorage.getItem('pricehound_region');
+		if (savedRegion && ['us', 'us1-fed', 'eu1', 'ap1', 'ap2'].includes(savedRegion)) {
+			selectedRegion = savedRegion;
+		}
+		
 		await loadChanges();
 	});
 </script>
@@ -185,34 +200,32 @@
 		</Card>
 	{:else}
 		<!-- Summary Cards -->
-		{#if summary}
-			<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-				<Card class="cursor-pointer hover:border-foreground/30 transition-colors {selectedType === null ? 'border-foreground/50' : ''}" on:click={() => selectedType = null}>
-					<CardContent class="pt-4">
-						<div class="text-2xl font-bold">{summary.total_pricing_changes + summary.total_allotment_changes}</div>
-						<div class="text-xs text-muted-foreground">Total Changes</div>
-					</CardContent>
-				</Card>
-				<Card class="cursor-pointer hover:border-foreground/30 transition-colors {selectedType === 'price_change' ? 'border-amber-500' : ''}" on:click={() => selectedType = selectedType === 'price_change' ? null : 'price_change'}>
-					<CardContent class="pt-4">
-						<div class="text-2xl font-bold text-amber-600">{summary.changes_by_type['price_change'] || 0}</div>
-						<div class="text-xs text-muted-foreground">Price Changes</div>
-					</CardContent>
-				</Card>
-				<Card class="cursor-pointer hover:border-foreground/30 transition-colors {selectedType === 'product_added' ? 'border-emerald-500' : ''}" on:click={() => selectedType = selectedType === 'product_added' ? null : 'product_added'}>
-					<CardContent class="pt-4">
-						<div class="text-2xl font-bold text-emerald-600">{summary.changes_by_type['product_added'] || 0}</div>
-						<div class="text-xs text-muted-foreground">New Products</div>
-					</CardContent>
-				</Card>
-				<Card class="cursor-pointer hover:border-foreground/30 transition-colors {selectedType === 'allotment_change' ? 'border-blue-500' : ''}" on:click={() => selectedType = selectedType === 'allotment_change' ? null : 'allotment_change'}>
-					<CardContent class="pt-4">
-						<div class="text-2xl font-bold text-blue-600">{summary.changes_by_type['allotment_change'] || 0}</div>
-						<div class="text-xs text-muted-foreground">Allotment Changes</div>
-					</CardContent>
-				</Card>
-			</div>
-		{/if}
+		<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+			<Card class="cursor-pointer hover:border-foreground/30 transition-colors {selectedType === null ? 'border-foreground/50' : ''}" on:click={() => selectedType = null}>
+				<CardContent class="pt-4">
+					<div class="text-2xl font-bold">{changes.length}</div>
+					<div class="text-xs text-muted-foreground">Total Changes</div>
+				</CardContent>
+			</Card>
+			<Card class="cursor-pointer hover:border-foreground/30 transition-colors {selectedType === 'price_change' ? 'border-amber-500' : ''}" on:click={() => selectedType = selectedType === 'price_change' ? null : 'price_change'}>
+				<CardContent class="pt-4">
+					<div class="text-2xl font-bold text-amber-600">{filteredSummary.price_changes}</div>
+					<div class="text-xs text-muted-foreground">Price Changes</div>
+				</CardContent>
+			</Card>
+			<Card class="cursor-pointer hover:border-foreground/30 transition-colors {selectedType === 'product_added' ? 'border-emerald-500' : ''}" on:click={() => selectedType = selectedType === 'product_added' ? null : 'product_added'}>
+				<CardContent class="pt-4">
+					<div class="text-2xl font-bold text-emerald-600">{filteredSummary.product_added}</div>
+					<div class="text-xs text-muted-foreground">New Products</div>
+				</CardContent>
+			</Card>
+			<Card class="cursor-pointer hover:border-foreground/30 transition-colors {selectedType === 'allotment_change' ? 'border-blue-500' : ''}" on:click={() => selectedType = selectedType === 'allotment_change' ? null : 'allotment_change'}>
+				<CardContent class="pt-4">
+					<div class="text-2xl font-bold text-blue-600">{filteredSummary.allotment_changes}</div>
+					<div class="text-xs text-muted-foreground">Allotment Changes</div>
+				</CardContent>
+			</Card>
+		</div>
 
 		<!-- Changes List -->
 		<Card>
