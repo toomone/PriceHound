@@ -67,6 +67,9 @@ htmlcov/
 # SvelteKit
 .svelte-kit/
 
+# Redis backups (stored as GitHub Actions artifacts)
+backups/*.json
+
 # Misc
 *.bak
 *.orig
