@@ -303,16 +303,27 @@
 		// Check for edit parameter (editing existing quote)
 		const editParam = $page.url.searchParams.get('edit');
 		if (editParam) {
-			// Try to parse as JSON (legacy format from quote page redirect)
+			// Try to parse as JSON (format from quote page redirect)
+			let editData = null;
 			try {
-				const editData = JSON.parse(decodeURIComponent(editParam));
-				await loadEditQuote(editData);
-				// Update URL to simple format (bookmarkable)
-				goto(`/?edit=${editData.quoteId}`, { replaceState: true });
-				return;
-			} catch (e) {
+				editData = JSON.parse(decodeURIComponent(editParam));
+			} catch {
 				// Not JSON, treat as simple quote ID (bookmarkable URL)
 				await loadEditFromQuoteId(editParam);
+				return;
+			}
+			
+			// If we have valid JSON data, load the quote
+			if (editData && editData.quoteId) {
+				try {
+					await loadEditQuote(editData);
+					// Update URL to simple format (bookmarkable)
+					goto(`/?edit=${editData.quoteId}`, { replaceState: true });
+				} catch (e) {
+					console.error('Failed to load edit quote:', e);
+					toast.error('Failed to load quote for editing.');
+					goto('/', { replaceState: true });
+				}
 				return;
 			}
 		}
