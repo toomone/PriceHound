@@ -77,6 +77,7 @@
 		// Encode quote data as URL parameter for the main page (include product IDs and region)
 		const cloneData = {
 			name: quote.name,
+			description: quote.description,
 			region: quote.region,
 			items: quote.items.map(item => ({
 				id: item.id,
@@ -131,6 +132,7 @@
 		const editData = {
 			quoteId: quote.id,
 			name: quote.name,
+			description: quote.description,
 			region: quote.region,
 			editPassword: isUnlocked ? editPassword : null,
 			items: quote.items.map(item => ({

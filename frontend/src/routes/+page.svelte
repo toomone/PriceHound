@@ -477,8 +477,10 @@
 		showTemplates = false;
 	}
 
-	async function loadClonedQuote(cloneData: { name: string; items: { id?: string; product: string; quantity: number }[] }) {
+	async function loadClonedQuote(cloneData: { name: string; description?: string | null; items: { id?: string; product: string; quantity: number }[] }) {
 		quoteName = cloneData.name ? `${cloneData.name} (Copy)` : '';
+		quoteDescription = cloneData.description || '';
+		showDescriptionEditor = !!cloneData.description;
 		
 		// Map cloned items to lines - match by ID first, then by name
 		const newLines: LineItem[] = [];
@@ -507,11 +509,13 @@
 		}
 	}
 
-	async function loadEditQuote(editData: { quoteId: string; name: string; region: string; editPassword: string | null; items: { id?: string; product: string; quantity: number }[] }) {
+	async function loadEditQuote(editData: { quoteId: string; name: string; description?: string | null; region: string; editPassword: string | null; items: { id?: string; product: string; quantity: number }[] }) {
 		// Store edit mode info
 		editingQuoteId = editData.quoteId;
 		editQuotePassword = editData.editPassword;
 		quoteName = editData.name || '';
+		quoteDescription = editData.description || '';
+		showDescriptionEditor = !!editData.description;
 		
 		// Change region if different
 		if (editData.region && editData.region !== selectedRegion) {
