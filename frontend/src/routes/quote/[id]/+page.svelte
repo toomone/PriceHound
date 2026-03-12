@@ -128,9 +128,13 @@
 
 	function redirectToEditor() {
 		if (!quote) return;
-		// Just pass the quote ID - the main page will fetch the quote fresh
-		// This avoids URL encoding issues with special characters in description/name
-		goto(`/?edit=${quote.id}`);
+		// Pass quote ID and password (if verified) - the main page will use password directly
+		// This avoids asking for password twice
+		if (isUnlocked && editPassword) {
+			goto(`/?edit=${quote.id}&pw=${encodeURIComponent(editPassword)}`);
+		} else {
+			goto(`/?edit=${quote.id}`);
+		}
 	}
 
 	$: billingLabel =

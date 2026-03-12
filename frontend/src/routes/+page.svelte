@@ -308,13 +308,19 @@
 		// Check for edit parameter (editing existing quote)
 		const editParam = $page.url.searchParams.get('edit');
 		if (editParam) {
+			// Check for pre-verified password (from quote page redirect)
+			const pwParam = $page.url.searchParams.get('pw');
+			const preVerifiedPassword = pwParam ? decodeURIComponent(pwParam) : undefined;
+			
 			// Try to parse as JSON (format from quote page redirect)
 			let editData = null;
 			try {
 				editData = JSON.parse(decodeURIComponent(editParam));
 			} catch {
 				// Not JSON, treat as simple quote ID (bookmarkable URL)
-				await loadEditFromQuoteId(editParam);
+				await loadEditFromQuoteId(editParam, preVerifiedPassword);
+				// Clean up URL to remove password parameter
+				goto(`/?edit=${editParam}`, { replaceState: true });
 				return;
 			}
 			
@@ -566,16 +572,21 @@
 		}
 	}
 
-	async function loadEditFromQuoteId(quoteId: string) {
+	async function loadEditFromQuoteId(quoteId: string, preVerifiedPassword?: string) {
 		// Fetch the quote from API
 		try {
 			const quote = await fetchQuote(quoteId);
 			
 			if (quote.is_protected) {
-				// Quote is protected, show password modal
-				pendingEditQuoteId = quoteId;
-				pendingEditQuote = quote;
-				editPasswordModalOpen = true;
+				if (preVerifiedPassword) {
+					// Password already verified (e.g., from quote page redirect), use it directly
+					await loadQuoteIntoEditor(quote, preVerifiedPassword);
+				} else {
+					// Quote is protected, show password modal
+					pendingEditQuoteId = quoteId;
+					pendingEditQuote = quote;
+					editPasswordModalOpen = true;
+				}
 			} else {
 				// Not protected, load directly
 				await loadQuoteIntoEditor(quote, null);
