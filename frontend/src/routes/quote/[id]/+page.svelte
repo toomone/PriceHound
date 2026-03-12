@@ -128,21 +128,9 @@
 
 	function redirectToEditor() {
 		if (!quote) return;
-		// Encode quote data for the editor, include the quote ID and password for saving
-		const editData = {
-			quoteId: quote.id,
-			name: quote.name,
-			description: quote.description,
-			region: quote.region,
-			editPassword: isUnlocked ? editPassword : null,
-			items: quote.items.map(item => ({
-				id: item.id,
-				product: item.product,
-				quantity: item.quantity
-			}))
-		};
-		const encoded = encodeURIComponent(JSON.stringify(editData));
-		goto(`/?edit=${encoded}`);
+		// Just pass the quote ID - the main page will fetch the quote fresh
+		// This avoids URL encoding issues with special characters in description/name
+		goto(`/?edit=${quote.id}`);
 	}
 
 	$: billingLabel =
