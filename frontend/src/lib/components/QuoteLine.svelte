@@ -27,9 +27,12 @@
 	export let hideCategory: boolean = false; // Hide category label when grouped
 	export let isGrouped: boolean = false; // Part of a category group (reduces visual weight)
 	export let searchId: string | undefined = undefined; // ID for the product search field (for guided tour)
+	export let negotiatedPrice: number | null = null; // Custom negotiated price (annual only)
+	
+	let showNegotiatedInput = negotiatedPrice !== null && negotiatedPrice > 0;
 
 	const dispatch = createEventDispatcher<{
-		update: { product: Product | null; quantity: number };
+		update: { product: Product | null; quantity: number; negotiatedPrice?: number | null };
 		remove: void;
 	}>();
 
@@ -46,12 +49,17 @@
 	$: monthlyPercent = selectedProduct ? parsePercentage(selectedProduct.billed_month_to_month) : 0;
 	$: onDemandPercent = selectedProduct ? parsePercentage(selectedProduct.on_demand) : 0;
 
+	// Negotiated price handling (annual only)
+	$: hasNegotiatedPrice = negotiatedPrice !== null && negotiatedPrice > 0;
+	$: effectiveAnnualPrice = hasNegotiatedPrice ? negotiatedPrice! : annualPrice;
+
 	// For allotments, only charge for quantity exceeding the included amount
 	$: chargeableQuantity = isAllotment ? Math.max(0, quantity - includedQuantity) : quantity;
 
 	// Calculate totals for all 3 (only for chargeable quantity)
 	// For percentage items, the "total" shown is just the percentage - actual calculation done in summary
-	$: annualTotal = isPercentageBased ? annualPercent : annualPrice * chargeableQuantity;
+	// For annual, use negotiated price if available
+	$: annualTotal = isPercentageBased ? annualPercent : effectiveAnnualPrice * chargeableQuantity;
 	$: monthlyTotal = isPercentageBased ? monthlyPercent : monthlyPrice * chargeableQuantity;
 	$: onDemandTotal = isPercentageBased ? onDemandPercent : onDemandPrice * chargeableQuantity;
 
@@ -59,11 +67,26 @@
 
 	function handleProductSelect(event: CustomEvent<Product>) {
 		selectedProduct = event.detail;
-		dispatch('update', { product: selectedProduct, quantity });
+		// Reset negotiated price when product changes
+		negotiatedPrice = null;
+		showNegotiatedInput = false;
+		dispatch('update', { product: selectedProduct, quantity, negotiatedPrice: null });
 	}
 
 	function handleQuantityChange() {
-		dispatch('update', { product: selectedProduct, quantity });
+		dispatch('update', { product: selectedProduct, quantity, negotiatedPrice });
+	}
+	
+	function handleNegotiatedPriceChange() {
+		dispatch('update', { product: selectedProduct, quantity, negotiatedPrice });
+	}
+	
+	function toggleNegotiatedPrice() {
+		showNegotiatedInput = !showNegotiatedInput;
+		if (!showNegotiatedInput) {
+			negotiatedPrice = null;
+			dispatch('update', { product: selectedProduct, quantity, negotiatedPrice: null });
+		}
 	}
 
 	function handleRemove() {
@@ -121,9 +144,42 @@
 				<div class="mb-1.5 h-4"></div>
 				<ProductSearch {products} {selectedProduct} id={searchId} on:select={handleProductSelect} />
 				{#if selectedProduct}
-					<span class="mt-2 inline-flex items-center px-2 py-0.5 rounded-sm text-xs text-muted-foreground bg-zinc-100 dark:bg-zinc-800">
-						{selectedProduct.billing_unit}
-					</span>
+					<div class="mt-2 flex items-center gap-2 flex-wrap">
+						<span class="inline-flex items-center px-2 py-0.5 rounded-sm text-xs text-muted-foreground bg-zinc-100 dark:bg-zinc-800">
+							{selectedProduct.billing_unit}
+						</span>
+						<!-- Negotiated price toggle (small switch) -->
+						{#if !isPercentageBased}
+							<button
+								type="button"
+								class="w-4 h-4 rounded-sm border transition-all flex items-center justify-center {showNegotiatedInput ? 'bg-amber-500 border-amber-500' : 'border-muted-foreground/30 hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950'}"
+								title="Set negotiated price (annual billing only)"
+								on:click={toggleNegotiatedPrice}
+							>
+								{#if showNegotiatedInput}
+									<svg class="w-2.5 h-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+										<path d="M5 13l4 4L19 7" />
+									</svg>
+								{/if}
+							</button>
+						{/if}
+						<!-- Negotiated price input (when enabled) -->
+						{#if showNegotiatedInput && !isPercentageBased}
+							<div class="flex items-center gap-1">
+								<span class="text-xs text-amber-600 dark:text-amber-400">$</span>
+								<input
+									type="number"
+									step="0.01"
+									min="0"
+									bind:value={negotiatedPrice}
+									placeholder={annualPrice.toFixed(2)}
+									class="w-20 h-6 px-1.5 text-xs rounded border border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-950 text-amber-800 dark:text-amber-200 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+									on:change={handleNegotiatedPriceChange}
+								/>
+								<span class="text-[10px] text-amber-600/70 dark:text-amber-400/70">/unit</span>
+							</div>
+						{/if}
+					</div>
 				{/if}
 			</div>
 
@@ -148,9 +204,11 @@
 			<div class="flex gap-2" style="width: {visibleColumns * 110}px;">
 				{#if showAnnual}
 					<div class="flex-1 text-center min-w-[100px]">
-						<span class="mb-1.5 block text-xs font-medium text-datadog-green">Annually</span>
-						<div class="rounded-lg bg-datadog-green/10 border border-datadog-green/20 px-2 py-2">
-							<div class="font-mono text-sm font-semibold text-datadog-green truncate">
+						<span class="mb-1.5 block text-xs font-medium {hasNegotiatedPrice ? 'text-amber-600 dark:text-amber-400' : 'text-datadog-green'}">
+							{hasNegotiatedPrice ? 'Negotiated' : 'Annually'}
+						</span>
+						<div class="rounded-lg {hasNegotiatedPrice ? 'bg-amber-500/10 border-amber-500/20' : 'bg-datadog-green/10 border-datadog-green/20'} border px-2 py-2">
+							<div class="font-mono text-sm font-semibold {hasNegotiatedPrice ? 'text-amber-600 dark:text-amber-400' : 'text-datadog-green'} truncate">
 								{#if !selectedProduct}
 									-
 								{:else if isPercentageBased}
@@ -159,9 +217,12 @@
 									{formatCurrency(annualTotal)}<span class="text-[10px] font-normal opacity-60">/mo</span>
 								{/if}
 							</div>
-							{#if selectedProduct && !isPercentageBased && annualPrice > 0}
-								<div class="font-mono text-[10px] text-datadog-green/60 mt-0.5">
-									{formatCurrency(annualPrice)}/unit
+							{#if selectedProduct && !isPercentageBased && effectiveAnnualPrice > 0}
+								<div class="font-mono text-[10px] {hasNegotiatedPrice ? 'text-amber-600/60 dark:text-amber-400/60' : 'text-datadog-green/60'} mt-0.5">
+									{formatCurrency(effectiveAnnualPrice)}/unit
+									{#if hasNegotiatedPrice}
+										<span class="line-through opacity-50 ml-1">{formatCurrency(annualPrice)}</span>
+									{/if}
 								</div>
 							{:else if selectedProduct && isPercentageBased}
 								<div class="font-mono text-[10px] text-datadog-green/60 mt-0.5">

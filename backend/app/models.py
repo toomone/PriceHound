@@ -36,6 +36,7 @@ class QuoteLineItem(BaseModel):
     total_price_annually: Optional[float] = None
     total_price_monthly: Optional[float] = None
     total_price_on_demand: Optional[float] = None
+    negotiated_price: Optional[float] = None  # Custom negotiated price (annual only)
     is_allotment: bool = False
     allotments: list[AllotmentInfo] = []
 

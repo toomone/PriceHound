@@ -251,7 +251,14 @@
 								>
 									<td class="py-4">
 										<div class="font-medium">{item.product}</div>
-										<div class="text-xs text-muted-foreground">{item.billing_unit}</div>
+										<div class="flex items-center gap-2 text-xs text-muted-foreground">
+											<span>{item.billing_unit}</span>
+											{#if item.negotiated_price && item.negotiated_price > 0}
+												<span class="inline-flex items-center rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
+													Negotiated
+												</span>
+											{/if}
+										</div>
 										{#if item.allotments && item.allotments.length > 0}
 											<div class="mt-1 flex flex-wrap gap-1">
 												{#each item.allotments as allot}
@@ -263,7 +270,7 @@
 										{/if}
 									</td>
 									<td class="py-4 text-center font-mono">{formatNumber(item.quantity)}</td>
-									<td class="py-4 text-right font-mono">{formatCurrency(item.unit_price)}</td>
+									<td class="py-4 text-right font-mono {item.negotiated_price && item.negotiated_price > 0 ? 'text-amber-600 dark:text-amber-400' : ''}">{formatCurrency(item.unit_price)}</td>
 									<td class="py-4 text-right font-mono font-semibold text-datadog-purple">
 										{formatCurrency(item.total_price)}
 									</td>

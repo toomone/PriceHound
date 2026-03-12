@@ -200,16 +200,21 @@ def create_quote(name: Optional[str], region: str, billing_type: str, items: lis
         product_id = item.get('id', '')
         product = item.get('product', '')
         quantity = int(item.get('quantity', 0))
+        negotiated_price = item.get('negotiated_price')  # Custom negotiated price (annual only)
         
         # Get all prices for comparison
         all_prices = get_all_prices_for_product(product_id, product, region)
         
         unit_price, billing_unit, resolved_id = get_price_for_product(product_id, product, billing_type, region)
+        
+        # Use negotiated price for annual calculations if available
+        effective_annual_price = negotiated_price if negotiated_price and negotiated_price > 0 else all_prices['annually']
+        
         item_total = unit_price * quantity
         total += item_total
         
-        # Calculate totals for all billing types
-        total_annually += all_prices['annually'] * quantity
+        # Calculate totals for all billing types (use negotiated price for annual)
+        total_annually += effective_annual_price * quantity
         total_monthly += all_prices['monthly'] * quantity
         total_on_demand += all_prices['on_demand'] * quantity
         
@@ -232,12 +237,13 @@ def create_quote(name: Optional[str], region: str, billing_type: str, items: lis
             unit_price=unit_price,
             total_price=item_total,
             # Add prices for all billing types
-            unit_price_annually=all_prices['annually'],
+            unit_price_annually=effective_annual_price,  # Use negotiated price if set
             unit_price_monthly=all_prices['monthly'],
             unit_price_on_demand=all_prices['on_demand'],
-            total_price_annually=all_prices['annually'] * quantity,
+            total_price_annually=effective_annual_price * quantity,
             total_price_monthly=all_prices['monthly'] * quantity,
             total_price_on_demand=all_prices['on_demand'] * quantity,
+            negotiated_price=negotiated_price if negotiated_price and negotiated_price > 0 else None,
             allotments=allotments
         ))
     
@@ -302,16 +308,21 @@ def update_quote(quote_id: str, name: Optional[str], region: str, billing_type: 
         product_id = item.get('id', '')
         product = item.get('product', '')
         quantity = int(item.get('quantity', 0))
+        negotiated_price = item.get('negotiated_price')  # Custom negotiated price (annual only)
         
         # Get all prices for comparison
         all_prices = get_all_prices_for_product(product_id, product, region)
         
         unit_price, billing_unit, resolved_id = get_price_for_product(product_id, product, billing_type, region)
+        
+        # Use negotiated price for annual calculations if available
+        effective_annual_price = negotiated_price if negotiated_price and negotiated_price > 0 else all_prices['annually']
+        
         item_total = unit_price * quantity
         total += item_total
         
-        # Calculate totals for all billing types
-        total_annually += all_prices['annually'] * quantity
+        # Calculate totals for all billing types (use negotiated price for annual)
+        total_annually += effective_annual_price * quantity
         total_monthly += all_prices['monthly'] * quantity
         total_on_demand += all_prices['on_demand'] * quantity
         
@@ -334,12 +345,13 @@ def update_quote(quote_id: str, name: Optional[str], region: str, billing_type: 
             unit_price=unit_price,
             total_price=item_total,
             # Add prices for all billing types
-            unit_price_annually=all_prices['annually'],
+            unit_price_annually=effective_annual_price,  # Use negotiated price if set
             unit_price_monthly=all_prices['monthly'],
             unit_price_on_demand=all_prices['on_demand'],
-            total_price_annually=all_prices['annually'] * quantity,
+            total_price_annually=effective_annual_price * quantity,
             total_price_monthly=all_prices['monthly'] * quantity,
             total_price_on_demand=all_prices['on_demand'] * quantity,
+            negotiated_price=negotiated_price if negotiated_price and negotiated_price > 0 else None,
             allotments=allotments
         ))
     

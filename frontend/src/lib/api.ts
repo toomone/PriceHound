@@ -49,6 +49,7 @@ export interface QuoteLineItem {
 	quantity: number;
 	unit_price: number;
 	total_price: number;
+	negotiated_price?: number | null;
 	allotments?: { id?: string; allotted_product: string; quantity_included: number; allotted_unit: string }[];
 }
 
@@ -154,7 +155,7 @@ export async function createQuote(
 	name: string | null,
 	region: string,
 	billing_type: string,
-	items: { id?: string; product: string; quantity: number; allotments?: { id?: string; allotted_product: string; quantity_included: number; allotted_unit: string }[] }[],
+	items: { id?: string; product: string; quantity: number; negotiated_price?: number | null; allotments?: { id?: string; allotted_product: string; quantity_included: number; allotted_unit: string }[] }[],
 	edit_password?: string | null,
 	description?: string | null
 ): Promise<Quote> {
@@ -178,7 +179,7 @@ export async function updateQuote(
 	name: string | null,
 	region: string,
 	billing_type: string,
-	items: { id?: string; product: string; quantity: number; allotments?: { id?: string; allotted_product: string; quantity_included: number; allotted_unit: string }[] }[],
+	items: { id?: string; product: string; quantity: number; negotiated_price?: number | null; allotments?: { id?: string; allotted_product: string; quantity_included: number; allotted_unit: string }[] }[],
 	edit_password?: string | null,
 	description?: string | null
 ): Promise<Quote> {

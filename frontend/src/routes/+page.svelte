@@ -34,6 +34,7 @@
 		id: string;
 		product: Product | null;
 		quantity: number;
+		negotiatedPrice?: number | null;
 		isAllotment?: boolean;
 		parentLineId?: string;
 		allotmentInfo?: Allotment;
@@ -186,7 +187,7 @@
 			.reduce((sum, l) => sum + (l.includedQuantity || 0), 0);
 	}
 
-	// Compute all billing totals simultaneously (considering allotments and percentage-based pricing)
+	// Compute all billing totals simultaneously (considering allotments, negotiated prices, and percentage-based pricing)
 	$: totals = (() => {
 		// First pass: calculate base totals (non-percentage items)
 		const baseTotals = validLines.reduce(
@@ -196,7 +197,11 @@
 				// Skip percentage-based products in first pass
 				if (isPercentagePrice(line.product.billed_annually)) return acc;
 				
-				const annualPrice = parsePrice(line.product.billed_annually);
+				const publicAnnualPrice = parsePrice(line.product.billed_annually);
+				// Use negotiated price for annual if available, otherwise use public price
+				const annualPrice = (line.negotiatedPrice && line.negotiatedPrice > 0) 
+					? line.negotiatedPrice 
+					: publicAnnualPrice;
 				const monthlyPrice = parsePrice(line.product.billed_month_to_month);
 				const onDemandPrice = parsePrice(line.product.on_demand);
 				
@@ -610,7 +615,8 @@
 				newLines.push({
 					id: crypto.randomUUID(),
 					product: matchedProduct,
-					quantity: item.quantity
+					quantity: item.quantity,
+					negotiatedPrice: item.negotiated_price ?? null
 				});
 			}
 		}
@@ -807,7 +813,7 @@
 		}
 	}
 
-	function updateLine(id: string, product: Product | null, quantity: number) {
+	function updateLine(id: string, product: Product | null, quantity: number, negotiatedPrice?: number | null) {
 		const existingLine = lines.find(l => l.id === id);
 		const previousProductId = existingLine?.product?.id;
 		
@@ -819,12 +825,13 @@
 		
 		if (product && productChanged) {
 			// Product changed: update line, remove old allotments, add new allotments
+			// Reset negotiated price when product changes
 			
 			// 1. Keep all lines except: the current line and its old allotments
 			newLines = lines.filter(l => l.id !== id && l.parentLineId !== id);
 			
-			// 2. Add the updated line
-			newLines.push({ ...existingLine!, product, quantity });
+			// 2. Add the updated line (reset negotiatedPrice on product change)
+			newLines.push({ ...existingLine!, product, quantity, negotiatedPrice: null });
 			
 			// 3. Find and add new allotments for this product (match by product_id)
 			// Deduplicate by allotted_product to avoid duplicate entries
@@ -862,9 +869,10 @@
 			}
 		} else if (!productChanged && quantity !== existingLine?.quantity) {
 			// Only quantity changed: update line and recalculate allotment quantities
+			// Preserve negotiatedPrice
 			newLines = lines.map(l => {
 				if (l.id === id) {
-					return { ...l, product, quantity };
+					return { ...l, product, quantity, negotiatedPrice: negotiatedPrice ?? l.negotiatedPrice };
 				}
 				if (l.parentLineId === id && l.allotmentInfo) {
 					const newIncluded = l.allotmentInfo.quantity_per_parent * quantity;
@@ -873,8 +881,8 @@
 				return l;
 			});
 		} else {
-			// Just update the line (no product change, no quantity change worth recalculating)
-			newLines = lines.map((l) => (l.id === id ? { ...l, product, quantity } : l));
+			// Just update the line (includes negotiated price changes)
+			newLines = lines.map((l) => (l.id === id ? { ...l, product, quantity, negotiatedPrice: negotiatedPrice ?? l.negotiatedPrice } : l));
 		}
 		
 		// Single assignment to trigger reactivity once
@@ -912,7 +920,7 @@
 		passwordError = '';
 
 		try {
-			// Build items with allotment info and product IDs
+			// Build items with allotment info, product IDs, and negotiated prices
 			const items = validLines
 				.filter(l => !l.isAllotment) // Only parent products
 				.map((l) => {
@@ -930,6 +938,7 @@
 						id: l.product!.id,
 						product: l.product!.product,
 						quantity: l.quantity,
+						negotiated_price: l.negotiatedPrice ?? null,
 						allotments: lineAllotments
 					};
 				});
@@ -1943,7 +1952,8 @@
 											{lineAllotments}
 											hideCategory={index > 0}
 											isGrouped={true}
-											on:update={(e) => updateLine(line.id, e.detail.product, e.detail.quantity)}
+											negotiatedPrice={line.negotiatedPrice}
+											on:update={(e) => updateLine(line.id, e.detail.product, e.detail.quantity, e.detail.negotiatedPrice)}
 											on:remove={() => removeLine(line.id)}
 										/>
 									</div>
@@ -1976,7 +1986,8 @@
 										totalAllottedForProduct={getTotalAllottedForProduct(line.product?.product)}
 										{lineAllotments}
 										hideCategory={false}
-										on:update={(e) => updateLine(line.id, e.detail.product, e.detail.quantity)}
+										negotiatedPrice={line.negotiatedPrice}
+										on:update={(e) => updateLine(line.id, e.detail.product, e.detail.quantity, e.detail.negotiatedPrice)}
 										on:remove={() => removeLine(line.id)}
 									/>
 								</div>
@@ -2010,7 +2021,8 @@
 								totalAllottedForProduct={getTotalAllottedForProduct(line.product?.product)}
 								{lineAllotments}
 								searchId={index === 0 ? 'product-search' : undefined}
-								on:update={(e) => updateLine(line.id, e.detail.product, e.detail.quantity)}
+								negotiatedPrice={line.negotiatedPrice}
+								on:update={(e) => updateLine(line.id, e.detail.product, e.detail.quantity, e.detail.negotiatedPrice)}
 								on:remove={() => removeLine(line.id)}
 							/>
 						</div>
