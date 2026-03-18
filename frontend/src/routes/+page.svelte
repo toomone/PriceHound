@@ -1172,15 +1172,42 @@
 			day: 'numeric' 
 		});
 		
-		const rows = validLines.map(line => `
+		// Filter out allotments - only show parent products
+		const parentLines = validLines.filter(l => !l.isAllotment);
+		
+		const rows = parentLines.map(line => {
+			// Find allotments for this line
+			const lineAllotments = lines.filter(l => l.isAllotment && l.parentLineId === line.id);
+			
+			// Calculate prices - use negotiatedPrice for annual if available
+			const publicAnnualPrice = parsePrice(line.product?.billed_annually);
+			const annualPrice = (line.negotiatedPrice && line.negotiatedPrice > 0) ? line.negotiatedPrice : publicAnnualPrice;
+			const monthlyPrice = parsePrice(line.product?.billed_month_to_month);
+			const onDemandPrice = parsePrice(line.product?.on_demand);
+			
+			const hasNegotiated = line.negotiatedPrice && line.negotiatedPrice > 0;
+			const annualColor = hasNegotiated ? '#d97706' : '#3ecfa8'; // Amber for negotiated, green for standard
+			
+			// Build allotments display
+			const allotmentsHtml = lineAllotments.length > 0 
+				? `<div style="margin-top: 4px; font-size: 11px; color: #888;">
+					${lineAllotments.map(a => `+${formatNumber(a.includedQuantity || 0)} ${escapeHtml(a.product?.product || '')}`).join(', ')}
+				   </div>`
+				: '';
+			
+			return `
 			<tr>
-				<td style="padding: 12px; border-bottom: 1px solid #e5e5e5;">${escapeHtml(line.product?.product || '')}</td>
-				<td style="padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: center;">${line.quantity}</td>
-				<td style="padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: right; color: #3ecfa8;">${formatCurrency(parsePrice(line.product?.billed_annually) * line.quantity)}</td>
-				<td style="padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: right; color: #632ca6;">${formatCurrency(parsePrice(line.product?.billed_month_to_month) * line.quantity)}</td>
-				<td style="padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: right; color: #ff6f00;">${formatCurrency(parsePrice(line.product?.on_demand) * line.quantity)}</td>
+				<td style="padding: 12px; border-bottom: 1px solid #e5e5e5;">
+					${escapeHtml(line.product?.product || '')}
+					${hasNegotiated ? '<span style="font-size: 10px; color: #d97706; margin-left: 8px;">(Negotiated)</span>' : ''}
+					${allotmentsHtml}
+				</td>
+				<td style="padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: center;">${formatNumber(line.quantity)}</td>
+				<td style="padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: right; color: ${annualColor};">${formatCurrency(annualPrice * line.quantity)}</td>
+				<td style="padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: right; color: #632ca6;">${formatCurrency(monthlyPrice * line.quantity)}</td>
+				<td style="padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: right; color: #ff6f00;">${formatCurrency(onDemandPrice * line.quantity)}</td>
 			</tr>
-		`).join('');
+		`}).join('');
 
 		return `
 			<!DOCTYPE html>
