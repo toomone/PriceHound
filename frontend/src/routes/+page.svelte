@@ -1781,6 +1781,14 @@
 					</button>
 				{/if}
 			</div>
+			{#if !editingQuoteId}
+				<p class="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
+					<svg class="h-3.5 w-3.5 text-amber-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+					</svg>
+					<span>Save this URL - there is no quote management. Bookmark it or keep it in your notes.</span>
+				</p>
+			{/if}
 		{/if}
 	{/if}
 
