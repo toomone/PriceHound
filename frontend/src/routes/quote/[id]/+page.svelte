@@ -74,7 +74,7 @@
 
 	function cloneQuote() {
 		if (!quote) return;
-		// Encode quote data as URL parameter for the main page (include product IDs and region)
+		// Encode quote data as URL parameter for the main page (include product IDs, region, and allotments)
 		const cloneData = {
 			name: quote.name,
 			description: quote.description,
@@ -82,7 +82,9 @@
 			items: quote.items.map(item => ({
 				id: item.id,
 				product: item.product,
-				quantity: item.quantity
+				quantity: item.quantity,
+				negotiated_price: item.negotiated_price,
+				allotments: item.allotments
 			}))
 		};
 		const encoded = encodeURIComponent(JSON.stringify(cloneData));

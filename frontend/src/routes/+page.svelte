@@ -499,12 +499,18 @@
 		showTemplates = false;
 	}
 
-	async function loadClonedQuote(cloneData: { name: string; description?: string | null; items: { id?: string; product: string; quantity: number }[] }) {
+	async function loadClonedQuote(cloneData: { name: string; description?: string | null; region?: string; items: { id?: string; product: string; quantity: number; negotiated_price?: number | null; allotments?: any[] }[] }) {
 		quoteName = cloneData.name ? `${cloneData.name} (Copy)` : '';
 		quoteDescription = cloneData.description || '';
 		showDescriptionEditor = !!cloneData.description;
 		
-		// Map cloned items to lines - match by ID first, then by name
+		// Set region if different
+		if (cloneData.region && cloneData.region !== selectedRegion) {
+			selectedRegion = cloneData.region;
+			await loadProducts();
+		}
+		
+		// Map cloned items to lines, including restoring allotments
 		const newLines: LineItem[] = [];
 		for (const item of cloneData.items) {
 			let matchedProduct = item.id 
@@ -517,11 +523,44 @@
 			}
 			
 			if (matchedProduct) {
+				const lineId = crypto.randomUUID();
 				newLines.push({
-					id: crypto.randomUUID(),
+					id: lineId,
 					product: matchedProduct,
-					quantity: item.quantity
+					quantity: item.quantity,
+					negotiatedPrice: item.negotiated_price ?? null
 				});
+				
+				// Restore allotments for this item
+				if (item.allotments && item.allotments.length > 0) {
+					for (const savedAllotment of item.allotments) {
+						// Find the allotted product
+						const allottedProduct = savedAllotment.id
+							? products.find(p => p.id === savedAllotment.id)
+							: products.find(p => p.product === savedAllotment.allotted_product);
+						
+						if (allottedProduct) {
+							// Find the allotment info from global allotments
+							const allotmentInfo = allotments.find(a => 
+								a.parent_product_id === matchedProduct!.id && 
+								a.allotted_product_id === allottedProduct.id
+							) || allotments.find(a =>
+								a.parent_product === matchedProduct!.product &&
+								a.allotted_product === allottedProduct.product
+							);
+							
+							newLines.push({
+								id: crypto.randomUUID(),
+								product: allottedProduct,
+								quantity: savedAllotment.quantity_included,
+								isAllotment: true,
+								parentLineId: lineId,
+								allotmentInfo: allotmentInfo || undefined,
+								includedQuantity: savedAllotment.quantity_included
+							});
+						}
+					}
+				}
 			}
 		}
 		
@@ -531,7 +570,7 @@
 		}
 	}
 
-	async function loadEditQuote(editData: { quoteId: string; name: string; description?: string | null; region: string; editPassword: string | null; items: { id?: string; product: string; quantity: number }[] }) {
+	async function loadEditQuote(editData: { quoteId: string; name: string; description?: string | null; region: string; editPassword: string | null; items: { id?: string; product: string; quantity: number; negotiated_price?: number | null; allotments?: any[] }[] }) {
 		// Store edit mode info
 		editingQuoteId = editData.quoteId;
 		editQuotePassword = editData.editPassword;
@@ -545,7 +584,7 @@
 			await loadProducts();
 		}
 		
-		// Map items to lines - match by ID first, then by name
+		// Map items to lines, including restoring allotments
 		const newLines: LineItem[] = [];
 		for (const item of editData.items) {
 			let matchedProduct = item.id 
@@ -558,11 +597,44 @@
 			}
 			
 			if (matchedProduct) {
+				const lineId = crypto.randomUUID();
 				newLines.push({
-					id: crypto.randomUUID(),
+					id: lineId,
 					product: matchedProduct,
-					quantity: item.quantity
+					quantity: item.quantity,
+					negotiatedPrice: item.negotiated_price ?? null
 				});
+				
+				// Restore allotments for this item
+				if (item.allotments && item.allotments.length > 0) {
+					for (const savedAllotment of item.allotments) {
+						// Find the allotted product
+						const allottedProduct = savedAllotment.id
+							? products.find(p => p.id === savedAllotment.id)
+							: products.find(p => p.product === savedAllotment.allotted_product);
+						
+						if (allottedProduct) {
+							// Find the allotment info from global allotments
+							const allotmentInfo = allotments.find(a => 
+								a.parent_product_id === matchedProduct!.id && 
+								a.allotted_product_id === allottedProduct.id
+							) || allotments.find(a =>
+								a.parent_product === matchedProduct!.product &&
+								a.allotted_product === allottedProduct.product
+							);
+							
+							newLines.push({
+								id: crypto.randomUUID(),
+								product: allottedProduct,
+								quantity: savedAllotment.quantity_included,
+								isAllotment: true,
+								parentLineId: lineId,
+								allotmentInfo: allotmentInfo || undefined,
+								includedQuantity: savedAllotment.quantity_included
+							});
+						}
+					}
+				}
 			}
 		}
 		
@@ -611,7 +683,7 @@
 			await loadProducts();
 		}
 		
-		// Map items to lines
+		// Map items to lines, including restoring allotments
 		const newLines: LineItem[] = [];
 		for (const item of quote.items) {
 			let matchedProduct = item.id 
@@ -623,12 +695,44 @@
 			}
 			
 			if (matchedProduct) {
+				const lineId = crypto.randomUUID();
 				newLines.push({
-					id: crypto.randomUUID(),
+					id: lineId,
 					product: matchedProduct,
 					quantity: item.quantity,
 					negotiatedPrice: item.negotiated_price ?? null
 				});
+				
+				// Restore allotments for this item
+				if (item.allotments && item.allotments.length > 0) {
+					for (const savedAllotment of item.allotments) {
+						// Find the allotted product
+						const allottedProduct = savedAllotment.id
+							? products.find(p => p.id === savedAllotment.id)
+							: products.find(p => p.product === savedAllotment.allotted_product);
+						
+						if (allottedProduct) {
+							// Find the allotment info from global allotments
+							const allotmentInfo = allotments.find(a => 
+								a.parent_product_id === matchedProduct!.id && 
+								a.allotted_product_id === allottedProduct.id
+							) || allotments.find(a =>
+								a.parent_product === matchedProduct!.product &&
+								a.allotted_product === allottedProduct.product
+							);
+							
+							newLines.push({
+								id: crypto.randomUUID(),
+								product: allottedProduct,
+								quantity: savedAllotment.quantity_included,
+								isAllotment: true,
+								parentLineId: lineId,
+								allotmentInfo: allotmentInfo || undefined,
+								includedQuantity: savedAllotment.quantity_included
+							});
+						}
+					}
+				}
 			}
 		}
 		
