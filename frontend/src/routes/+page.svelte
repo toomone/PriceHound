@@ -102,6 +102,7 @@
 	let previewTemplate: Template | null = null;
 	let selectedTemplateItems: Set<number> = new Set();
 	let stackFilter = '';
+	let getStartedExpanded = false;
 	
 	// Filtered templates based on search
 	$: filteredTemplates = templates.filter(t => 
@@ -1792,103 +1793,122 @@
 		{/if}
 	{/if}
 
-	<!-- Get Started Section - shown when quote is empty -->
+	<!-- Get Started Section - collapsible -->
 	{#if !loading}
-		<div class="mb-6 p-5 rounded-lg border border-border bg-card shadow-sm" transition:slide={{ duration: 200 }}>
-			<div class="flex items-center justify-between mb-4">
-				<div>
+		<div class="mb-6 rounded-lg border border-border bg-card shadow-sm" transition:slide={{ duration: 200 }}>
+			<!-- Header - always visible -->
+			<div class="flex items-center justify-between p-4">
+				<button
+					type="button"
+					class="flex items-center gap-2 hover:opacity-80 transition-opacity"
+					on:click={() => getStartedExpanded = !getStartedExpanded}
+				>
+					<svg 
+						class="h-4 w-4 text-muted-foreground transition-transform duration-200 {getStartedExpanded ? 'rotate-90' : ''}" 
+						viewBox="0 0 24 24" 
+						fill="none" 
+						stroke="currentColor" 
+						stroke-width="2"
+					>
+						<path d="m9 18 6-6-6-6" />
+					</svg>
 					<h3 class="text-sm font-semibold flex items-center gap-2">
 						<svg class="h-4 w-4 text-datadog-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
 						</svg>
 						Get Started
 					</h3>
-					<p class="text-xs text-muted-foreground mt-0.5">Pick an example stack or build from scratch</p>
-				</div>
-				<div class="relative">
-					<svg class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<circle cx="11" cy="11" r="8" />
-						<path d="m21 21-4.35-4.35" />
-					</svg>
-					<input
-						type="text"
-						bind:value={stackFilter}
-						placeholder="Filter stacks..."
-						class="h-8 w-40 rounded-md border border-border bg-background pl-8 pr-3 text-xs placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-ring"
-					/>
-				</div>
-			</div>
-			
-			<!-- Stacks Grid - One row visible, scroll for more -->
-			<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-[6.5rem] overflow-y-auto pr-1">
-				<!-- Start from Scratch -->
-				<button
-					type="button"
-					class="flex flex-col p-2.5 rounded-md border-2 border-dashed border-border hover:border-foreground/30 bg-background hover:bg-muted/30 transition-all text-left group min-h-[5.5rem]"
-					on:click={() => {
-						const searchInput = document.querySelector('input[placeholder="Search products..."]');
-						if (searchInput instanceof HTMLInputElement) searchInput.focus();
-					}}
-				>
-					<div class="flex items-center gap-2">
-						<div class="flex items-center justify-center h-6 w-6 rounded-md bg-muted shrink-0 group-hover:bg-foreground/10 transition-colors">
-							<svg class="h-3.5 w-3.5 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<path d="M12 5v14M5 12h14" />
-							</svg>
-						</div>
-						<div class="text-xs font-medium">Start from scratch</div>
-					</div>
-					<div class="text-[10px] text-muted-foreground leading-tight mt-1.5">Build your own quote</div>
+					<span class="text-xs text-muted-foreground hidden sm:inline">Pick an example stack or build from scratch</span>
 				</button>
 				
-				<!-- Logging Without Limits Helper -->
+				<!-- Logging Without Limits - always visible -->
 				<button
 					type="button"
-					class="flex flex-col p-2.5 rounded-md border border-border hover:border-datadog-purple/50 bg-background hover:bg-datadog-purple/5 transition-all text-left group min-h-[5.5rem]"
+					class="flex items-center gap-2 px-3 py-1.5 rounded-md border border-datadog-purple/30 hover:border-datadog-purple/50 bg-datadog-purple/5 hover:bg-datadog-purple/10 transition-all text-xs font-medium text-datadog-purple"
 					on:click={() => showLogsCalculator = true}
 				>
-					<div class="flex items-center gap-2">
-						<div class="flex items-center justify-center h-6 w-6 rounded-md bg-datadog-purple/10 shrink-0">
-							<svg class="h-3.5 w-3.5 text-datadog-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<rect x="4" y="2" width="16" height="20" rx="2" />
-								<path d="M8 6h8M8 10h8M8 14h4" />
-							</svg>
-						</div>
-						<div class="text-xs font-medium">Logging Without Limits</div>
-					</div>
-					<div class="text-[10px] text-muted-foreground leading-tight mt-1.5">Plan your log pipeline</div>
+					<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<rect x="4" y="2" width="16" height="20" rx="2" />
+						<path d="M8 6h8M8 10h8M8 14h4" />
+					</svg>
+					<span class="hidden sm:inline">Logging Without Limits</span>
+					<span class="sm:hidden">Logs</span>
 				</button>
-				
-				<!-- Example Stacks -->
-				{#each filteredTemplates as template (template.id)}
-					<button
-						type="button"
-						class="relative flex flex-col p-2.5 rounded-md border border-border hover:border-foreground/30 bg-background hover:bg-muted/30 transition-all text-left min-h-[5.5rem]"
-						on:click={() => previewTemplate = template}
-					>
-						<span class="absolute top-2 right-2 flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-datadog-purple text-[10px] font-medium text-white">
-							{template.items.length}
-						</span>
-						<div class="flex items-center gap-2 pr-6">
-							<div class="flex items-center justify-center h-6 w-6 rounded-md bg-muted shrink-0">
-								<svg class="h-3.5 w-3.5 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-									<path d="M22 12l-10 5-10-5" />
-									<path d="M22 7l-10 5-10-5 10-5 10 5z" />
-									<path d="M2 17l10 5 10-5" />
-								</svg>
-							</div>
-							<div class="text-xs font-medium">{template.name}</div>
-						</div>
-						<div class="text-[10px] text-muted-foreground leading-tight mt-1.5 line-clamp-3">{template.description || 'Example stack'}</div>
-					</button>
-				{/each}
-				
-				{#if filteredTemplates.length === 0 && stackFilter !== ''}
-					<div class="col-span-full p-3 flex items-center justify-center text-xs text-muted-foreground">
-						No stacks match "{stackFilter}"
-					</div>
-				{/if}
 			</div>
+			
+			<!-- Collapsible content -->
+			{#if getStartedExpanded}
+				<div transition:slide={{ duration: 200 }} class="px-4 pb-4">
+					<!-- Filter -->
+					<div class="flex items-center justify-end mb-3">
+						<div class="relative">
+							<svg class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<circle cx="11" cy="11" r="8" />
+								<path d="m21 21-4.35-4.35" />
+							</svg>
+							<input
+								type="text"
+								bind:value={stackFilter}
+								placeholder="Filter stacks..."
+								class="h-8 w-40 rounded-md border border-border bg-background pl-8 pr-3 text-xs placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-ring"
+							/>
+						</div>
+					</div>
+					
+					<!-- Stacks Grid -->
+					<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-[6.5rem] overflow-y-auto pr-1">
+						<!-- Start from Scratch -->
+						<button
+							type="button"
+							class="flex flex-col p-2.5 rounded-md border-2 border-dashed border-border hover:border-foreground/30 bg-background hover:bg-muted/30 transition-all text-left group min-h-[5.5rem]"
+							on:click={() => {
+								const searchInput = document.querySelector('input[placeholder="Search products..."]');
+								if (searchInput instanceof HTMLInputElement) searchInput.focus();
+							}}
+						>
+							<div class="flex items-center gap-2">
+								<div class="flex items-center justify-center h-6 w-6 rounded-md bg-muted shrink-0 group-hover:bg-foreground/10 transition-colors">
+									<svg class="h-3.5 w-3.5 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M12 5v14M5 12h14" />
+									</svg>
+								</div>
+								<div class="text-xs font-medium">Start from scratch</div>
+							</div>
+							<div class="text-[10px] text-muted-foreground leading-tight mt-1.5">Build your own quote</div>
+						</button>
+						
+						<!-- Example Stacks -->
+						{#each filteredTemplates as template (template.id)}
+							<button
+								type="button"
+								class="relative flex flex-col p-2.5 rounded-md border border-border hover:border-foreground/30 bg-background hover:bg-muted/30 transition-all text-left min-h-[5.5rem]"
+								on:click={() => previewTemplate = template}
+							>
+								<span class="absolute top-2 right-2 flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-datadog-purple text-[10px] font-medium text-white">
+									{template.items.length}
+								</span>
+								<div class="flex items-center gap-2 pr-6">
+									<div class="flex items-center justify-center h-6 w-6 rounded-md bg-muted shrink-0">
+										<svg class="h-3.5 w-3.5 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+											<path d="M22 12l-10 5-10-5" />
+											<path d="M22 7l-10 5-10-5 10-5 10 5z" />
+											<path d="M2 17l10 5 10-5" />
+										</svg>
+									</div>
+									<div class="text-xs font-medium">{template.name}</div>
+								</div>
+								<div class="text-[10px] text-muted-foreground leading-tight mt-1.5 line-clamp-3">{template.description || 'Example stack'}</div>
+							</button>
+						{/each}
+						
+						{#if filteredTemplates.length === 0 && stackFilter !== ''}
+							<div class="col-span-full p-3 flex items-center justify-center text-xs text-muted-foreground">
+								No stacks match "{stackFilter}"
+							</div>
+						{/if}
+					</div>
+				</div>
+			{/if}
 		</div>
 	{/if}
 
