@@ -1746,50 +1746,52 @@
 	{#if shareUrl || editingQuoteId}
 		{@const displayUrl = shareUrl || (editingQuoteId ? `${window.location.origin}/quote/${editingQuoteId}` : '')}
 		{#if displayUrl}
-			<div transition:slide={{ duration: 200 }} class="mb-4 flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3">
-				{#if editingQuoteId}
-					<span class="text-xs font-medium text-datadog-green bg-datadog-green/10 px-2 py-0.5 rounded">Editing</span>
-				{/if}
-				<span class="text-sm text-muted-foreground">Public URL <span class="text-xs opacity-70">(expires in 30 days)</span>:</span>
-				<a 
-					href={displayUrl} 
-					target="_blank"
-					class="flex-1 truncate font-mono text-sm text-datadog-purple hover:underline"
-				>
-					{displayUrl}
-				</a>
-				<button
-					type="button"
-					class="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-					on:click={() => { navigator.clipboard.writeText(displayUrl); toast.success('URL copied to clipboard!'); }}
-					title="Copy URL"
-				>
-					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<rect x="9" y="9" width="13" height="13" rx="2" />
-						<path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-					</svg>
-				</button>
-				{#if !editingQuoteId}
+			<div transition:slide={{ duration: 200 }} class="mb-4 rounded-lg border border-border bg-muted/30 px-4 py-3">
+				<div class="flex items-center gap-3">
+					{#if editingQuoteId}
+						<span class="text-xs font-medium text-datadog-green bg-datadog-green/10 px-2 py-0.5 rounded">Editing</span>
+					{/if}
+					<span class="text-sm text-muted-foreground">Public URL <span class="text-xs opacity-70">(expires in 30 days)</span>:</span>
+					<a 
+						href={displayUrl} 
+						target="_blank"
+						class="flex-1 truncate font-mono text-sm text-datadog-purple hover:underline"
+					>
+						{displayUrl}
+					</a>
 					<button
 						type="button"
 						class="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-						on:click={() => shareUrl = ''}
-						title="Dismiss"
+						on:click={() => { navigator.clipboard.writeText(displayUrl); toast.success('URL copied to clipboard!'); }}
+						title="Copy URL"
 					>
 						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<path d="M18 6L6 18M6 6l12 12" />
+							<rect x="9" y="9" width="13" height="13" rx="2" />
+							<path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
 						</svg>
 					</button>
+					{#if !editingQuoteId}
+						<button
+							type="button"
+							class="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+							on:click={() => shareUrl = ''}
+							title="Dismiss"
+						>
+							<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M18 6L6 18M6 6l12 12" />
+							</svg>
+						</button>
+					{/if}
+				</div>
+				{#if !editingQuoteId}
+					<p class="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
+						<svg class="h-3.5 w-3.5 text-amber-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+						</svg>
+						<span>Save this URL - there is no quote management. Bookmark it or keep it in your notes.</span>
+					</p>
 				{/if}
 			</div>
-			{#if !editingQuoteId}
-				<p class="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
-					<svg class="h-3.5 w-3.5 text-amber-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-					</svg>
-					<span>Save this URL - there is no quote management. Bookmark it or keep it in your notes.</span>
-				</p>
-			{/if}
 		{/if}
 	{/if}
 
