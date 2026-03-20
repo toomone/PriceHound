@@ -15,6 +15,7 @@
 	import ModeToggle from '$lib/components/ModeToggle.svelte';
 	import GuidedTour from '$lib/components/GuidedTour.svelte';
 	import CostDistributionChart from '$lib/components/CostDistributionChart.svelte';
+	import GetStartedBanner from '$lib/components/GetStartedBanner.svelte';
 	import { fetchProducts, fetchMetadata, createQuote, updateQuote, fetchQuote, verifyQuotePassword, fetchRegions, fetchAllotments, initAllotments, syncPricing, fetchTemplates, fetchCategoryOrder, type Product, type PricingMetadata, type Region, type Allotment, type Template } from '$lib/api';
 	import { formatCurrency, parsePrice, formatNumber, isPercentagePrice, parsePercentage } from '$lib/utils';
 	import { APP_VERSION } from '$lib/version';
@@ -62,6 +63,7 @@
 	let editingQuoteName = false;
 	let showDescriptionEditor = false;
 	let loading = false;
+	let loadingQuote = false;
 	let saving = false;
 	let syncing = false;
 	let shareUrl = '';
@@ -102,7 +104,6 @@
 	let previewTemplate: Template | null = null;
 	let selectedTemplateItems: Set<number> = new Set();
 	let stackFilter = '';
-	let getStartedExpanded = false;
 	
 	// Filtered templates based on search
 	$: filteredTemplates = templates.filter(t => 
@@ -304,39 +305,43 @@
 		await loadRegions();
 		await loadAllotments();
 		await loadProducts();
-		await loadTemplates();
 		
 		// Check for edit parameter (editing existing quote)
 		const editParam = $page.url.searchParams.get('edit');
 		if (editParam) {
-			// Check for pre-verified password (from quote page redirect)
-			const pwParam = $page.url.searchParams.get('pw');
-			const preVerifiedPassword = pwParam ? decodeURIComponent(pwParam) : undefined;
-			
-			// Try to parse as JSON (format from quote page redirect)
-			let editData = null;
+			loadingQuote = true;
 			try {
-				editData = JSON.parse(decodeURIComponent(editParam));
-			} catch {
-				// Not JSON, treat as simple quote ID (bookmarkable URL)
-				await loadEditFromQuoteId(editParam, preVerifiedPassword);
-				// Clean up URL to remove password parameter
-				goto(`/?edit=${editParam}`, { replaceState: true });
-				return;
-			}
-			
-			// If we have valid JSON data, load the quote
-			if (editData && editData.quoteId) {
+				// Check for pre-verified password (from quote page redirect)
+				const pwParam = $page.url.searchParams.get('pw');
+				const preVerifiedPassword = pwParam ? decodeURIComponent(pwParam) : undefined;
+				
+				// Try to parse as JSON (format from quote page redirect)
+				let editData = null;
 				try {
-					await loadEditQuote(editData);
-					// Update URL to simple format (bookmarkable)
-					goto(`/?edit=${editData.quoteId}`, { replaceState: true });
-				} catch (e) {
-					console.error('Failed to load edit quote:', e);
-					toast.error('Failed to load quote for editing.');
-					goto('/', { replaceState: true });
+					editData = JSON.parse(decodeURIComponent(editParam));
+				} catch {
+					// Not JSON, treat as simple quote ID (bookmarkable URL)
+					await loadEditFromQuoteId(editParam, preVerifiedPassword);
+					// Clean up URL to remove password parameter
+					goto(`/?edit=${editParam}`, { replaceState: true });
+					return;
 				}
-				return;
+				
+				// If we have valid JSON data, load the quote
+				if (editData && editData.quoteId) {
+					try {
+						await loadEditQuote(editData);
+						// Update URL to simple format (bookmarkable)
+						goto(`/?edit=${editData.quoteId}`, { replaceState: true });
+					} catch (e) {
+						console.error('Failed to load edit quote:', e);
+						toast.error('Failed to load quote for editing.');
+						goto('/', { replaceState: true });
+					}
+					return;
+				}
+			} finally {
+				loadingQuote = false;
 			}
 		}
 		
@@ -404,6 +409,12 @@
 		} finally {
 			loadingTemplates = false;
 		}
+	}
+
+	/** Example stacks: fetch only when Get Started is expanded (not on initial page load) */
+	async function loadGetStartedTemplatesIfNeeded() {
+		if (templates.length > 0 || loadingTemplates) return;
+		await loadTemplates();
 	}
 
 	function toggleTemplateItem(index: number) {
@@ -756,8 +767,13 @@
 			const isValid = await verifyQuotePassword(pendingEditQuoteId, editPasswordInput);
 			
 			if (isValid) {
-				await loadQuoteIntoEditor(pendingEditQuote, editPasswordInput);
 				editPasswordModalOpen = false;
+				loadingQuote = true;
+				try {
+					await loadQuoteIntoEditor(pendingEditQuote, editPasswordInput);
+				} finally {
+					loadingQuote = false;
+				}
 				editPasswordInput = '';
 				pendingEditQuoteId = null;
 				pendingEditQuote = null;
@@ -1568,6 +1584,17 @@
 
 <svelte:window on:click={handleClickOutside} />
 
+{#if loadingQuote}
+	<div transition:fade={{ duration: 200 }} class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+		<div class="flex flex-col items-center gap-4">
+			<svg class="h-12 w-12 animate-spin text-datadog-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<path d="M21 12a9 9 0 11-6.219-8.56" />
+			</svg>
+			<p class="text-sm font-medium text-muted-foreground">Loading quote...</p>
+		</div>
+	</div>
+{/if}
+
 <div class="container mx-auto max-w-7xl px-4 py-8">
 	<!-- Header -->
 	<header class="mb-8 relative">
@@ -1795,124 +1822,14 @@
 		{/if}
 	{/if}
 
-	<!-- Get Started Section - collapsible -->
-	{#if !loading}
-		<div class="mb-6 rounded-lg border border-border bg-card shadow-sm" transition:slide={{ duration: 200 }}>
-			<!-- Header - always visible -->
-			<div class="flex items-center justify-between p-4">
-				<button
-					type="button"
-					class="flex items-center gap-2 hover:opacity-80 transition-opacity"
-					on:click={() => getStartedExpanded = !getStartedExpanded}
-				>
-					<svg 
-						class="h-4 w-4 text-muted-foreground transition-transform duration-200 {getStartedExpanded ? 'rotate-90' : ''}" 
-						viewBox="0 0 24 24" 
-						fill="none" 
-						stroke="currentColor" 
-						stroke-width="2"
-					>
-						<path d="m9 18 6-6-6-6" />
-					</svg>
-					<h3 class="text-sm font-semibold flex items-center gap-2">
-						<svg class="h-4 w-4 text-datadog-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-						</svg>
-						Get Started
-					</h3>
-					<span class="text-xs text-muted-foreground hidden sm:inline">Pick an example stack or build from scratch</span>
-				</button>
-				
-				<!-- Logging Without Limits - always visible -->
-				<button
-					type="button"
-					class="flex items-center gap-2 px-3 py-1.5 rounded-md border border-datadog-purple/30 hover:border-datadog-purple/50 bg-datadog-purple/5 hover:bg-datadog-purple/10 transition-all text-xs font-medium text-datadog-purple"
-					on:click={() => showLogsCalculator = true}
-				>
-					<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<rect x="4" y="2" width="16" height="20" rx="2" />
-						<path d="M8 6h8M8 10h8M8 14h4" />
-					</svg>
-					<span class="hidden sm:inline">Logging Without Limits</span>
-					<span class="sm:hidden">Logs</span>
-				</button>
-			</div>
-			
-			<!-- Collapsible content -->
-			{#if getStartedExpanded}
-				<div transition:slide={{ duration: 200 }} class="px-4 pb-4">
-					<!-- Filter -->
-					<div class="flex items-center justify-end mb-3">
-						<div class="relative">
-							<svg class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<circle cx="11" cy="11" r="8" />
-								<path d="m21 21-4.35-4.35" />
-							</svg>
-							<input
-								type="text"
-								bind:value={stackFilter}
-								placeholder="Filter stacks..."
-								class="h-8 w-40 rounded-md border border-border bg-background pl-8 pr-3 text-xs placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-ring"
-							/>
-						</div>
-					</div>
-					
-					<!-- Stacks Grid -->
-					<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-[6.5rem] overflow-y-auto pr-1">
-						<!-- Start from Scratch -->
-						<button
-							type="button"
-							class="flex flex-col p-2.5 rounded-md border-2 border-dashed border-border hover:border-foreground/30 bg-background hover:bg-muted/30 transition-all text-left group min-h-[5.5rem]"
-							on:click={() => {
-								const searchInput = document.querySelector('input[placeholder="Search products..."]');
-								if (searchInput instanceof HTMLInputElement) searchInput.focus();
-							}}
-						>
-							<div class="flex items-center gap-2">
-								<div class="flex items-center justify-center h-6 w-6 rounded-md bg-muted shrink-0 group-hover:bg-foreground/10 transition-colors">
-									<svg class="h-3.5 w-3.5 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-										<path d="M12 5v14M5 12h14" />
-									</svg>
-								</div>
-								<div class="text-xs font-medium">Start from scratch</div>
-							</div>
-							<div class="text-[10px] text-muted-foreground leading-tight mt-1.5">Build your own quote</div>
-						</button>
-						
-						<!-- Example Stacks -->
-						{#each filteredTemplates as template (template.id)}
-							<button
-								type="button"
-								class="relative flex flex-col p-2.5 rounded-md border border-border hover:border-foreground/30 bg-background hover:bg-muted/30 transition-all text-left min-h-[5.5rem]"
-								on:click={() => previewTemplate = template}
-							>
-								<span class="absolute top-2 right-2 flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-datadog-purple text-[10px] font-medium text-white">
-									{template.items.length}
-								</span>
-								<div class="flex items-center gap-2 pr-6">
-									<div class="flex items-center justify-center h-6 w-6 rounded-md bg-muted shrink-0">
-										<svg class="h-3.5 w-3.5 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-											<path d="M22 12l-10 5-10-5" />
-											<path d="M22 7l-10 5-10-5 10-5 10 5z" />
-											<path d="M2 17l10 5 10-5" />
-										</svg>
-									</div>
-									<div class="text-xs font-medium">{template.name}</div>
-								</div>
-								<div class="text-[10px] text-muted-foreground leading-tight mt-1.5 line-clamp-3">{template.description || 'Example stack'}</div>
-							</button>
-						{/each}
-						
-						{#if filteredTemplates.length === 0 && stackFilter !== ''}
-							<div class="col-span-full p-3 flex items-center justify-center text-xs text-muted-foreground">
-								No stacks match "{stackFilter}"
-							</div>
-						{/if}
-					</div>
-				</div>
-			{/if}
-		</div>
-	{/if}
+	<GetStartedBanner
+		bind:stackFilter
+		filteredTemplates={filteredTemplates}
+		loadingTemplates={loadingTemplates}
+		loadOnExpand={loadGetStartedTemplatesIfNeeded}
+		on:logs={() => (showLogsCalculator = true)}
+		on:preview={(e) => (previewTemplate = e.detail)}
+	/>
 
 	<!-- Quote Lines -->
 	<Card class="mb-6 overflow-visible relative z-10">

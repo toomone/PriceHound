@@ -13,8 +13,11 @@ const config = {
 	],
 	kit: {
 		adapter: adapter({
-			fallback: 'index.html'
+			fallback: '200.html'
 		}),
+		prerender: {
+			handleHttpError: 'warn'
+		},
 		alias: {
 			$lib: './src/lib'
 		}
