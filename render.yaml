@@ -46,10 +46,10 @@ services:
       - type: rewrite
         source: /api/*
         destination: https://pricehound-api.onrender.com/api/*
-      # SPA fallback for client-side routing (non-prerendered routes)
+      # SPA fallback: SvelteKit emits a single index.html shell (see adapter-static fallback)
       - type: rewrite
         source: /*
-        destination: /200.html
+        destination: /index.html
     envVars:
       - key: NODE_VERSION
         value: "20"
