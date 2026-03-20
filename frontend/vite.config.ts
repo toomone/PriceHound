@@ -11,6 +11,16 @@ export default defineConfig({
 				changeOrigin: true
 			}
 		}
+	},
+	// Same proxy for `npm run preview` so local prod builds reach the API
+	preview: {
+		port: 4173,
+		proxy: {
+			'/api': {
+				target: 'http://localhost:8000',
+				changeOrigin: true
+			}
+		}
 	}
 });
 

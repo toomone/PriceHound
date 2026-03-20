@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
+	import { slide } from 'svelte/transition';
+	import { cubicOut } from 'svelte/easing';
 	import type { Template } from '$lib/api';
 
 	export let filteredTemplates: Template[] = [];
@@ -72,7 +74,13 @@
 	</div>
 
 	{#if expanded}
-		<div id="get-started-panel" class="px-4 pb-4 border-t border-border/40" role="region" aria-labelledby="get-started-toggle">
+		<div
+			id="get-started-panel"
+			class="px-4 pb-4 border-t border-border/40"
+			role="region"
+			aria-labelledby="get-started-toggle"
+			transition:slide={{ duration: 220, easing: cubicOut, axis: 'y' }}
+		>
 			{#if loadingTemplates}
 				<div class="flex flex-col items-center justify-center gap-3 py-12" aria-busy="true" aria-live="polite">
 					<svg class="h-8 w-8 animate-spin text-datadog-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
