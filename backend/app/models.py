@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+import re
+from pydantic import BaseModel, field_validator
 from typing import Optional
 from datetime import datetime
 
@@ -25,6 +26,12 @@ class AllotmentInfo(BaseModel):
 class QuantityBreakdownLine(BaseModel):
     label: str
     quantity: int
+
+    @field_validator('label')
+    @classmethod
+    def sanitize_label(cls, v: str) -> str:
+        v = re.sub(r'[<>"\'`;]', '', v)
+        return v[:50].strip()
 
 
 class QuoteLineItem(BaseModel):

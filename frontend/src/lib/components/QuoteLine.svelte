@@ -39,6 +39,7 @@
 	export let showBreakdown: boolean = false;
 	
 	let showNegotiatedInput = negotiatedPrice !== null && negotiatedPrice > 0;
+	$: if (negotiatedPrice === null || negotiatedPrice === undefined) showNegotiatedInput = false;
 
 	$: hasBreakdown = quantityBreakdown.length > 0;
 	$: breakdownSum = quantityBreakdown.reduce((s, bl) => s + bl.quantity, 0);
@@ -215,6 +216,18 @@
 								<span class="text-[10px] text-amber-600/70 dark:text-amber-400/70">/unit</span>
 							</div>
 						{/if}
+						<!-- Detail volume breakdown button -->
+						{#if !hasBreakdown && !isAllotment}
+							<button
+								type="button"
+								class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-muted-foreground/60 hover:text-datadog-purple hover:bg-datadog-purple/5 border border-transparent hover:border-datadog-purple/20 transition-all"
+								title="Break down quantity by env, team, etc."
+								on:click={initBreakdown}
+							>
+								<svg class="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14" /></svg>
+								detail volume
+							</button>
+						{/if}
 					</div>
 				{/if}
 			</div>
@@ -237,17 +250,6 @@
 						on:change={handleQuantityChange}
 						class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-center font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200"
 					/>
-				{/if}
-				{#if !hasBreakdown && selectedProduct && !isAllotment}
-					<button
-						type="button"
-						class="mt-1 flex w-full items-center justify-center gap-0.5 text-[10px] text-muted-foreground/60 hover:text-foreground/70 transition-colors"
-						title="Break down quantity by env, team, etc."
-						on:click={initBreakdown}
-					>
-						<svg class="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14" /></svg>
-						detail
-					</button>
 				{/if}
 				{#if totalAllottedForProduct > 0}
 					<div class="mt-1 text-[10px] text-center text-datadog-green">
@@ -377,8 +379,10 @@
 								type="text"
 								bind:value={bl.label}
 								on:change={handleBreakdownChange}
+								on:input={() => { bl.label = bl.label.replace(/[<>"'`;]/g, ''); }}
 								placeholder="env, team..."
-								class="h-6 w-24 rounded border border-border bg-background px-1.5 text-xs placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-ring"
+								maxlength="50"
+								class="h-6 w-40 rounded border border-border bg-background px-1.5 text-xs placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-ring"
 							/>
 							<input
 								type="number"
