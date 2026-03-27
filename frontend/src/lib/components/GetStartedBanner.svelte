@@ -10,7 +10,7 @@
 	/** Called when user expands — should load templates if not already loaded */
 	export let loadOnExpand: () => void | Promise<void> = () => {};
 
-	const dispatch = createEventDispatcher<{ logs: void; preview: Template }>();
+	const dispatch = createEventDispatcher<{ preview: Template }>();
 
 	let expanded = false;
 
@@ -29,7 +29,7 @@
 
 <!-- Static shell: always the same DOM on first paint; expand only adds the panel below -->
 <div class="mb-6 rounded-lg border border-border bg-card shadow-sm">
-	<div class="flex items-center justify-between p-4">
+	<div class="flex items-center p-4">
 		<button
 			type="button"
 			class="flex min-w-0 flex-1 items-center gap-2 text-left hover:opacity-80 transition-opacity"
@@ -54,22 +54,9 @@
 				</svg>
 				Get Started
 			</h3>
-			<span class="text-xs text-muted-foreground hidden sm:inline truncate">
+			<span class="text-xs text-muted-foreground hidden sm:inline truncate pointer-events-none">
 				Pick an example stack or build from scratch
 			</span>
-		</button>
-
-		<button
-			type="button"
-			class="ml-2 flex shrink-0 items-center gap-2 px-3 py-1.5 rounded-md border border-datadog-purple/30 hover:border-datadog-purple/50 bg-datadog-purple/5 hover:bg-datadog-purple/10 transition-all text-xs font-medium text-datadog-purple"
-			on:click={() => dispatch('logs')}
-		>
-			<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-				<rect x="4" y="2" width="16" height="20" rx="2" />
-				<path d="M8 6h8M8 10h8M8 14h4" />
-			</svg>
-			<span class="hidden sm:inline">Logging Without Limits</span>
-			<span class="sm:hidden">Logs</span>
 		</button>
 	</div>
 

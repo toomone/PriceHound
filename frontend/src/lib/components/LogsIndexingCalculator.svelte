@@ -131,11 +131,11 @@
 		<!-- ROW 3: Tabs -->
 		<div class="px-6 py-3 border-b border-border bg-muted/30">
 			<Tabs.Root bind:value={currentStep}>
-				<Tabs.List class="w-full grid grid-cols-4">
-					<Tabs.Trigger value="volume">Ingesting</Tabs.Trigger>
-					<Tabs.Trigger value="retention">Retention</Tabs.Trigger>
-					<Tabs.Trigger value="indexing">Indexing</Tabs.Trigger>
-					<Tabs.Trigger value="extras">Extras</Tabs.Trigger>
+				<Tabs.List class="w-full grid grid-cols-4 gap-0.5 p-0.5">
+					<Tabs.Trigger value="volume" class="w-full cursor-pointer">Ingesting</Tabs.Trigger>
+					<Tabs.Trigger value="retention" class="w-full cursor-pointer">Retention</Tabs.Trigger>
+					<Tabs.Trigger value="indexing" class="w-full cursor-pointer">Indexing</Tabs.Trigger>
+					<Tabs.Trigger value="extras" class="w-full cursor-pointer">Extras</Tabs.Trigger>
 				</Tabs.List>
 			</Tabs.Root>
 		</div>
@@ -243,7 +243,7 @@
 						{#each retentionOptions as option}
 							<button
 								type="button"
-								class="p-3 border text-left transition-all rounded-sm
+								class="w-full touch-manipulation p-3 border text-left transition-all rounded-sm
 									{retentionDays === option.days 
 										? 'border-foreground bg-muted' 
 										: 'border-border hover:border-foreground/50 hover:bg-muted/50'}"
@@ -261,7 +261,7 @@
 							{#each useCasePresets as preset}
 								<button
 									type="button"
-									class="p-3 border text-left transition-all rounded-sm
+									class="w-full touch-manipulation p-3 border text-left transition-all rounded-sm
 										{indexingPercentage === preset.percentage 
 											? 'border-foreground bg-muted' 
 											: 'border-border hover:border-foreground/50 hover:bg-muted/50'}"
@@ -293,20 +293,20 @@
 				{:else if currentStep === 'extras'}
 					<div class="space-y-3">
 					<label
-						class="flex items-start gap-3 p-4 border cursor-pointer transition-all rounded-sm
+						class="flex items-start gap-3 p-4 border cursor-pointer touch-manipulation transition-all rounded-sm
 							{enableFlexStarter ? 'border-foreground bg-muted' : 'border-border hover:border-foreground/50 hover:bg-muted/50'}"
 					>
 						<input 
 							type="checkbox" 
 							bind:checked={enableFlexStarter}
-							class="mt-0.5 h-4 w-4 accent-foreground"
+							class="mt-0.5 h-4 w-4 shrink-0 accent-foreground"
 						/>
-						<div class="flex-1">
+						<div class="min-w-0 flex-1">
 							<div class="font-medium text-sm">Flex Logs Starter</div>
 							<div class="text-xs text-muted-foreground">Query archived logs cost-effectively</div>
 							{#if enableFlexStarter}
-								<div class="mt-2 flex items-center gap-2" transition:slide={{ duration: 150 }}>
-									<Input type="number" bind:value={flexStarterEvents} min="1" class="w-20 font-mono text-sm" />
+								<div class="mt-2 flex flex-wrap items-center gap-2" transition:slide={{ duration: 150 }}>
+									<Input type="number" bind:value={flexStarterEvents} min="1" class="min-h-9 min-w-[5.5rem] font-mono text-sm" />
 									<span class="text-xs text-muted-foreground">M events</span>
 									{#if flexStarterPrice > 0}
 										<span class="text-xs ml-auto">{formatCurrency(flexStarterCost)}/mo</span>
@@ -317,20 +317,20 @@
 					</label>
 
 					<label
-						class="flex items-start gap-3 p-4 border cursor-pointer transition-all rounded-sm
+						class="flex items-start gap-3 p-4 border cursor-pointer touch-manipulation transition-all rounded-sm
 							{enableFlexStorage ? 'border-foreground bg-muted' : 'border-border hover:border-foreground/50 hover:bg-muted/50'}"
 					>
 						<input 
 							type="checkbox" 
 							bind:checked={enableFlexStorage}
-							class="mt-0.5 h-4 w-4 accent-foreground"
+							class="mt-0.5 h-4 w-4 shrink-0 accent-foreground"
 						/>
-						<div class="flex-1">
+						<div class="min-w-0 flex-1">
 							<div class="font-medium text-sm">Flex Logs Storage</div>
 							<div class="text-xs text-muted-foreground">Long-term storage for compliance</div>
 							{#if enableFlexStorage}
-								<div class="mt-2 flex items-center gap-2" transition:slide={{ duration: 150 }}>
-									<Input type="number" bind:value={flexStorageEvents} min="1" class="w-20 font-mono text-sm" />
+								<div class="mt-2 flex flex-wrap items-center gap-2" transition:slide={{ duration: 150 }}>
+									<Input type="number" bind:value={flexStorageEvents} min="1" class="min-h-9 min-w-[5.5rem] font-mono text-sm" />
 									<span class="text-xs text-muted-foreground">M events</span>
 									{#if flexStoragePrice > 0}
 										<span class="text-xs ml-auto">{formatCurrency(flexStorageCost)}/mo</span>
@@ -341,20 +341,20 @@
 					</label>
 
 					<label
-						class="flex items-start gap-3 p-4 border cursor-pointer transition-all rounded-sm
+						class="flex items-start gap-3 p-4 border cursor-pointer touch-manipulation transition-all rounded-sm
 							{enableForwarding ? 'border-foreground bg-muted' : 'border-border hover:border-foreground/50 hover:bg-muted/50'}"
 					>
 						<input 
 							type="checkbox" 
 							bind:checked={enableForwarding}
-							class="mt-0.5 h-4 w-4 accent-foreground"
+							class="mt-0.5 h-4 w-4 shrink-0 accent-foreground"
 						/>
-						<div class="flex-1">
+						<div class="min-w-0 flex-1">
 							<div class="font-medium text-sm">Log Forwarding</div>
 							<div class="text-xs text-muted-foreground">Forward to S3, Azure, GCS</div>
 							{#if enableForwarding}
-								<div class="mt-2 flex items-center gap-2" transition:slide={{ duration: 150 }}>
-									<Input type="number" bind:value={forwardingGB} min="1" class="w-20 font-mono text-sm" />
+								<div class="mt-2 flex flex-wrap items-center gap-2" transition:slide={{ duration: 150 }}>
+									<Input type="number" bind:value={forwardingGB} min="1" class="min-h-9 min-w-[5.5rem] font-mono text-sm" />
 									<span class="text-xs text-muted-foreground">GB/mo</span>
 									{#if forwardingPrice > 0}
 										<span class="text-xs ml-auto">{formatCurrency(forwardingCost)}/mo</span>

@@ -29,7 +29,7 @@
 
 <ModeWatcher />
 <Toaster position="top-right" richColors />
-<div class="gradient-bg min-h-screen">
+<main class="gradient-bg min-h-screen">
 	<slot />
-</div>
+</main>
 

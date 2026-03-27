@@ -59,6 +59,11 @@
 	body {
 		@apply bg-background text-foreground;
 	}
+
+	/* Helps scrollIntoView (e.g. “View Summary”) clear the fixed bottom bar without extra nudging */
+	html {
+		scroll-padding-bottom: 5rem;
+	}
 }
 
 /* Gradient background - light theme */

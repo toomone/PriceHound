@@ -1605,7 +1605,13 @@
 		<!-- Title and Tagline (centered) -->
 		<div class="text-center mb-6">
 			<div class="mb-2 inline-flex items-center gap-3">
-				<img src="/pricehound-logo.png" alt="PriceHound logo" class="h-[68px] w-[68px]" />
+				<a
+					href="/"
+					class="inline-flex shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+					aria-label="PriceHound home"
+				>
+					<img src="/pricehound-logo.png" alt="" class="h-[68px] w-[68px]" />
+				</a>
 				<h1 class="text-5xl font-bold tracking-tight">
 					<span class="text-datadog-purple">Price</span>Hound
 				</h1>
@@ -1664,12 +1670,27 @@
 				<button
 					type="button"
 					on:click={() => importModalOpen = true}
-					class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-muted border-r border-input rounded-l-lg"
+					class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-muted border-r border-input rounded-l-lg touch-manipulation"
 				>
 					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 3v12" />
 					</svg>
-					<span class="hidden sm:inline">Import JSON</span>
+					<span class="hidden sm:inline pointer-events-none">Import JSON</span>
+				</button>
+
+				<!-- Log estimator (Logging Without Limits) -->
+				<button
+					type="button"
+					on:click={() => (showLogsCalculator = true)}
+					class="inline-flex items-center gap-1.5 border-r border-input px-3 py-2 text-sm font-medium text-datadog-purple transition-colors hover:bg-muted touch-manipulation"
+					title="Estimate log ingestion, retention, indexing, and Flex Logs add-ons"
+					aria-label="Open log estimator: Logging Without Limits"
+				>
+					<svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+						<rect x="4" y="2" width="16" height="20" rx="2" />
+						<path d="M8 6h8M8 10h8M8 14h4" />
+					</svg>
+					<span class="hidden sm:inline pointer-events-none">Log estimator</span>
 				</button>
 
 				<!-- Share Button with Dropdown -->
@@ -1678,12 +1699,13 @@
 						type="button"
 						on:click={() => shareMenuOpen = !shareMenuOpen}
 						disabled={validLines.length === 0}
-						class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg"
+						title={validLines.length === 0 ? 'Add at least one product line to share or save' : 'Share, export, or save your quote'}
+						class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg touch-manipulation"
 					>
 						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" />
 						</svg>
-						<span class="hidden sm:inline">Share & Save</span>
+						<span class="hidden sm:inline pointer-events-none">Share & Save</span>
 						<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M6 9l6 6 6-6" />
 						</svg>
@@ -1827,7 +1849,6 @@
 		filteredTemplates={filteredTemplates}
 		loadingTemplates={loadingTemplates}
 		loadOnExpand={loadGetStartedTemplatesIfNeeded}
-		on:logs={() => (showLogsCalculator = true)}
 		on:preview={(e) => (previewTemplate = e.detail)}
 	/>
 
@@ -2259,8 +2280,8 @@
 					{/if}
 				</div>
 
-				<!-- Cost Distribution Chart -->
-				<div class="mt-6 pt-6 border-t border-border">
+				<!-- Cost Distribution Chart (min-height reduces CLS when chart mounts) -->
+				<div class="mt-6 min-h-[280px] pt-6 border-t border-border">
 					<h4 class="text-sm font-medium text-muted-foreground mb-4">Cost Distribution by Category</h4>
 					<CostDistributionChart 
 						{lines} 

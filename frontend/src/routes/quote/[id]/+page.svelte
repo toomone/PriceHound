@@ -170,7 +170,13 @@
 	<header class="mb-8">
 		<div class="flex items-center justify-between">
 			<div class="flex items-center gap-3">
-				<img src="/pricehound-logo.png" alt="PriceHound logo" class="h-[60px] w-[60px]" />
+				<a
+					href="/"
+					class="inline-flex shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+					aria-label="Back to PriceHound home"
+				>
+					<img src="/pricehound-logo.png" alt="" class="h-[60px] w-[60px]" />
+				</a>
 				<h1 class="text-3xl font-bold tracking-tight">Shared Quote</h1>
 			</div>
 			<ModeToggle />
