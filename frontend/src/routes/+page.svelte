@@ -1678,21 +1678,6 @@
 					<span class="hidden sm:inline pointer-events-none">Import JSON</span>
 				</button>
 
-				<!-- Log estimator (Logging Without Limits) -->
-				<button
-					type="button"
-					on:click={() => (showLogsCalculator = true)}
-					class="inline-flex items-center gap-1.5 border-r border-input px-3 py-2 text-sm font-medium text-datadog-purple transition-colors hover:bg-muted touch-manipulation"
-					title="Estimate log ingestion, retention, indexing, and Flex Logs add-ons"
-					aria-label="Open log estimator: Logging Without Limits"
-				>
-					<svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-						<rect x="4" y="2" width="16" height="20" rx="2" />
-						<path d="M8 6h8M8 10h8M8 14h4" />
-					</svg>
-					<span class="hidden sm:inline pointer-events-none">Log estimator</span>
-				</button>
-
 				<!-- Share Button with Dropdown -->
 				<div id="share-button" class="share-menu-container relative">
 					<button
@@ -1849,6 +1834,7 @@
 		filteredTemplates={filteredTemplates}
 		loadingTemplates={loadingTemplates}
 		loadOnExpand={loadGetStartedTemplatesIfNeeded}
+		on:logs={() => (showLogsCalculator = true)}
 		on:preview={(e) => (previewTemplate = e.detail)}
 	/>
 
