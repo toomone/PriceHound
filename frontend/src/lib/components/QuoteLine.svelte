@@ -220,7 +220,7 @@
 						{#if !hasBreakdown && !isAllotment}
 							<button
 								type="button"
-								class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-muted-foreground/60 hover:text-datadog-purple hover:bg-datadog-purple/5 border border-transparent hover:border-datadog-purple/20 transition-all"
+								class="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-border/60 bg-muted/40 text-[10px] text-muted-foreground hover:bg-muted hover:border-border transition-all"
 								title="Break down quantity by env, team, etc."
 								on:click={initBreakdown}
 							>
