@@ -2400,7 +2400,7 @@
 	</div>
 {/if}
 
-<!-- Logging Without Limits Modal -->
+<!-- Log Index Estimator modal -->
 {#if showLogsCalculator}
 	<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 	<div 

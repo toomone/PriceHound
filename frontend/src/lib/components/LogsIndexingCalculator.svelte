@@ -116,7 +116,7 @@
 				</svg>
 			</div>
 			<div>
-				<h2 class="text-lg font-semibold">Logging Without Limits</h2>
+				<h2 class="text-lg font-semibold">Log Index Estimator</h2>
 				<p class="text-sm text-muted-foreground">Estimate your log indexing needs based on ingestion volume</p>
 			</div>
 		</div>

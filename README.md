@@ -235,7 +235,7 @@ ddog-pricing-calculator/
 │   │   │   ├── components/      # Svelte components
 │   │   │   │   ├── GuidedTour.svelte        # Interactive onboarding
 │   │   │   │   ├── CostDistributionChart.svelte  # Pie chart
-│   │   │   │   ├── LogsIndexingCalculator.svelte # Log estimator
+│   │   │   │   ├── LogsIndexingCalculator.svelte # Log Index Estimator
 │   │   │   │   └── ui/          # shadcn-svelte components
 │   │   │   ├── api.ts           # API client
 │   │   │   └── utils.ts         # Utility functions
