@@ -1043,6 +1043,8 @@
 				: l.quantity;
 			return { ...l, quantityBreakdown: breakdown.length > 0 ? breakdown : undefined, quantity: newQuantity };
 		});
+		// Auto-enable detailed view when a breakdown is created
+		if (breakdown.length > 0) showDetailedQuantities = true;
 		// Also update allotment quantities for the parent
 		const line = lines.find(l => l.id === lineId);
 		if (line && line.product) {
