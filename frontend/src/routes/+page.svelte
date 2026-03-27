@@ -455,24 +455,42 @@
 		}
 		
 		// Templates are region agnostic - use current region's products
-		// Map selected template items to lines
 		const newLines: LineItem[] = [];
+		let mergedCount = 0;
 		for (const item of selectedItems) {
-			// Find matching product by name
 			const matchedProduct = products.find(p => 
 				p.product.toLowerCase().includes(item.product.toLowerCase()) ||
 				item.product.toLowerCase().includes(p.product.toLowerCase())
 			);
 			
-			if (matchedProduct) {
+			if (!matchedProduct) continue;
+
+			const existingLine = lines.find(l => l.product?.id === matchedProduct.id && !l.isAllotment);
+			if (existingLine) {
+				const existingBreakdown = existingLine.quantityBreakdown || [];
+				const newBl: QuantityLine = { id: crypto.randomUUID(), label: template.name, quantity: item.quantity };
+				const updatedBreakdown = existingBreakdown.length > 0
+					? [...existingBreakdown, newBl]
+					: [{ id: crypto.randomUUID(), label: 'base', quantity: existingLine.quantity }, newBl];
+				const newQty = updatedBreakdown.reduce((s, bl) => s + bl.quantity, 0);
+				lines = lines.map(l =>
+					l.id === existingLine.id ? { ...l, quantity: newQty, quantityBreakdown: updatedBreakdown } : l
+				);
+				mergedCount++;
+			} else {
 				const lineId = crypto.randomUUID();
+				const breakdown: QuantityLine[] = [{
+					id: crypto.randomUUID(),
+					label: template.name,
+					quantity: item.quantity
+				}];
 				newLines.push({
 					id: lineId,
 					product: matchedProduct,
-					quantity: item.quantity
+					quantity: item.quantity,
+					quantityBreakdown: breakdown
 				});
 				
-				// Find and add allotments for this product
 				const productAllotmentsRaw = allotments.filter(a => 
 					a.parent_product_id === matchedProduct.id
 				);
@@ -507,12 +525,14 @@
 			}
 		}
 		
-		if (newLines.length > 0) {
-			// Filter out empty lines (no product selected) before appending
-			const existingValidLines = lines.filter(l => l.product !== null);
-			lines = [...existingValidLines, ...newLines];
-			const productCount = newLines.filter(l => !l.isAllotment).length;
-			toast.success(`Added ${productCount} products from "${template.name}"`);
+		const addedCount = newLines.filter(l => !l.isAllotment).length;
+		if (newLines.length > 0 || mergedCount > 0) {
+			if (newLines.length > 0) {
+				const existingValidLines = lines.filter(l => l.product !== null);
+				lines = [...existingValidLines, ...newLines];
+			}
+			showDetailedQuantities = true;
+			toast.success(`Added ${addedCount + mergedCount} products from "${template.name}"`);
 		} else {
 			toast.error('Could not match any products from the template');
 		}
@@ -914,39 +934,43 @@
 
 	function addItemsFromCalculator(items: { product: Product; quantity: number }[]) {
 		const newLines: LineItem[] = [];
+		const calcLabel = 'Log Index Estimator';
 		
 		for (const item of items) {
-			// Check if product already exists in lines
 			const existingLine = lines.find(l => l.product?.id === item.product.id);
 			if (existingLine) {
-				// Update quantity
-				lines = lines.map(l => 
-					l.id === existingLine.id 
-						? { ...l, quantity: l.quantity + item.quantity }
+				const existingBreakdown = existingLine.quantityBreakdown || [];
+				const newBl: QuantityLine = { id: crypto.randomUUID(), label: calcLabel, quantity: item.quantity };
+				const updatedBreakdown = existingBreakdown.length > 0
+					? [...existingBreakdown, newBl]
+					: [{ id: crypto.randomUUID(), label: 'base', quantity: existingLine.quantity }, newBl];
+				const newQty = updatedBreakdown.reduce((s, bl) => s + bl.quantity, 0);
+				lines = lines.map(l =>
+					l.id === existingLine.id
+						? { ...l, quantity: newQty, quantityBreakdown: updatedBreakdown }
 						: l
 				);
 			} else {
-				// Add new line
+				const breakdown: QuantityLine[] = [{
+					id: crypto.randomUUID(),
+					label: calcLabel,
+					quantity: item.quantity
+				}];
 				newLines.push({
 					id: crypto.randomUUID(),
 					product: item.product,
-					quantity: item.quantity
+					quantity: item.quantity,
+					quantityBreakdown: breakdown
 				});
 			}
 		}
 		
 		if (newLines.length > 0) {
-			// Remove empty lines first
 			lines = lines.filter(l => l.product !== null);
 			lines = [...lines, ...newLines];
-			
-			// If lines was empty, the new lines are already added
-			if (lines.length === 0) {
-				lines = newLines;
-			}
 		}
 		
-		// Close the calculator
+		showDetailedQuantities = true;
 		showLogsCalculator = false;
 		toast.success(`Added ${items.length} item(s) to quote`);
 	}
