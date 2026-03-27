@@ -2083,14 +2083,14 @@
 							type="button"
 							class="inline-flex items-center gap-2 px-1 py-1 text-xs text-muted-foreground touch-manipulation"
 							on:click={() => showDetailedQuantities = !showDetailedQuantities}
-							title={showDetailedQuantities ? 'Show grouped quantities' : 'Show detailed quantity breakdowns'}
+							title={showDetailedQuantities ? 'Group detailed quantities' : 'Show detailed quantity breakdowns'}
 						>
 							<span class="hidden sm:inline">Grouped</span>
 							<span
-								class="relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors {showDetailedQuantities ? 'bg-datadog-purple' : 'bg-muted-foreground/30'}"
+								class="relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors {showDetailedQuantities ? 'bg-muted-foreground/30' : 'bg-datadog-purple'}"
 							>
 								<span
-									class="inline-block h-3 w-3 rounded-full bg-white shadow-sm transition-transform {showDetailedQuantities ? 'translate-x-3.5' : 'translate-x-0.5'}"
+									class="inline-block h-3 w-3 rounded-full bg-white shadow-sm transition-transform {showDetailedQuantities ? 'translate-x-0.5' : 'translate-x-3.5'}"
 								></span>
 							</span>
 						</button>
