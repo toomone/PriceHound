@@ -365,41 +365,35 @@
 			<div class="mt-3 pt-3 border-t border-border/30" transition:slide={{ duration: 150 }}>
 				<div class="space-y-1">
 					{#each quantityBreakdown as bl (bl.id)}
-						<div class="flex flex-col lg:flex-row lg:items-center group/bl">
-							<div class="flex-1 min-w-0 flex items-center gap-2 pl-4">
-								<span class="w-1 h-1 rounded-full bg-datadog-purple/40 shrink-0"></span>
-								<input
-									type="text"
-									bind:value={bl.label}
-									on:change={handleBreakdownChange}
-									on:input={() => { bl.label = bl.label.replace(/[<>"'`;]/g, ''); }}
-									placeholder="env, team..."
-									maxlength="50"
-									class="h-6 w-40 border-0 border-b border-border/50 bg-transparent px-0.5 text-xs placeholder:text-muted-foreground/40 focus:outline-none focus:border-datadog-purple"
-								/>
-								<button
-									type="button"
-									class="h-4 w-4 shrink-0 flex items-center justify-center rounded text-muted-foreground/20 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover/bl:opacity-100 transition-all"
-									title="Remove this breakdown line"
-									on:click={() => removeBreakdownLine(bl.id)}
-								>
-									<svg class="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-								</button>
-							</div>
-							<div class="w-24 shrink-0">
-								<input
-									type="number"
-									min="0"
-									bind:value={bl.quantity}
-									on:change={handleBreakdownChange}
-									class="h-6 w-full border-0 border-b border-border/50 bg-transparent px-1 text-xs text-center font-mono focus:outline-none focus:border-datadog-purple"
-								/>
-							</div>
-							<div class="hidden lg:block shrink-0" style="width: {visibleColumns * 110}px;"></div>
-							<div class="hidden lg:block shrink-0 lg:ml-2 w-8"></div>
+						<div class="flex items-center gap-3 group/bl pl-4">
+							<span class="w-1 h-1 rounded-full bg-datadog-purple/40 shrink-0"></span>
+							<input
+								type="text"
+								bind:value={bl.label}
+								on:change={handleBreakdownChange}
+								on:input={() => { bl.label = bl.label.replace(/[<>"'`;]/g, ''); }}
+								placeholder="env, team..."
+								maxlength="50"
+								class="h-6 flex-1 min-w-0 border-0 border-b border-border/50 bg-transparent px-0.5 text-xs placeholder:text-muted-foreground/40 focus:outline-none focus:border-datadog-purple"
+							/>
+							<button
+								type="button"
+								class="h-4 w-4 shrink-0 flex items-center justify-center rounded text-muted-foreground/20 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover/bl:opacity-100 transition-all"
+								title="Remove this breakdown line"
+								on:click={() => removeBreakdownLine(bl.id)}
+							>
+								<svg class="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+							</button>
+							<input
+								type="number"
+								min="0"
+								bind:value={bl.quantity}
+								on:change={handleBreakdownChange}
+								class="h-6 w-16 shrink-0 border-0 border-b border-border/50 bg-transparent px-1 text-xs text-right font-mono focus:outline-none focus:border-datadog-purple"
+							/>
 						</div>
 					{/each}
-					<div class="flex items-center pl-7">
+					<div class="pl-7">
 						<button
 							type="button"
 							class="flex items-center gap-1 text-[10px] text-muted-foreground/50 hover:text-datadog-purple transition-colors"
