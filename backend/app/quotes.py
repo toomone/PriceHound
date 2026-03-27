@@ -229,6 +229,13 @@ def create_quote(name: Optional[str], region: str, billing_type: str, items: lis
                 allotted_unit=allot.get('allotted_unit', 'units')
             ))
         
+        # Process quantity breakdown
+        from .models import QuantityBreakdownLine
+        quantity_breakdown = [
+            QuantityBreakdownLine(label=bl.get('label', ''), quantity=int(bl.get('quantity', 0)))
+            for bl in item.get('quantity_breakdown', [])
+        ]
+
         quote_items.append(QuoteLineItem(
             id=resolved_id or product_id,
             product=product,
@@ -236,15 +243,15 @@ def create_quote(name: Optional[str], region: str, billing_type: str, items: lis
             quantity=quantity,
             unit_price=unit_price,
             total_price=item_total,
-            # Add prices for all billing types
-            unit_price_annually=effective_annual_price,  # Use negotiated price if set
+            unit_price_annually=effective_annual_price,
             unit_price_monthly=all_prices['monthly'],
             unit_price_on_demand=all_prices['on_demand'],
             total_price_annually=effective_annual_price * quantity,
             total_price_monthly=all_prices['monthly'] * quantity,
             total_price_on_demand=all_prices['on_demand'] * quantity,
             negotiated_price=negotiated_price if negotiated_price and negotiated_price > 0 else None,
-            allotments=allotments
+            allotments=allotments,
+            quantity_breakdown=quantity_breakdown
         ))
     
     # Hash password if provided
@@ -337,6 +344,12 @@ def update_quote(quote_id: str, name: Optional[str], region: str, billing_type: 
                 allotted_unit=allot.get('allotted_unit', 'units')
             ))
         
+        from .models import QuantityBreakdownLine
+        quantity_breakdown = [
+            QuantityBreakdownLine(label=bl.get('label', ''), quantity=int(bl.get('quantity', 0)))
+            for bl in item.get('quantity_breakdown', [])
+        ]
+
         quote_items.append(QuoteLineItem(
             id=resolved_id or product_id,
             product=product,
@@ -344,15 +357,15 @@ def update_quote(quote_id: str, name: Optional[str], region: str, billing_type: 
             quantity=quantity,
             unit_price=unit_price,
             total_price=item_total,
-            # Add prices for all billing types
-            unit_price_annually=effective_annual_price,  # Use negotiated price if set
+            unit_price_annually=effective_annual_price,
             unit_price_monthly=all_prices['monthly'],
             unit_price_on_demand=all_prices['on_demand'],
             total_price_annually=effective_annual_price * quantity,
             total_price_monthly=all_prices['monthly'] * quantity,
             total_price_on_demand=all_prices['on_demand'] * quantity,
             negotiated_price=negotiated_price if negotiated_price and negotiated_price > 0 else None,
-            allotments=allotments
+            allotments=allotments,
+            quantity_breakdown=quantity_breakdown
         ))
     
     quote = Quote(

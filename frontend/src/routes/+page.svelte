@@ -31,6 +31,12 @@
 		return productDescriptions[productId]?.description ?? null;
 	}
 
+	interface QuantityLine {
+		id: string;
+		label: string;
+		quantity: number;
+	}
+
 	interface LineItem {
 		id: string;
 		product: Product | null;
@@ -40,6 +46,7 @@
 		parentLineId?: string;
 		allotmentInfo?: Allotment;
 		includedQuantity?: number;
+		quantityBreakdown?: QuantityLine[];
 	}
 
 	let products: Product[] = [];
@@ -96,6 +103,9 @@
 	
 	// Tools visibility
 	let showLogsCalculator = false;
+	
+	// Quantity detail view
+	let showDetailedQuantities = false;
 	
 	// Templates / Example Stacks
 	let templates: Template[] = [];
@@ -511,7 +521,7 @@
 		showTemplates = false;
 	}
 
-	async function loadClonedQuote(cloneData: { name: string; description?: string | null; region?: string; items: { id?: string; product: string; quantity: number; negotiated_price?: number | null; allotments?: any[] }[] }) {
+	async function loadClonedQuote(cloneData: { name: string; description?: string | null; region?: string; items: { id?: string; product: string; quantity: number; negotiated_price?: number | null; allotments?: any[]; quantity_breakdown?: { label: string; quantity: number }[] }[] }) {
 		quoteName = cloneData.name ? `${cloneData.name} (Copy)` : '';
 		quoteDescription = cloneData.description || '';
 		showDescriptionEditor = !!cloneData.description;
@@ -536,23 +546,25 @@
 			
 			if (matchedProduct) {
 				const lineId = crypto.randomUUID();
+				const breakdown: QuantityLine[] = (item.quantity_breakdown || []).map(bl => ({
+					id: crypto.randomUUID(), label: bl.label, quantity: bl.quantity
+				}));
 				newLines.push({
 					id: lineId,
 					product: matchedProduct,
 					quantity: item.quantity,
-					negotiatedPrice: item.negotiated_price ?? null
+					negotiatedPrice: item.negotiated_price ?? null,
+					quantityBreakdown: breakdown.length > 0 ? breakdown : undefined
 				});
 				
 				// Restore allotments for this item
 				if (item.allotments && item.allotments.length > 0) {
 					for (const savedAllotment of item.allotments) {
-						// Find the allotted product
 						const allottedProduct = savedAllotment.id
 							? products.find(p => p.id === savedAllotment.id)
 							: products.find(p => p.product === savedAllotment.allotted_product);
 						
 						if (allottedProduct) {
-							// Find the allotment info from global allotments
 							const allotmentInfo = allotments.find(a => 
 								a.parent_product_id === matchedProduct!.id && 
 								a.allotted_product_id === allottedProduct.id
@@ -578,11 +590,12 @@
 		
 		if (newLines.length > 0) {
 			lines = newLines;
+			if (lines.some(l => l.quantityBreakdown && l.quantityBreakdown.length > 0)) showDetailedQuantities = true;
 			toast.success('Quote cloned successfully! You can now edit it.');
 		}
 	}
 
-	async function loadEditQuote(editData: { quoteId: string; name: string; description?: string | null; region: string; editPassword: string | null; items: { id?: string; product: string; quantity: number; negotiated_price?: number | null; allotments?: any[] }[] }) {
+	async function loadEditQuote(editData: { quoteId: string; name: string; description?: string | null; region: string; editPassword: string | null; items: { id?: string; product: string; quantity: number; negotiated_price?: number | null; allotments?: any[]; quantity_breakdown?: { label: string; quantity: number }[] }[] }) {
 		// Store edit mode info
 		editingQuoteId = editData.quoteId;
 		editQuotePassword = editData.editPassword;
@@ -610,23 +623,24 @@
 			
 			if (matchedProduct) {
 				const lineId = crypto.randomUUID();
+				const breakdown: QuantityLine[] = (item.quantity_breakdown || []).map(bl => ({
+					id: crypto.randomUUID(), label: bl.label, quantity: bl.quantity
+				}));
 				newLines.push({
 					id: lineId,
 					product: matchedProduct,
 					quantity: item.quantity,
-					negotiatedPrice: item.negotiated_price ?? null
+					negotiatedPrice: item.negotiated_price ?? null,
+					quantityBreakdown: breakdown.length > 0 ? breakdown : undefined
 				});
 				
-				// Restore allotments for this item
 				if (item.allotments && item.allotments.length > 0) {
 					for (const savedAllotment of item.allotments) {
-						// Find the allotted product
 						const allottedProduct = savedAllotment.id
 							? products.find(p => p.id === savedAllotment.id)
 							: products.find(p => p.product === savedAllotment.allotted_product);
 						
 						if (allottedProduct) {
-							// Find the allotment info from global allotments
 							const allotmentInfo = allotments.find(a => 
 								a.parent_product_id === matchedProduct!.id && 
 								a.allotted_product_id === allottedProduct.id
@@ -652,6 +666,7 @@
 		
 		if (newLines.length > 0) {
 			lines = newLines;
+			if (lines.some(l => l.quantityBreakdown && l.quantityBreakdown.length > 0)) showDetailedQuantities = true;
 			toast.success('Editing quote. Make your changes and save.');
 		}
 	}
@@ -708,23 +723,24 @@
 			
 			if (matchedProduct) {
 				const lineId = crypto.randomUUID();
+				const breakdown: QuantityLine[] = (item.quantity_breakdown || []).map((bl: any) => ({
+					id: crypto.randomUUID(), label: bl.label, quantity: bl.quantity
+				}));
 				newLines.push({
 					id: lineId,
 					product: matchedProduct,
 					quantity: item.quantity,
-					negotiatedPrice: item.negotiated_price ?? null
+					negotiatedPrice: item.negotiated_price ?? null,
+					quantityBreakdown: breakdown.length > 0 ? breakdown : undefined
 				});
 				
-				// Restore allotments for this item
 				if (item.allotments && item.allotments.length > 0) {
 					for (const savedAllotment of item.allotments) {
-						// Find the allotted product
 						const allottedProduct = savedAllotment.id
 							? products.find(p => p.id === savedAllotment.id)
 							: products.find(p => p.product === savedAllotment.allotted_product);
 						
 						if (allottedProduct) {
-							// Find the allotment info from global allotments
 							const allotmentInfo = allotments.find(a => 
 								a.parent_product_id === matchedProduct!.id && 
 								a.allotted_product_id === allottedProduct.id
@@ -750,10 +766,10 @@
 		
 		if (newLines.length > 0) {
 			lines = newLines;
+			if (lines.some(l => l.quantityBreakdown && l.quantityBreakdown.length > 0)) showDetailedQuantities = true;
 			toast.success('Editing quote. Make your changes and save.');
 		}
 		
-		// Set the share URL
 		shareUrl = `${window.location.origin}/quote/${quote.id}`;
 	}
 
@@ -962,8 +978,7 @@
 			// 1. Keep all lines except: the current line and its old allotments
 			newLines = lines.filter(l => l.id !== id && l.parentLineId !== id);
 			
-			// 2. Add the updated line (reset negotiatedPrice on product change)
-			newLines.push({ ...existingLine!, product, quantity, negotiatedPrice: null });
+			newLines.push({ ...existingLine!, product, quantity, negotiatedPrice: null, quantityBreakdown: undefined });
 			
 			// 3. Find and add new allotments for this product (match by product_id)
 			// Deduplicate by allotted_product to avoid duplicate entries
@@ -1021,6 +1036,29 @@
 		lines = newLines;
 	}
 
+	function updateBreakdown(lineId: string, breakdown: { id: string; label: string; quantity: number }[]) {
+		lines = lines.map(l => {
+			if (l.id !== lineId) return l;
+			const newQuantity = breakdown.length > 0
+				? breakdown.reduce((s, bl) => s + bl.quantity, 0)
+				: l.quantity;
+			return { ...l, quantityBreakdown: breakdown.length > 0 ? breakdown : undefined, quantity: newQuantity };
+		});
+		// Also update allotment quantities for the parent
+		const line = lines.find(l => l.id === lineId);
+		if (line && line.product) {
+			lines = lines.map(l => {
+				if (l.parentLineId === lineId && l.allotmentInfo) {
+					const newIncluded = l.allotmentInfo.quantity_per_parent * (line.quantity);
+					return { ...l, includedQuantity: newIncluded };
+				}
+				return l;
+			});
+		}
+	}
+
+	$: hasAnyBreakdown = lines.some(l => l.quantityBreakdown && l.quantityBreakdown.length > 0);
+
 	function openSaveModal() {
 		if (validLines.length === 0) {
 			toast.error('Please add at least one product to share');
@@ -1066,13 +1104,14 @@
 							allotted_unit: al.allotmentInfo?.allotted_unit || 'units'
 						}));
 					
-					return {
-						id: l.product!.id,
-						product: l.product!.product,
-						quantity: l.quantity,
-						negotiated_price: l.negotiatedPrice ?? null,
-						allotments: lineAllotments
-					};
+				return {
+					id: l.product!.id,
+					product: l.product!.product,
+					quantity: l.quantity,
+					negotiated_price: l.negotiatedPrice ?? null,
+					allotments: lineAllotments,
+					quantity_breakdown: (l.quantityBreakdown || []).map(bl => ({ label: bl.label, quantity: bl.quantity }))
+				};
 				});
 
 			let quote;
@@ -1133,19 +1172,37 @@
 	}
 
 	function downloadCSV() {
-		const headers = ['Product', 'Billing Unit', 'Quantity', 'Annual (Monthly)', 'Monthly (Monthly)', 'On-Demand (Monthly)', 'Annual (Yearly)', 'Monthly (Yearly)', 'On-Demand (Yearly)'];
+		const headers = ['Product', 'Billing Unit', 'Quantity', 'Label', 'Annual (Monthly)', 'Monthly (Monthly)', 'On-Demand (Monthly)', 'Annual (Yearly)', 'Monthly (Yearly)', 'On-Demand (Yearly)'];
 		
-		const rows = validLines.map(line => [
-			`"${line.product?.product || ''}"`,
-			`"${line.product?.billing_unit || ''}"`,
-			line.quantity,
-			parsePrice(line.product?.billed_annually) * line.quantity,
-			parsePrice(line.product?.billed_month_to_month) * line.quantity,
-			parsePrice(line.product?.on_demand) * line.quantity,
-			parsePrice(line.product?.billed_annually) * line.quantity * 12,
-			parsePrice(line.product?.billed_month_to_month) * line.quantity * 12,
-			parsePrice(line.product?.on_demand) * line.quantity * 12
-		]);
+		const rows: (string | number)[][] = [];
+		for (const line of validLines) {
+			const ap = parsePrice(line.product?.billed_annually);
+			const mp = parsePrice(line.product?.billed_month_to_month);
+			const op = parsePrice(line.product?.on_demand);
+			if (line.quantityBreakdown && line.quantityBreakdown.length > 0) {
+				rows.push([
+					`"${line.product?.product || ''}"`, `"${line.product?.billing_unit || ''}"`,
+					line.quantity, '"(total)"',
+					ap * line.quantity, mp * line.quantity, op * line.quantity,
+					ap * line.quantity * 12, mp * line.quantity * 12, op * line.quantity * 12
+				]);
+				for (const bl of line.quantityBreakdown) {
+					rows.push([
+						`"  ↳ ${line.product?.product || ''}"`, '""',
+						bl.quantity, `"${bl.label}"`,
+						ap * bl.quantity, mp * bl.quantity, op * bl.quantity,
+						ap * bl.quantity * 12, mp * bl.quantity * 12, op * bl.quantity * 12
+					]);
+				}
+			} else {
+				rows.push([
+					`"${line.product?.product || ''}"`, `"${line.product?.billing_unit || ''}"`,
+					line.quantity, '""',
+					ap * line.quantity, mp * line.quantity, op * line.quantity,
+					ap * line.quantity * 12, mp * line.quantity * 12, op * line.quantity * 12
+				]);
+			}
+		}
 
 		// Add totals row
 		rows.push([
@@ -1351,18 +1408,19 @@
 							unit: al.allotmentInfo?.allotted_unit || 'units'
 						}));
 					
-					return {
-						id: line.product?.id || '',
-						product: line.product?.product || '',
-						billing_unit: line.product?.billing_unit || '',
-						quantity: line.quantity,
-						prices: {
-							annual: line.product?.billed_annually || '',
-							monthly: line.product?.billed_month_to_month || '',
-							on_demand: line.product?.on_demand || ''
-						},
-						allotments: lineAllotments
-					};
+				return {
+					id: line.product?.id || '',
+					product: line.product?.product || '',
+					billing_unit: line.product?.billing_unit || '',
+					quantity: line.quantity,
+					prices: {
+						annual: line.product?.billed_annually || '',
+						monthly: line.product?.billed_month_to_month || '',
+						on_demand: line.product?.on_demand || ''
+					},
+					allotments: lineAllotments,
+					quantity_breakdown: (line.quantityBreakdown || []).map(bl => ({ label: bl.label, quantity: bl.quantity }))
+				};
 				}),
 			totals: {
 				monthly: totals,
@@ -1491,11 +1549,15 @@
 				}
 				
 				const lineId = crypto.randomUUID();
+				const importedBreakdown: QuantityLine[] = (item.quantity_breakdown || []).map((bl: any) => ({
+					id: crypto.randomUUID(), label: bl.label, quantity: bl.quantity
+				}));
 				const newLine: LineItem = {
 					id: lineId,
 					product: matchingProduct,
 					quantity: item.quantity || 1,
-					isAllotment: false
+					isAllotment: false,
+					quantityBreakdown: importedBreakdown.length > 0 ? importedBreakdown : undefined
 				};
 				
 				lines = [...lines, newLine];
@@ -1988,6 +2050,23 @@
 							</div>
 						{/if}
 					</div>
+
+					<!-- Quantity Detail Toggle -->
+					{#if hasAnyBreakdown}
+						<div class="h-5 w-px bg-border"></div>
+						<button
+							type="button"
+							class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors touch-manipulation
+								{showDetailedQuantities ? 'bg-datadog-purple/10 text-datadog-purple border border-datadog-purple/30' : 'text-muted-foreground hover:bg-muted'}"
+							on:click={() => showDetailedQuantities = !showDetailedQuantities}
+							title={showDetailedQuantities ? 'Show grouped quantities' : 'Show detailed quantity breakdowns'}
+						>
+							<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+							</svg>
+							<span class="hidden sm:inline">{showDetailedQuantities ? 'Detailed' : 'Grouped'}</span>
+						</button>
+					{/if}
 				</div>
 			</div>
 		</CardHeader>
@@ -2049,7 +2128,10 @@
 											hideCategory={index > 0}
 											isGrouped={true}
 											negotiatedPrice={line.negotiatedPrice}
+											quantityBreakdown={line.quantityBreakdown || []}
+											showBreakdown={showDetailedQuantities}
 											on:update={(e) => updateLine(line.id, e.detail.product, e.detail.quantity, e.detail.negotiatedPrice)}
+											on:updateBreakdown={(e) => updateBreakdown(line.id, e.detail.breakdown)}
 											on:remove={() => removeLine(line.id)}
 										/>
 									</div>
@@ -2083,7 +2165,10 @@
 										{lineAllotments}
 										hideCategory={false}
 										negotiatedPrice={line.negotiatedPrice}
+										quantityBreakdown={line.quantityBreakdown || []}
+										showBreakdown={showDetailedQuantities}
 										on:update={(e) => updateLine(line.id, e.detail.product, e.detail.quantity, e.detail.negotiatedPrice)}
+										on:updateBreakdown={(e) => updateBreakdown(line.id, e.detail.breakdown)}
 										on:remove={() => removeLine(line.id)}
 									/>
 								</div>
@@ -2118,7 +2203,10 @@
 								{lineAllotments}
 								searchId={index === 0 ? 'product-search' : undefined}
 								negotiatedPrice={line.negotiatedPrice}
+								quantityBreakdown={line.quantityBreakdown || []}
+								showBreakdown={showDetailedQuantities}
 								on:update={(e) => updateLine(line.id, e.detail.product, e.detail.quantity, e.detail.negotiatedPrice)}
+								on:updateBreakdown={(e) => updateBreakdown(line.id, e.detail.breakdown)}
 								on:remove={() => removeLine(line.id)}
 							/>
 						</div>

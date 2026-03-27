@@ -74,7 +74,6 @@
 
 	function cloneQuote() {
 		if (!quote) return;
-		// Encode quote data as URL parameter for the main page (include product IDs, region, and allotments)
 		const cloneData = {
 			name: quote.name,
 			description: quote.description,
@@ -84,7 +83,8 @@
 				product: item.product,
 				quantity: item.quantity,
 				negotiated_price: item.negotiated_price,
-				allotments: item.allotments
+				allotments: item.allotments,
+				quantity_breakdown: item.quantity_breakdown
 			}))
 		};
 		const encoded = encodeURIComponent(JSON.stringify(cloneData));
@@ -287,6 +287,25 @@
 										{formatCurrency(item.total_price)}
 									</td>
 								</tr>
+								{#if item.quantity_breakdown && item.quantity_breakdown.length > 0}
+									{#each item.quantity_breakdown as bl, blIdx}
+										<tr class="border-b border-border/20 bg-muted/20">
+											<td class="py-2 pl-8">
+												<div class="flex items-center gap-2 text-xs text-muted-foreground">
+													<svg class="w-3 h-3 shrink-0 text-datadog-purple/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+														<path d="M9 18l6-6-6-6" />
+													</svg>
+													<span class="inline-flex items-center rounded bg-datadog-purple/10 px-1.5 py-0.5 text-[10px] font-medium text-datadog-purple">
+														{bl.label || '(no label)'}
+													</span>
+												</div>
+											</td>
+											<td class="py-2 text-center font-mono text-xs text-muted-foreground">{formatNumber(bl.quantity)}</td>
+											<td class="py-2"></td>
+											<td class="py-2"></td>
+										</tr>
+									{/each}
+								{/if}
 							{/each}
 						</tbody>
 					</table>

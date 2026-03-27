@@ -42,6 +42,11 @@ export interface PricingMetadata {
 	source_url: string;
 }
 
+export interface QuantityBreakdownLine {
+	label: string;
+	quantity: number;
+}
+
 export interface QuoteLineItem {
 	id?: string;
 	product: string;
@@ -51,6 +56,7 @@ export interface QuoteLineItem {
 	total_price: number;
 	negotiated_price?: number | null;
 	allotments?: { id?: string; allotted_product: string; quantity_included: number; allotted_unit: string }[];
+	quantity_breakdown?: QuantityBreakdownLine[];
 }
 
 export interface Quote {

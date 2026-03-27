@@ -22,6 +22,11 @@ class AllotmentInfo(BaseModel):
     allotted_unit: str
 
 
+class QuantityBreakdownLine(BaseModel):
+    label: str
+    quantity: int
+
+
 class QuoteLineItem(BaseModel):
     id: Optional[str] = None
     product: str
@@ -39,6 +44,7 @@ class QuoteLineItem(BaseModel):
     negotiated_price: Optional[float] = None  # Custom negotiated price (annual only)
     is_allotment: bool = False
     allotments: list[AllotmentInfo] = []
+    quantity_breakdown: list[QuantityBreakdownLine] = []
 
 
 class Quote(BaseModel):

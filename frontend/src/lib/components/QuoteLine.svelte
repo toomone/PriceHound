@@ -1,15 +1,22 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
+	import { slide } from 'svelte/transition';
 	import ProductSearch from './ProductSearch.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { formatCurrency, parsePrice, formatNumber, isPercentagePrice, parsePercentage } from '$lib/utils';
-	import type { Product, Allotment } from '$lib/api';
+	import type { Product, Allotment, QuantityBreakdownLine } from '$lib/api';
 
 	interface AllotmentItem {
 		product: Product | null;
 		includedQuantity: number;
 		allotmentInfo: Allotment | null;
+	}
+
+	interface QuantityLineLocal {
+		id: string;
+		label: string;
+		quantity: number;
 	}
 
 	export let products: Product[] = [];
@@ -22,19 +29,48 @@
 	export let isAllotment: boolean = false;
 	export let includedQuantity: number = 0;
 	export let allotmentInfo: Allotment | null = null;
-	export let totalAllottedForProduct: number = 0; // Total included from parent products
-	export let lineAllotments: AllotmentItem[] = []; // Allotments for this line
-	export let hideCategory: boolean = false; // Hide category label when grouped
-	export let isGrouped: boolean = false; // Part of a category group (reduces visual weight)
-	export let searchId: string | undefined = undefined; // ID for the product search field (for guided tour)
-	export let negotiatedPrice: number | null = null; // Custom negotiated price (annual only)
+	export let totalAllottedForProduct: number = 0;
+	export let lineAllotments: AllotmentItem[] = [];
+	export let hideCategory: boolean = false;
+	export let isGrouped: boolean = false;
+	export let searchId: string | undefined = undefined;
+	export let negotiatedPrice: number | null = null;
+	export let quantityBreakdown: QuantityLineLocal[] = [];
+	export let showBreakdown: boolean = false;
 	
 	let showNegotiatedInput = negotiatedPrice !== null && negotiatedPrice > 0;
+
+	$: hasBreakdown = quantityBreakdown.length > 0;
+	$: breakdownSum = quantityBreakdown.reduce((s, bl) => s + bl.quantity, 0);
 
 	const dispatch = createEventDispatcher<{
 		update: { product: Product | null; quantity: number; negotiatedPrice?: number | null };
 		remove: void;
+		updateBreakdown: { breakdown: QuantityLineLocal[] };
 	}>();
+
+	function initBreakdown() {
+		const initial: QuantityLineLocal[] = [{ id: crypto.randomUUID(), label: 'default', quantity }];
+		dispatch('updateBreakdown', { breakdown: initial });
+	}
+
+	function addBreakdownLine() {
+		const updated = [...quantityBreakdown, { id: crypto.randomUUID(), label: '', quantity: 0 }];
+		dispatch('updateBreakdown', { breakdown: updated });
+	}
+
+	function removeBreakdownLine(lineId: string) {
+		const updated = quantityBreakdown.filter(bl => bl.id !== lineId);
+		if (updated.length === 0) {
+			dispatch('updateBreakdown', { breakdown: [] });
+		} else {
+			dispatch('updateBreakdown', { breakdown: updated });
+		}
+	}
+
+	function handleBreakdownChange() {
+		dispatch('updateBreakdown', { breakdown: quantityBreakdown });
+	}
 
 	// Check if this product uses percentage-based pricing
 	$: isPercentageBased = selectedProduct ? isPercentagePrice(selectedProduct.billed_annually) : false;
@@ -186,13 +222,33 @@
 			<!-- Quantity -->
 			<div class="w-24 shrink-0">
 				<div class="mb-1.5 h-4"></div>
-				<input
-					type="number"
-					min="1"
-					bind:value={quantity}
-					on:change={handleQuantityChange}
-					class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-center font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200"
-				/>
+				{#if hasBreakdown}
+					<div
+						class="flex h-10 w-full items-center justify-center rounded-lg border border-dashed border-input bg-muted/30 px-3 py-2 text-sm text-center font-mono text-muted-foreground"
+						title="Sum of {quantityBreakdown.length} breakdown lines"
+					>
+						{breakdownSum}
+					</div>
+				{:else}
+					<input
+						type="number"
+						min="1"
+						bind:value={quantity}
+						on:change={handleQuantityChange}
+						class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-center font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200"
+					/>
+				{/if}
+				{#if !hasBreakdown && selectedProduct && !isAllotment}
+					<button
+						type="button"
+						class="mt-1 flex w-full items-center justify-center gap-0.5 text-[10px] text-muted-foreground/60 hover:text-foreground/70 transition-colors"
+						title="Break down quantity by env, team, etc."
+						on:click={initBreakdown}
+					>
+						<svg class="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14" /></svg>
+						detail
+					</button>
+				{/if}
 				{#if totalAllottedForProduct > 0}
 					<div class="mt-1 text-[10px] text-center text-datadog-green">
 						+ {formatNumber(totalAllottedForProduct)} included
@@ -301,6 +357,57 @@
 				</Button>
 			</div>
 		</div>
+
+		<!-- Quantity Breakdown -->
+		{#if hasBreakdown && showBreakdown}
+			<div class="mt-3 pt-3 border-t border-border/30" transition:slide={{ duration: 150 }}>
+				<div class="flex items-center gap-2 mb-2">
+					<svg class="w-3.5 h-3.5 text-datadog-purple/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+					</svg>
+					<span class="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wide">Quantity Breakdown</span>
+				</div>
+				<div class="space-y-1.5 pl-5">
+					{#each quantityBreakdown as bl (bl.id)}
+						<div class="flex items-center gap-2 group/bl">
+							<svg class="w-3 h-3 shrink-0 text-datadog-purple/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M9 18l6-6-6-6" />
+							</svg>
+							<input
+								type="text"
+								bind:value={bl.label}
+								on:change={handleBreakdownChange}
+								placeholder="env, team..."
+								class="h-6 w-24 rounded border border-border bg-background px-1.5 text-xs placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-ring"
+							/>
+							<input
+								type="number"
+								min="0"
+								bind:value={bl.quantity}
+								on:change={handleBreakdownChange}
+								class="h-6 w-16 rounded border border-border bg-background px-1.5 text-xs text-center font-mono focus:outline-none focus:ring-1 focus:ring-ring"
+							/>
+							<button
+								type="button"
+								class="h-5 w-5 shrink-0 flex items-center justify-center rounded text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover/bl:opacity-100 transition-all"
+								title="Remove this breakdown line"
+								on:click={() => removeBreakdownLine(bl.id)}
+							>
+								<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+							</button>
+						</div>
+					{/each}
+					<button
+						type="button"
+						class="flex items-center gap-1 pl-5 text-[10px] text-muted-foreground/50 hover:text-datadog-purple transition-colors"
+						on:click={addBreakdownLine}
+					>
+						<svg class="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14" /></svg>
+						Add line
+					</button>
+				</div>
+			</div>
+		{/if}
 
 		<!-- Included Allotments (inside product card) -->
 		{#if lineAllotments.length > 0}
