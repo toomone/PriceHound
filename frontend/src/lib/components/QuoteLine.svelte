@@ -51,7 +51,7 @@
 	}>();
 
 	function initBreakdown() {
-		const initial: QuantityLineLocal[] = [{ id: crypto.randomUUID(), label: 'default', quantity }];
+		const initial: QuantityLineLocal[] = [{ id: crypto.randomUUID(), label: 'base', quantity }];
 		dispatch('updateBreakdown', { breakdown: initial });
 	}
 
@@ -363,52 +363,50 @@
 		<!-- Quantity Breakdown -->
 		{#if hasBreakdown && showBreakdown}
 			<div class="mt-3 pt-3 border-t border-border/30" transition:slide={{ duration: 150 }}>
-				<div class="flex items-center gap-2 mb-2">
-					<svg class="w-3.5 h-3.5 text-datadog-purple/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-						<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
-					</svg>
-					<span class="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wide">Quantity Breakdown</span>
-				</div>
-				<div class="space-y-1.5 pl-5">
+				<div class="space-y-1 pl-4">
 					{#each quantityBreakdown as bl (bl.id)}
-						<div class="flex items-center gap-2 group/bl">
-							<svg class="w-3 h-3 shrink-0 text-datadog-purple/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<path d="M9 18l6-6-6-6" />
-							</svg>
-							<input
-								type="text"
-								bind:value={bl.label}
-								on:change={handleBreakdownChange}
-								on:input={() => { bl.label = bl.label.replace(/[<>"'`;]/g, ''); }}
-								placeholder="env, team..."
-								maxlength="50"
-								class="h-6 w-40 rounded border border-border bg-background px-1.5 text-xs placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-ring"
-							/>
-							<input
-								type="number"
-								min="0"
-								bind:value={bl.quantity}
-								on:change={handleBreakdownChange}
-								class="h-6 w-16 rounded border border-border bg-background px-1.5 text-xs text-center font-mono focus:outline-none focus:ring-1 focus:ring-ring"
-							/>
-							<button
-								type="button"
-								class="h-5 w-5 shrink-0 flex items-center justify-center rounded text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover/bl:opacity-100 transition-all"
-								title="Remove this breakdown line"
-								on:click={() => removeBreakdownLine(bl.id)}
-							>
-								<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-							</button>
+						<div class="flex items-center group/bl">
+							<div class="flex-1 min-w-0 flex items-center gap-2">
+								<span class="w-1 h-1 rounded-full bg-datadog-purple/40 shrink-0"></span>
+								<input
+									type="text"
+									bind:value={bl.label}
+									on:change={handleBreakdownChange}
+									on:input={() => { bl.label = bl.label.replace(/[<>"'`;]/g, ''); }}
+									placeholder="env, team..."
+									maxlength="50"
+									class="h-6 w-40 border-0 border-b border-border/50 bg-transparent px-0.5 text-xs placeholder:text-muted-foreground/40 focus:outline-none focus:border-datadog-purple"
+								/>
+								<button
+									type="button"
+									class="h-4 w-4 shrink-0 flex items-center justify-center rounded text-muted-foreground/20 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover/bl:opacity-100 transition-all"
+									title="Remove this breakdown line"
+									on:click={() => removeBreakdownLine(bl.id)}
+								>
+									<svg class="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+								</button>
+							</div>
+							<div class="w-24 shrink-0">
+								<input
+									type="number"
+									min="0"
+									bind:value={bl.quantity}
+									on:change={handleBreakdownChange}
+									class="h-6 w-full border-0 border-b border-border/50 bg-transparent px-1 text-xs text-center font-mono focus:outline-none focus:border-datadog-purple"
+								/>
+							</div>
 						</div>
 					{/each}
-					<button
-						type="button"
-						class="flex items-center gap-1 pl-5 text-[10px] text-muted-foreground/50 hover:text-datadog-purple transition-colors"
-						on:click={addBreakdownLine}
-					>
-						<svg class="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14" /></svg>
-						Add line
-					</button>
+					<div class="flex items-center pl-3">
+						<button
+							type="button"
+							class="flex items-center gap-1 text-[10px] text-muted-foreground/50 hover:text-datadog-purple transition-colors"
+							on:click={addBreakdownLine}
+						>
+							<svg class="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14" /></svg>
+							Add line
+						</button>
+					</div>
 				</div>
 			</div>
 		{/if}
