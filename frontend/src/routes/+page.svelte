@@ -2081,15 +2081,18 @@
 						<div class="h-5 w-px bg-border"></div>
 						<button
 							type="button"
-							class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors touch-manipulation
-								{showDetailedQuantities ? 'bg-datadog-purple/10 text-datadog-purple border border-datadog-purple/30' : 'text-muted-foreground hover:bg-muted'}"
+							class="inline-flex items-center gap-2 px-1 py-1 text-xs text-muted-foreground touch-manipulation"
 							on:click={() => showDetailedQuantities = !showDetailedQuantities}
 							title={showDetailedQuantities ? 'Show grouped quantities' : 'Show detailed quantity breakdowns'}
 						>
-							<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-								<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
-							</svg>
-							<span class="hidden sm:inline">{showDetailedQuantities ? 'Detailed' : 'Grouped'}</span>
+							<span class="hidden sm:inline">Grouped</span>
+							<span
+								class="relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors {showDetailedQuantities ? 'bg-datadog-purple' : 'bg-muted-foreground/30'}"
+							>
+								<span
+									class="inline-block h-3 w-3 rounded-full bg-white shadow-sm transition-transform {showDetailedQuantities ? 'translate-x-3.5' : 'translate-x-0.5'}"
+								></span>
+							</span>
 						</button>
 					{/if}
 				</div>
