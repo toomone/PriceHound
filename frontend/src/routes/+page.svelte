@@ -1019,7 +1019,7 @@
 			// Preserve negotiatedPrice
 			newLines = lines.map(l => {
 				if (l.id === id) {
-					return { ...l, product, quantity, negotiatedPrice: negotiatedPrice ?? l.negotiatedPrice };
+					return { ...l, product, quantity, negotiatedPrice: negotiatedPrice !== undefined ? negotiatedPrice : l.negotiatedPrice };
 				}
 				if (l.parentLineId === id && l.allotmentInfo) {
 					const newIncluded = l.allotmentInfo.quantity_per_parent * quantity;
@@ -1028,8 +1028,7 @@
 				return l;
 			});
 		} else {
-			// Just update the line (includes negotiated price changes)
-			newLines = lines.map((l) => (l.id === id ? { ...l, product, quantity, negotiatedPrice: negotiatedPrice ?? l.negotiatedPrice } : l));
+			newLines = lines.map((l) => (l.id === id ? { ...l, product, quantity, negotiatedPrice: negotiatedPrice !== undefined ? negotiatedPrice : l.negotiatedPrice } : l));
 		}
 		
 		// Single assignment to trigger reactivity once
