@@ -363,10 +363,10 @@
 		<!-- Quantity Breakdown -->
 		{#if hasBreakdown && showBreakdown}
 			<div class="mt-3 pt-3 border-t border-border/30" transition:slide={{ duration: 150 }}>
-				<div class="space-y-1 pl-4">
+				<div class="space-y-1">
 					{#each quantityBreakdown as bl (bl.id)}
-						<div class="flex items-center group/bl">
-							<div class="flex-1 min-w-0 flex items-center gap-2">
+						<div class="flex flex-col lg:flex-row lg:items-center group/bl">
+							<div class="flex-1 min-w-0 flex items-center gap-2 pl-4">
 								<span class="w-1 h-1 rounded-full bg-datadog-purple/40 shrink-0"></span>
 								<input
 									type="text"
@@ -395,9 +395,11 @@
 									class="h-6 w-full border-0 border-b border-border/50 bg-transparent px-1 text-xs text-center font-mono focus:outline-none focus:border-datadog-purple"
 								/>
 							</div>
+							<div class="hidden lg:block shrink-0" style="width: {visibleColumns * 110}px;"></div>
+							<div class="hidden lg:block shrink-0 lg:ml-2 w-8"></div>
 						</div>
 					{/each}
-					<div class="flex items-center pl-3">
+					<div class="flex items-center pl-7">
 						<button
 							type="button"
 							class="flex items-center gap-1 text-[10px] text-muted-foreground/50 hover:text-datadog-purple transition-colors"
