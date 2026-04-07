@@ -176,15 +176,15 @@
 						<button
 							type="button"
 							class={cn(
-								'relative flex w-full cursor-pointer select-none items-start rounded-md border border-transparent px-3 py-1.5 text-sm outline-none transition-all text-left',
+								'relative flex w-full cursor-pointer select-none items-start rounded-md px-3 py-1.5 text-sm outline-none transition-all text-left',
 								isKeyboardActive &&
-									'z-[1] bg-primary/15 text-foreground ring-2 ring-primary ring-offset-1 ring-offset-card border-primary/25',
+									'bg-primary/15 text-foreground',
 								!isKeyboardActive &&
 									isCommittedSelection &&
-									'bg-primary/8 ring-1 ring-primary/40 border-primary/20',
+									'bg-primary/10',
 								!isKeyboardActive &&
 									!isCommittedSelection &&
-									'hover:bg-accent hover:ring-1 hover:ring-ring/35 hover:border-border'
+									'hover:bg-accent'
 							)}
 							on:mousedown|preventDefault={() => handleSelect(product)}
 							on:mouseenter={() => (highlightedIndex = index)}
