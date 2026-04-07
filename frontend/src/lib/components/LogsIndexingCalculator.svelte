@@ -151,16 +151,7 @@
 			</div>
 			<div>
 				<h2 class="text-lg font-semibold">Logging Without Limits</h2>
-				<p class="text-sm text-muted-foreground">
-					Estimate your log indexing needs based on ingestion volume.
-				</p>
-				<p class="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-					Forwarding to <span class="text-foreground/90">Amazon S3</span>,
-					<span class="text-foreground/90">Azure Storage</span>, and
-					<span class="text-foreground/90">Google Cloud Storage</span> is included at no extra charge. Use
-					<strong class="font-medium text-foreground">Extras</strong> below only if you need Flex Logs or an estimate for
-					<strong class="font-medium text-foreground">custom</strong> destinations (paid per GB).
-				</p>
+				<p class="text-sm text-muted-foreground">Estimate your log indexing needs based on ingestion volume</p>
 			</div>
 		</div>
 
@@ -423,11 +414,18 @@
 							class="mt-0.5 h-4 w-4 shrink-0 accent-foreground"
 						/>
 						<div class="min-w-0 flex-1">
-							<div class="font-medium text-sm">Custom log forwarding</div>
-							<div class="text-xs text-muted-foreground leading-relaxed">
-								Forwarding to S3, Azure Blob, and GCS is <span class="text-foreground font-medium">free</span>.
-								Enable this to estimate <span class="font-mono text-[10px]">Logs – Forwarding to Custom Destinations</span>
-								(third-party systems such as Splunk or generic HTTP)—billed per GB forwarded.
+							<div class="font-medium text-sm flex items-center gap-1.5">
+								Custom log forwarding
+								<Tooltip.Root>
+									<Tooltip.Trigger asChild let:builder>
+										<span use:builder.action {...builder} class="inline-flex cursor-help">
+											<svg class="h-3.5 w-3.5 text-muted-foreground/50 hover:text-muted-foreground transition-colors" viewBox="0 0 24 24" fill="currentColor">
+												<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+											</svg>
+										</span>
+									</Tooltip.Trigger>
+									<Tooltip.Content class="max-w-xs">Forwarding to S3, Azure Blob, and GCS is free. This option estimates the cost for custom destinations only (e.g. Splunk, generic HTTP)—billed per GB forwarded.</Tooltip.Content>
+								</Tooltip.Root>
 							</div>
 							{#if enableForwarding}
 								<div class="mt-2 space-y-2" transition:slide={{ duration: 150 }}>
