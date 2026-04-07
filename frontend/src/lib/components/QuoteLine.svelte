@@ -178,24 +178,22 @@
 {:else}
 	<!-- Regular Product Line -->
 	<div
-		class="group relative p-3 transition-all {isGrouped ? 'bg-transparent hover:bg-muted/30' : 'rounded-xl border border-border/50 bg-card/50 hover:border-foreground/20 hover:bg-card/80'}"
+		class="group relative p-4 transition-all {isGrouped ? 'bg-transparent hover:bg-muted/30' : 'rounded-xl border border-border/50 bg-card/50 hover:border-foreground/20 hover:bg-card/80'}"
 		style="animation: slideIn 0.3s ease-out {index * 0.05}s both;"
 	>
-		<!-- Category strip: visually distinct from product meta (e.g. billing unit chips) -->
+		<!-- Category Label (hidden when grouped) -->
 		{#if selectedProduct?.category && !hideCategory}
-			<div
-				class="mb-2 border-l-4 border-datadog-blue bg-primary/5 dark:bg-primary/10 pl-2.5 pr-2 py-1 rounded-r-md"
-			>
-				<span class="text-xs font-semibold uppercase tracking-wide text-foreground">{selectedProduct.category}</span>
+			<div class="absolute -top-3 left-4 z-10">
+				<span class="inline-flex items-center px-2.5 py-1 rounded text-[11px] font-medium bg-zinc-200 dark:bg-zinc-700 text-foreground/80 border border-foreground/20 shadow-sm whitespace-nowrap">
+					{selectedProduct.category}
+				</span>
 			</div>
 		{/if}
 
-		<div class="flex flex-col gap-3 lg:flex-row lg:items-start">
+		<div class="flex flex-col gap-4 lg:flex-row lg:items-start">
 			<!-- Product Search -->
 			<div class="flex-1 min-w-0">
-				{#if !selectedProduct?.category || hideCategory}
-					<div class="mb-1 h-3 lg:h-4"></div>
-				{/if}
+				<div class="mb-1.5 h-4"></div>
 				<ProductSearch {products} {selectedProduct} id={searchId} on:select={handleProductSelect} />
 				{#if selectedProduct}
 					<div class="mt-2 flex items-center gap-2 flex-wrap">
@@ -280,10 +278,10 @@
 
 			<!-- Quantity -->
 			<div class="w-24 shrink-0">
-				<div class="mb-1 h-3 lg:h-4"></div>
+				<div class="mb-1.5 h-4"></div>
 				{#if hasBreakdown}
 					<div
-						class="flex h-9 w-full items-center justify-center rounded-lg border border-dashed border-input bg-muted/30 px-3 py-2 text-sm text-center font-mono text-muted-foreground"
+						class="flex h-10 w-full items-center justify-center rounded-lg border border-dashed border-input bg-muted/30 px-3 py-2 text-sm text-center font-mono text-muted-foreground"
 						title="Sum of {quantityBreakdown.length} breakdown lines"
 					>
 						{breakdownSum}
@@ -294,7 +292,7 @@
 						min="1"
 						bind:value={quantity}
 						on:change={handleQuantityChange}
-						class="flex h-9 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-center font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200"
+						class="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-center font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200"
 					/>
 				{/if}
 				{#if totalAllottedForProduct > 0}
@@ -308,7 +306,7 @@
 			<div class="flex gap-2" style="width: {visibleColumns * 110}px;">
 				{#if showAnnual}
 					<div class="flex-1 text-center min-w-[100px]">
-						<span class="mb-1 block text-xs font-medium {hasNegotiatedPrice ? 'text-amber-600 dark:text-amber-400' : 'text-datadog-green'}">
+						<span class="mb-1.5 block text-xs font-medium {hasNegotiatedPrice ? 'text-amber-600 dark:text-amber-400' : 'text-datadog-green'}">
 							{hasNegotiatedPrice ? 'Negotiated' : 'Annually'}
 						</span>
 						<div class="rounded-lg {hasNegotiatedPrice ? 'bg-amber-500/10 border-amber-500/20' : 'bg-datadog-green/10 border-datadog-green/20'} border px-2 py-2">
@@ -339,7 +337,7 @@
 
 				{#if showMonthly}
 					<div class="flex-1 text-center min-w-[100px]">
-						<span class="mb-1 block text-xs font-medium text-datadog-blue">Monthly</span>
+						<span class="mb-1.5 block text-xs font-medium text-datadog-blue">Monthly</span>
 						<div class="rounded-lg bg-datadog-blue/10 border border-datadog-blue/20 px-2 py-2">
 							<div class="font-mono text-sm font-semibold text-datadog-blue truncate">
 								{#if !selectedProduct}
@@ -365,7 +363,7 @@
 
 				{#if showOnDemand}
 					<div class="flex-1 text-center min-w-[100px]">
-						<span class="mb-1 block text-xs font-medium text-datadog-orange">On-Demand</span>
+						<span class="mb-1.5 block text-xs font-medium text-datadog-orange">On-Demand</span>
 						<div class="rounded-lg bg-datadog-orange/10 border border-datadog-orange/20 px-2 py-2">
 							<div class="font-mono text-sm font-semibold text-datadog-orange truncate">
 								{#if !selectedProduct}
@@ -392,7 +390,7 @@
 
 			<!-- Remove Button -->
 			<div class="absolute -right-2 -top-2 lg:relative lg:right-auto lg:top-auto lg:self-center lg:ml-2">
-				<div class="mb-1 h-3 lg:h-4 hidden lg:block"></div>
+				<div class="mb-1.5 h-4 hidden lg:block"></div>
 				<Button
 					variant="ghost"
 					size="icon"

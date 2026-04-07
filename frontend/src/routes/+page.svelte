@@ -2127,21 +2127,19 @@
 					{#each groupedLines.sortedCategories as category (category)}
 						{@const categoryLines = groupedLines.groups[category]}
 						{#if categoryLines.length > 1}
-							<!-- Multiple products in same category: section header + lines -->
-							<div class="rounded-xl border border-border/50 bg-card/30 overflow-hidden mt-2">
-								<div
-									class="flex items-center border-b border-border/40 bg-muted/40 px-3 py-1.5 border-l-4 border-datadog-blue"
-								>
-									<span class="text-xs font-semibold uppercase tracking-wide text-foreground">{category}</span>
-								</div>
+							<!-- Multiple products in same category: grouped in a container -->
+							<div class="rounded-xl border border-border/50 bg-card/30 overflow-visible mt-3">
 								{#each categoryLines as line, index (line.id)}
 									{@const lineAllotments = lines.filter(l => l.isAllotment && l.parentLineId === line.id).map(l => ({
 										product: l.product,
 										includedQuantity: l.includedQuantity || 0,
 										allotmentInfo: l.allotmentInfo || null
 									}))}
+									{#if index > 0}
+										<!-- Thin separator line between grouped products -->
+										<div class="h-px bg-border/30 mx-4"></div>
+									{/if}
 									<div
-										class={index > 0 ? 'border-t border-border/30' : ''}
 										in:fly={{ y: -20, duration: 200 }}
 										out:fade={{ duration: 150 }}
 									>
@@ -2158,7 +2156,7 @@
 											allotmentInfo={null}
 											totalAllottedForProduct={getTotalAllottedForProduct(line.product?.product)}
 											{lineAllotments}
-											hideCategory={true}
+											hideCategory={index > 0}
 											isGrouped={true}
 											negotiatedPrice={line.negotiatedPrice}
 											quantityBreakdown={line.quantityBreakdown || []}

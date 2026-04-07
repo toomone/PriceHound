@@ -160,10 +160,8 @@
 		>
 			<div class="max-h-72 overflow-auto">
 				{#each groupedProducts as group}
-					<!-- Category header: distinct from product rows -->
-					<div
-						class="sticky top-0 z-10 border-b border-border bg-muted/50 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-foreground border-l-4 border-datadog-blue shadow-sm"
-					>
+					<!-- Category Header -->
+					<div class="sticky top-0 z-10 bg-card px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border mb-1 shadow-sm">
 						{group.name}
 					</div>
 					<!-- Products in this category -->
