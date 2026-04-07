@@ -68,8 +68,11 @@
 			// Skip percentage-based pricing for now
 			if (isPercentagePrice(priceStr)) continue;
 			
-			const price = parsePrice(priceStr);
-			const lineCost = price * line.quantity;
+			const publicPrice = parsePrice(priceStr);
+			const unitPrice = line.negotiatedPrice != null && line.negotiatedPrice > 0 && billingType === 'annually'
+				? line.negotiatedPrice
+				: publicPrice;
+			const lineCost = unitPrice * line.quantity;
 			
 			if (!categories[category]) {
 				categories[category] = { cost: 0, products: [] };
