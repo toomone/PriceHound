@@ -9,7 +9,8 @@ from app.scraper import (
     save_metadata,
     get_all_regions,
     REGIONS,
-    DEFAULT_REGION
+    DEFAULT_REGION,
+    match_product_to_category,
 )
 
 
@@ -87,4 +88,22 @@ class TestPricingDataStructure:
             price_fields = ["billed_annually", "billed_month_to_month", "on_demand"]
             for field in price_fields:
                 assert field in item, f"Pricing items should have '{field}' field"
+
+
+class TestMatchProductCategory:
+    """Fargate add-ons should map to the correct pillar, not all Infrastructure."""
+
+    @pytest.mark.parametrize(
+        "product_name,expected",
+        [
+            ("Fargate (Infra)", "Infrastructure"),
+            ("Fargate (APM)", "Applications"),
+            ("Fargate (APM Enterprise)", "Applications"),
+            ("Fargate (Continuous Profiler)", "Applications"),
+            ("Fargate (Workload Protection)", "Security"),
+            ("Fargate (App and API Protection)", "Security"),
+        ],
+    )
+    def test_fargate_products(self, product_name, expected):
+        assert match_product_to_category(product_name) == expected
 

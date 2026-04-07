@@ -121,7 +121,7 @@
   },
   "b9be186aec2c": {
     "name": "Logs - Forwarding to Custom Destinations",
-    "description": "Forward logs to external destinations like S3 or Splunk. Maintain existing log workflows while using Datadog."
+    "description": "Forward logs to third-party systems (e.g. Splunk, generic HTTP). Forwarding to Amazon S3, Azure Storage, and Google Cloud Storage is included at no extra charge—this product applies to custom destinations only."
   },
   "9560f10d5aab": {
     "name": "Sensitive Data Scanner",

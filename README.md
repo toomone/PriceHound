@@ -56,7 +56,7 @@ Built-in calculator for log management costs:
 - **Retention Options** — Compare 3, 7, 15, and 30-day retention costs
 - **Indexing Presets** — Quick presets for common use cases (Minimal, Standard, Extended, Compliance)
 - **Flex Logs Support** — Add Flex Logs Starter or Storage with compute pricing notes
-- **Log Forwarding** — Include forwarding to custom destinations (S3, Azure, GCS)
+- **Log Forwarding** — Forwarding to Amazon S3, Azure Storage, and Google Cloud Storage is included at no extra charge; the estimator can add **custom** destination forwarding (paid per GB) when needed
 
 ### 📊 Cost Insights
 

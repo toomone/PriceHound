@@ -1,3 +1,5 @@
+from typing import Optional
+
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -90,8 +92,8 @@ DEFAULT_CATEGORIES = [
     {
         "name": "Infrastructure",
         "order": 1,
-        "keywords": ["infrastructure", "container", "custom metrics", "ingested custom metrics", 
-                     "serverless", "network", "cloud cost", "fargate", "azure app", "google cloud run"]
+        "keywords": ["infrastructure", "container", "custom metrics", "ingested custom metrics",
+                     "serverless", "network", "cloud cost", "azure app", "google cloud run"]
     },
     {
         "name": "Logs",
@@ -146,6 +148,26 @@ def get_categories_file() -> Path:
     return PRICING_DIR / "categories.json"
 
 
+def categorize_fargate_product(product_lower: str) -> Optional[str]:
+    """Map AWS Fargate add-on products to the right Datadog pillar.
+
+    A single generic "fargate" keyword would label APM, security, etc. as Infrastructure.
+    """
+    if "fargate" not in product_lower:
+        return None
+    if "app and api" in product_lower or "api protection" in product_lower:
+        return "Security"
+    if "workload protection" in product_lower:
+        return "Security"
+    if "continuous profiler" in product_lower:
+        return "Applications"
+    if "apm enterprise" in product_lower:
+        return "Applications"
+    if "apm" in product_lower:
+        return "Applications"
+    return "Infrastructure"
+
+
 def match_product_to_category(product_name: str, categories: list[dict] = None) -> str:
     """Find which category a product belongs to.
     
@@ -172,7 +194,11 @@ def match_product_to_category(product_name: str, categories: list[dict] = None) 
         for prod in products:
             if prod.lower() in product_lower or product_lower in prod.lower():
                 return category["name"]
-    
+
+    fargate_category = categorize_fargate_product(product_lower)
+    if fargate_category is not None:
+        return fargate_category
+
     # Second: Try keyword matching (fallback for DEFAULT_CATEGORIES)
     # Use word-boundary matching for short keywords to avoid false positives
     for category in categories:

@@ -151,7 +151,16 @@
 			</div>
 			<div>
 				<h2 class="text-lg font-semibold">Logging Without Limits</h2>
-				<p class="text-sm text-muted-foreground">Estimate your log indexing needs based on ingestion volume</p>
+				<p class="text-sm text-muted-foreground">
+					Estimate your log indexing needs based on ingestion volume.
+				</p>
+				<p class="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+					Forwarding to <span class="text-foreground/90">Amazon S3</span>,
+					<span class="text-foreground/90">Azure Storage</span>, and
+					<span class="text-foreground/90">Google Cloud Storage</span> is included at no extra charge. Use
+					<strong class="font-medium text-foreground">Extras</strong> below only if you need Flex Logs or an estimate for
+					<strong class="font-medium text-foreground">custom</strong> destinations (paid per GB).
+				</p>
 			</div>
 		</div>
 
@@ -207,7 +216,8 @@
 				{:else if currentStep === 'extras'}
 					<h3 class="text-lg font-semibold mb-2">Additional Options</h3>
 					<p class="text-xs text-muted-foreground">
-						Optional features for advanced use cases. Skip if not needed.
+						Optional Flex Logs and paid forwarding to <strong class="font-medium text-foreground">custom</strong> destinations.
+						S3, Azure, and GCS forwarding stays free—leave forwarding unchecked if that is all you use.
 					</p>
 				{/if}
 			</div>
@@ -413,8 +423,12 @@
 							class="mt-0.5 h-4 w-4 shrink-0 accent-foreground"
 						/>
 						<div class="min-w-0 flex-1">
-							<div class="font-medium text-sm">Log Forwarding</div>
-							<div class="text-xs text-muted-foreground">Forward to S3, Azure, GCS destinations</div>
+							<div class="font-medium text-sm">Custom log forwarding</div>
+							<div class="text-xs text-muted-foreground leading-relaxed">
+								Forwarding to S3, Azure Blob, and GCS is <span class="text-foreground font-medium">free</span>.
+								Enable this to estimate <span class="font-mono text-[10px]">Logs – Forwarding to Custom Destinations</span>
+								(third-party systems such as Splunk or generic HTTP)—billed per GB forwarded.
+							</div>
 							{#if enableForwarding}
 								<div class="mt-2 space-y-2" transition:slide={{ duration: 150 }}>
 									<div class="flex flex-wrap gap-1">
@@ -440,7 +454,7 @@
 									</div>
 									<div class="flex flex-wrap items-center gap-2">
 										<Input type="number" bind:value={forwardingGB} min="1" class="min-h-9 min-w-[5.5rem] font-mono text-sm" />
-										<span class="text-xs text-muted-foreground">GB/mo</span>
+										<span class="text-xs text-muted-foreground">GB/mo (custom only)</span>
 										{#if forwardingPrice > 0}
 											<span class="text-xs ml-auto">{formatCurrency(forwardingCost)}/mo</span>
 										{/if}
@@ -496,7 +510,7 @@
 						<div>
 							<div class="flex items-center gap-2">
 								<div class="w-2 h-2 bg-emerald-500"></div>
-								<span>Forwarding</span>
+								<span>Custom forwarding</span>
 							</div>
 							<div class="font-mono text-right">{formatCurrency(forwardingCost)}</div>
 						</div>
