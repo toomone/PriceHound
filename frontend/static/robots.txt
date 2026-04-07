@@ -1,0 +1,12 @@
+# PriceHound - Datadog Pricing Calculator
+# https://pricehound.onrender.com
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://pricehound.onrender.com/sitemap.xml
+
+# Disallow private quotes from indexing (contain user data)
+Disallow: /quote/
+

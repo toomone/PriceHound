@@ -1,0 +1,236 @@
+<script lang="ts">
+	import { cn } from '$lib/utils';
+	import { createEventDispatcher } from 'svelte';
+	import type { Product } from '$lib/api';
+	import productDescriptions from '$lib/product-descriptions.json';
+
+	export let products: Product[] = [];
+	export let selectedProduct: Product | null = null;
+	export let placeholder: string = 'Search products...';
+	export let id: string | undefined = undefined;
+
+	function getProductDescription(productId: string | undefined): string | null {
+		if (!productId) return null;
+		const desc = (productDescriptions as any)[productId];
+		return desc?.description || null;
+	}
+
+	let searchQuery = selectedProduct?.product || '';
+	let isOpen = false;
+	let isTyping = false; // Track if user is actively typing
+
+	// Sync searchQuery when selectedProduct changes externally (but not while typing)
+	$: if (selectedProduct && !isTyping) {
+		searchQuery = selectedProduct.product;
+	}
+	// Clear search when selectedProduct is set to null externally
+	$: if (!selectedProduct && !isTyping && searchQuery) {
+		searchQuery = '';
+	}
+	let highlightedIndex = 0;
+	let inputElement: HTMLInputElement;
+
+	const dispatch = createEventDispatcher<{ select: Product }>();
+
+	$: filteredProducts = searchQuery
+		? products.filter((p) =>
+				p.product.toLowerCase().includes(searchQuery.toLowerCase())
+		  )
+		: products;
+
+	// Group products by category
+	interface CategoryGroup {
+		name: string;
+		products: Product[];
+	}
+	
+	$: groupedProducts = (() => {
+		const groups: Record<string, Product[]> = {};
+		for (const product of filteredProducts) {
+			const category = product.category || 'Specific';
+			if (!groups[category]) {
+				groups[category] = [];
+			}
+			groups[category].push(product);
+		}
+		// Convert to array and maintain order (categories are already sorted in filteredProducts)
+		const result: CategoryGroup[] = [];
+		const seenCategories = new Set<string>();
+		for (const product of filteredProducts) {
+			const category = product.category || 'Specific';
+			if (!seenCategories.has(category)) {
+				seenCategories.add(category);
+				result.push({ name: category, products: groups[category] });
+			}
+		}
+		return result;
+	})();
+
+	// Flatten for keyboard navigation
+	$: flatProducts = filteredProducts;
+
+	$: if (filteredProducts.length > 0 && highlightedIndex >= filteredProducts.length) {
+		highlightedIndex = 0;
+	}
+
+	function handleSelect(product: Product) {
+		isTyping = false;
+		selectedProduct = product;
+		searchQuery = product.product;
+		isOpen = false;
+		dispatch('select', product);
+	}
+
+	function handleKeydown(event: KeyboardEvent) {
+		if (!isOpen && event.key === 'ArrowDown') {
+			isOpen = true;
+			return;
+		}
+
+		if (!isOpen) return;
+
+		switch (event.key) {
+			case 'ArrowDown':
+				event.preventDefault();
+				highlightedIndex = (highlightedIndex + 1) % filteredProducts.length;
+				break;
+			case 'ArrowUp':
+				event.preventDefault();
+				highlightedIndex =
+					(highlightedIndex - 1 + filteredProducts.length) % filteredProducts.length;
+				break;
+			case 'Enter':
+				event.preventDefault();
+				if (filteredProducts[highlightedIndex]) {
+					handleSelect(filteredProducts[highlightedIndex]);
+				}
+				break;
+			case 'Escape':
+				isOpen = false;
+				break;
+		}
+	}
+
+	function handleInput() {
+		// User is actively typing
+		isTyping = true;
+		// Reopen dropdown when user types
+		isOpen = true;
+		// Clear selected product if search query doesn't match
+		if (selectedProduct && searchQuery !== selectedProduct.product) {
+			selectedProduct = null;
+		}
+	}
+
+	function handleFocus() {
+		isTyping = true;
+		isOpen = true;
+	}
+
+	function handleBlur(event: FocusEvent) {
+		// Delay to allow click on option
+		setTimeout(() => {
+			isOpen = false;
+			isTyping = false;
+		}, 150);
+	}
+</script>
+
+<div class="relative w-full" {id}>
+	<input
+		bind:this={inputElement}
+		type="text"
+		{placeholder}
+		bind:value={searchQuery}
+		on:input={handleInput}
+		on:focus={handleFocus}
+		on:blur={handleBlur}
+		on:keydown={handleKeydown}
+		class={cn(
+			'flex h-9 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background',
+			'placeholder:text-muted-foreground',
+			'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:border-primary/40',
+			'transition-all duration-200'
+		)}
+	/>
+
+	{#if isOpen && filteredProducts.length > 0}
+		<div
+			class="absolute z-[9999] mt-1 w-full rounded-lg border border-border bg-card p-1 shadow-2xl overflow-visible"
+		>
+			<div class="max-h-72 overflow-auto">
+				{#each groupedProducts as group}
+					<!-- Category header: distinct from product rows -->
+					<div
+						class="sticky top-0 z-10 border-b border-border bg-muted/50 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-foreground border-l-4 border-datadog-blue shadow-sm"
+					>
+						{group.name}
+					</div>
+					<!-- Products in this category -->
+					{#each group.products as product}
+						{@const index = flatProducts.indexOf(product)}
+						{@const productDesc = getProductDescription(product.id)}
+						{@const isKeyboardActive = index === highlightedIndex}
+						{@const isCommittedSelection =
+							selectedProduct &&
+							(selectedProduct.id === product.id ||
+								(!product.id && selectedProduct.product === product.product))}
+						<button
+							type="button"
+							class={cn(
+								'relative flex w-full cursor-pointer select-none items-start rounded-md border border-transparent px-3 py-1.5 text-sm outline-none transition-all text-left',
+								isKeyboardActive &&
+									'z-[1] bg-primary/15 text-foreground ring-2 ring-primary ring-offset-1 ring-offset-card border-primary/25',
+								!isKeyboardActive &&
+									isCommittedSelection &&
+									'bg-primary/8 ring-1 ring-primary/40 border-primary/20',
+								!isKeyboardActive &&
+									!isCommittedSelection &&
+									'hover:bg-accent hover:ring-1 hover:ring-ring/35 hover:border-border'
+							)}
+							on:mousedown|preventDefault={() => handleSelect(product)}
+							on:mouseenter={() => (highlightedIndex = index)}
+							on:focus={() => (highlightedIndex = index)}
+						>
+							<div class="flex flex-col items-start gap-0.5 w-full pr-6">
+								<span class="font-medium text-left flex items-center gap-1.5">
+									{#if isCommittedSelection}
+										<span
+											class="absolute right-2 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground"
+											aria-hidden="true"
+										>
+											<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+												<path d="M5 13l4 4L19 7" />
+											</svg>
+										</span>
+									{/if}
+									{product.product}
+									{#if productDesc}
+										<span class="group/info relative inline-flex shrink-0">
+											<svg class="h-3.5 w-3.5 text-muted-foreground/50 hover:text-muted-foreground transition-colors" viewBox="0 0 24 24" fill="currentColor">
+												<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+											</svg>
+											<span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs text-background bg-foreground rounded-md shadow-lg opacity-0 group-hover/info:opacity-100 transition-opacity pointer-events-none w-64 text-center z-[99999] whitespace-normal after:content-[''] after:absolute after:top-full after:left-1/2 after:-translate-x-1/2 after:border-4 after:border-transparent after:border-t-foreground">
+												{productDesc}
+											</span>
+										</span>
+									{/if}
+								</span>
+								<span class="text-xs text-muted-foreground text-left">{product.billing_unit}</span>
+							</div>
+						</button>
+					{/each}
+				{/each}
+			</div>
+		</div>
+	{/if}
+
+	{#if isOpen && searchQuery && filteredProducts.length === 0}
+		<div
+			class="absolute z-[9999] mt-1 w-full rounded-lg border border-border bg-card p-4 text-center text-sm text-muted-foreground shadow-2xl"
+		>
+			No products found
+		</div>
+	{/if}
+</div>
+

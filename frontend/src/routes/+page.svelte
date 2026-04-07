@@ -1,0 +1,3002 @@
+<script lang="ts">
+	import { onMount, onDestroy } from 'svelte';
+	import { fade, slide, fly } from 'svelte/transition';
+	import { flip } from 'svelte/animate';
+	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
+	import escapeHtml from 'escape-html';
+	import { toast } from 'svelte-sonner';
+	import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '$lib/components/ui/card';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
+	import { Textarea } from '$lib/components/ui/textarea';
+	import QuoteLine from '$lib/components/QuoteLine.svelte';
+	import LogsIndexingCalculator from '$lib/components/LogsIndexingCalculator.svelte';
+	import ModeToggle from '$lib/components/ModeToggle.svelte';
+	import GuidedTour from '$lib/components/GuidedTour.svelte';
+	import CostDistributionChart from '$lib/components/CostDistributionChart.svelte';
+	import GetStartedBanner from '$lib/components/GetStartedBanner.svelte';
+	import { fetchProducts, fetchMetadata, createQuote, updateQuote, fetchQuote, verifyQuotePassword, fetchRegions, fetchAllotments, initAllotments, syncPricing, fetchTemplates, fetchCategoryOrder, type Product, type PricingMetadata, type Region, type Allotment, type Template } from '$lib/api';
+	import { formatCurrency, parsePrice, formatNumber, isPercentagePrice, parsePercentage } from '$lib/utils';
+	import { APP_VERSION } from '$lib/version';
+	import { trackQuoteShared, trackJsonImported, trackJsonExported, trackCsvExported, trackPdfDownloaded, trackPricingSync } from '$lib/rum';
+	import productDescriptionsData from '$lib/product-descriptions.json';
+
+	// Type for product descriptions
+	const productDescriptions = productDescriptionsData as Record<string, { name: string; description: string | null }>;
+
+	// Helper to get product description by ID
+	function getProductDescription(productId: string | undefined): string | null {
+		if (!productId) return null;
+		return productDescriptions[productId]?.description ?? null;
+	}
+
+	interface QuantityLine {
+		id: string;
+		label: string;
+		quantity: number;
+	}
+
+	interface LineItem {
+		id: string;
+		product: Product | null;
+		quantity: number;
+		negotiatedPrice?: number | null;
+		isAllotment?: boolean;
+		parentLineId?: string;
+		allotmentInfo?: Allotment;
+		includedQuantity?: number;
+		quantityBreakdown?: QuantityLine[];
+	}
+
+	let products: Product[] = [];
+	let metadata: PricingMetadata | null = null;
+	let regions: Record<string, Region> = {};
+	let allotments: Allotment[] = [];
+	let selectedRegion = 'us';
+	
+	// Region flags mapping
+	const regionFlags: Record<string, string> = {
+		'us': '🇺🇸',
+		'us1-fed': '🇺🇸',
+		'eu1': '🇪🇺',
+		'ap1': '🇯🇵',
+		'ap2': '🇦🇺'
+	};
+	let selectedPlan: 'Pro' | 'Enterprise' = 'Pro';
+	let lines: LineItem[] = [{ id: crypto.randomUUID(), product: null, quantity: 1 }];
+	let quoteName = '';
+	let quoteDescription = '';
+	let editingQuoteName = false;
+	let showDescriptionEditor = false;
+	let loading = false;
+	let loadingQuote = false;
+	let saving = false;
+	let syncing = false;
+	let shareUrl = '';
+	let shareMenuOpen = false;
+	let filterMenuOpen = false;
+	let billingMenuOpen = false;
+	let importModalOpen = false;
+	let isDragging = false;
+	let saveModalOpen = false;
+	let editPassword = '';
+	let confirmPassword = '';
+	let passwordError = '';
+	
+	// Edit mode (editing existing quote)
+	let editingQuoteId: string | null = null;
+	let editQuotePassword: string | null = null;
+	
+	// Edit mode password modal (for loading from URL)
+	let editPasswordModalOpen = false;
+	let editPasswordInput = '';
+	let editPasswordError = '';
+	let pendingEditQuoteId: string | null = null;
+	let pendingEditQuote: any = null;
+	let verifyingEditPassword = false;
+	
+	// Billing visibility toggles
+	let showAnnual = true;
+	let showMonthly = true;
+	let showOnDemand = false;
+	
+	// Tools visibility
+	let showLogsCalculator = false;
+	
+	// Quantity detail view
+	let showDetailedQuantities = false;
+	
+	// Templates / Example Stacks
+	let templates: Template[] = [];
+	let showTemplates = false;
+	let loadingTemplates = false;
+	let previewTemplate: Template | null = null;
+	let selectedTemplateItems: Set<number> = new Set();
+	let templateCustomLabel = '';
+	let stackFilter = '';
+	
+	// Filtered templates based on search
+	$: filteredTemplates = templates.filter(t => 
+		stackFilter === '' || 
+		t.name.toLowerCase().includes(stackFilter.toLowerCase()) ||
+		t.description.toLowerCase().includes(stackFilter.toLowerCase())
+	);
+	
+	// Initialize all items as selected when previewing a template
+	$: if (previewTemplate) {
+		selectedTemplateItems = new Set(previewTemplate.items.map((_, i) => i));
+	}
+	
+	// Category order for sorting products
+	let categoryOrder: Record<string, number> = {};
+	
+	// Sticky footer visibility
+	let summaryVisible = true;
+	let summaryElement: HTMLElement;
+	let summaryObserver: IntersectionObserver | null = null;
+	
+	// Filter products based on selected plan and sort by category
+	// Products without a plan field are treated as "All" (available to all plans)
+	$: filteredProducts = products
+		.filter(p => {
+			const productPlan = p.plan || 'All';
+			return productPlan === selectedPlan || productPlan === 'All';
+		})
+		.sort((a, b) => {
+			// First sort by category order
+			const catOrderA = categoryOrder[a.category || 'Other'] ?? 99;
+			const catOrderB = categoryOrder[b.category || 'Other'] ?? 99;
+			if (catOrderA !== catOrderB) return catOrderA - catOrderB;
+			// Then sort alphabetically within category
+			return a.product.localeCompare(b.product);
+		});
+
+	$: lastSyncFormatted = metadata?.last_sync
+		? new Date(metadata.last_sync).toLocaleString('en-US', {
+				month: 'short',
+				day: 'numeric',
+				year: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit'
+		  })
+		: null;
+
+	$: validLines = lines.filter((l) => l.product !== null);
+
+	// Group non-allotment lines by category for visual grouping
+	$: groupedLines = (() => {
+		const nonAllotmentLines = lines.filter(l => !l.isAllotment);
+		const groups: Record<string, LineItem[]> = {};
+		
+		for (const line of nonAllotmentLines) {
+			const category = line.product?.category || null;
+			if (category) {
+				if (!groups[category]) {
+					groups[category] = [];
+				}
+				groups[category].push(line);
+			}
+		}
+		
+		// Sort categories by order
+		const sortedCategories = Object.keys(groups).sort((a, b) => {
+			const orderA = categoryOrder[a] ?? 99;
+			const orderB = categoryOrder[b] ?? 99;
+			return orderA - orderB;
+		});
+		
+		// Get lines without a category (product not selected yet)
+		const uncategorizedLines = nonAllotmentLines.filter(l => !l.product?.category);
+		
+		return { groups, sortedCategories, uncategorizedLines };
+	})();
+
+	// Calculate total allotted quantity for each product from allotment lines
+	function getTotalAllottedForProduct(productName: string | undefined): number {
+		if (!productName) return 0;
+		return lines
+			.filter(l => l.isAllotment && l.product?.product === productName)
+			.reduce((sum, l) => sum + (l.includedQuantity || 0), 0);
+	}
+
+	// Compute all billing totals simultaneously (considering allotments, negotiated prices, and percentage-based pricing)
+	$: totals = (() => {
+		// First pass: calculate base totals (non-percentage items)
+		const baseTotals = validLines.reduce(
+			(acc, line) => {
+				if (!line.product) return acc;
+				
+				// Skip percentage-based products in first pass
+				if (isPercentagePrice(line.product.billed_annually)) return acc;
+				
+				const publicAnnualPrice = parsePrice(line.product.billed_annually);
+				// Use negotiated price for annual if available, otherwise use public price
+				const annualPrice = (line.negotiatedPrice && line.negotiatedPrice > 0) 
+					? line.negotiatedPrice 
+					: publicAnnualPrice;
+				const monthlyPrice = parsePrice(line.product.billed_month_to_month);
+				const onDemandPrice = parsePrice(line.product.on_demand);
+				
+				// For allotments, only charge for quantity exceeding included amount
+				const chargeableQty = line.isAllotment 
+					? Math.max(0, line.quantity - (line.includedQuantity || 0))
+					: line.quantity;
+				
+				return {
+					annually: acc.annually + annualPrice * chargeableQty,
+					monthly: acc.monthly + monthlyPrice * chargeableQty,
+					on_demand: acc.on_demand + onDemandPrice * chargeableQty
+				};
+			},
+			{ annually: 0, monthly: 0, on_demand: 0 }
+		);
+		
+		// Second pass: calculate percentage-based add-ons
+		const percentageAddOns = validLines.reduce(
+			(acc, line) => {
+				if (!line.product) return acc;
+				
+				// Only process percentage-based products
+				if (!isPercentagePrice(line.product.billed_annually)) return acc;
+				
+				const annualPercent = parsePercentage(line.product.billed_annually);
+				const monthlyPercent = parsePercentage(line.product.billed_month_to_month);
+				const onDemandPercent = parsePercentage(line.product.on_demand);
+				
+				return {
+					annually: acc.annually + (baseTotals.annually * annualPercent / 100),
+					monthly: acc.monthly + (baseTotals.monthly * monthlyPercent / 100),
+					on_demand: acc.on_demand + (baseTotals.on_demand * onDemandPercent / 100)
+				};
+			},
+			{ annually: 0, monthly: 0, on_demand: 0 }
+		);
+		
+		// Return total = base + percentage add-ons
+		return {
+			annually: baseTotals.annually + percentageAddOns.annually,
+			monthly: baseTotals.monthly + percentageAddOns.monthly,
+			on_demand: baseTotals.on_demand + percentageAddOns.on_demand
+		};
+	})();
+
+	// Calculate annual costs for comparison
+	$: annualCosts = {
+		annually: totals.annually * 12,
+		monthly: totals.monthly * 12,
+		on_demand: totals.on_demand * 12
+	};
+
+	// Calculate savings between visible options
+	$: savingsVsMonthly = annualCosts.monthly - annualCosts.annually;
+	$: savingsVsOnDemand = annualCosts.on_demand - annualCosts.annually;
+	$: savingsMonthlyVsOnDemand = annualCosts.on_demand - annualCosts.monthly;
+	$: savingsPercentVsMonthly = annualCosts.monthly > 0 ? (savingsVsMonthly / annualCosts.monthly) * 100 : 0;
+	$: savingsPercentVsOnDemand = annualCosts.on_demand > 0 ? (savingsVsOnDemand / annualCosts.on_demand) * 100 : 0;
+	$: savingsPercentMonthlyVsOnDemand = annualCosts.on_demand > 0 ? (savingsMonthlyVsOnDemand / annualCosts.on_demand) * 100 : 0;
+
+	// Determine best value and savings based on visible columns
+	$: bestValueOption = (() => {
+		const visible = [];
+		if (showAnnual) visible.push({ key: 'annual', cost: annualCosts.annually });
+		if (showMonthly) visible.push({ key: 'monthly', cost: annualCosts.monthly });
+		if (showOnDemand) visible.push({ key: 'ondemand', cost: annualCosts.on_demand });
+		if (visible.length < 2) return null;
+		return visible.reduce((min, curr) => curr.cost < min.cost ? curr : min);
+	})();
+
+	$: worstValueOption = (() => {
+		const visible = [];
+		if (showAnnual) visible.push({ key: 'annual', cost: annualCosts.annually });
+		if (showMonthly) visible.push({ key: 'monthly', cost: annualCosts.monthly });
+		if (showOnDemand) visible.push({ key: 'ondemand', cost: annualCosts.on_demand });
+		if (visible.length < 2) return null;
+		return visible.reduce((max, curr) => curr.cost > max.cost ? curr : max);
+	})();
+
+	$: dynamicSavings = bestValueOption && worstValueOption && bestValueOption.key !== worstValueOption.key
+		? worstValueOption.cost - bestValueOption.cost
+		: 0;
+
+	$: dynamicSavingsPercent = worstValueOption && worstValueOption.cost > 0
+		? (dynamicSavings / worstValueOption.cost) * 100
+		: 0;
+
+	$: bestValueLabel = bestValueOption?.key === 'annual' ? 'annual' : bestValueOption?.key === 'monthly' ? 'monthly' : 'on-demand';
+	$: worstValueLabel = worstValueOption?.key === 'annual' ? 'annual' : worstValueOption?.key === 'monthly' ? 'monthly' : 'on-demand';
+
+	onMount(async () => {
+		// Restore saved region preference
+		const savedRegion = localStorage.getItem('pricehound_region');
+		if (savedRegion && ['us', 'us1-fed', 'eu1', 'ap1', 'ap2'].includes(savedRegion)) {
+			selectedRegion = savedRegion;
+		}
+		
+		await loadRegions();
+		await loadAllotments();
+		await loadProducts();
+		
+		// Check for edit parameter (editing existing quote)
+		const editParam = $page.url.searchParams.get('edit');
+		if (editParam) {
+			loadingQuote = true;
+			try {
+				// Check for pre-verified password (from quote page redirect)
+				const pwParam = $page.url.searchParams.get('pw');
+				const preVerifiedPassword = pwParam ? decodeURIComponent(pwParam) : undefined;
+				
+				// Try to parse as JSON (format from quote page redirect)
+				let editData = null;
+				try {
+					editData = JSON.parse(decodeURIComponent(editParam));
+				} catch {
+					// Not JSON, treat as simple quote ID (bookmarkable URL)
+					await loadEditFromQuoteId(editParam, preVerifiedPassword);
+					// Clean up URL to remove password parameter
+					goto(`/?edit=${editParam}`, { replaceState: true });
+					return;
+				}
+				
+				// If we have valid JSON data, load the quote
+				if (editData && editData.quoteId) {
+					try {
+						await loadEditQuote(editData);
+						// Update URL to simple format (bookmarkable)
+						goto(`/?edit=${editData.quoteId}`, { replaceState: true });
+					} catch (e) {
+						console.error('Failed to load edit quote:', e);
+						toast.error('Failed to load quote for editing.');
+						goto('/', { replaceState: true });
+					}
+					return;
+				}
+			} finally {
+				loadingQuote = false;
+			}
+		}
+		
+		// Check for clone parameter
+		const cloneParam = $page.url.searchParams.get('clone');
+		if (cloneParam) {
+			try {
+				const cloneData = JSON.parse(decodeURIComponent(cloneParam));
+				await loadClonedQuote(cloneData);
+				// Remove the clone param from URL
+				goto('/', { replaceState: true });
+			} catch (e) {
+				console.error('Failed to parse clone data:', e);
+			}
+		}
+		
+		// Setup Intersection Observer for sticky footer
+		summaryObserver = new IntersectionObserver(
+			([entry]) => {
+				summaryVisible = entry.isIntersecting;
+			},
+			{ threshold: 0.1 }
+		);
+	});
+	
+	// Track if we've already started observing
+	let isObserving = false;
+	
+	// Observe the summary element when it becomes available
+	$: if (summaryElement && summaryObserver && !isObserving) {
+		summaryObserver.observe(summaryElement);
+		isObserving = true;
+	}
+	
+	// Reset observation state when element is removed
+	$: if (!summaryElement && isObserving) {
+		isObserving = false;
+	}
+	
+	onDestroy(() => {
+		if (summaryObserver) {
+			summaryObserver.disconnect();
+		}
+	});
+
+	async function loadAllotments() {
+		try {
+			allotments = await fetchAllotments();
+			if (allotments.length === 0) {
+				// Initialize with manual allotments
+				await initAllotments();
+				allotments = await fetchAllotments();
+			}
+		} catch (e) {
+			console.error('Failed to load allotments:', e);
+		}
+	}
+
+	async function loadTemplates() {
+		loadingTemplates = true;
+		try {
+			templates = await fetchTemplates();
+		} catch (e) {
+			console.error('Failed to load templates:', e);
+		} finally {
+			loadingTemplates = false;
+		}
+	}
+
+	/** Example stacks: fetch only when Get Started is expanded (not on initial page load) */
+	async function loadGetStartedTemplatesIfNeeded() {
+		if (templates.length > 0 || loadingTemplates) return;
+		await loadTemplates();
+	}
+
+	function toggleTemplateItem(index: number) {
+		const newSet = new Set(selectedTemplateItems);
+		if (newSet.has(index)) {
+			newSet.delete(index);
+		} else {
+			newSet.add(index);
+		}
+		selectedTemplateItems = newSet; // create new reference to trigger reactivity
+	}
+
+	function toggleAllTemplateItems() {
+		if (selectedTemplateItems.size === previewTemplate?.items.length) {
+			selectedTemplateItems = new Set();
+		} else {
+			selectedTemplateItems = new Set(previewTemplate?.items.map((_, i) => i) || []);
+		}
+	}
+
+	async function applyTemplate(template: Template, customLabel?: string) {
+		// Filter to only selected items
+		const selectedItems = template.items.filter((_, i) => selectedTemplateItems.has(i));
+		
+		if (selectedItems.length === 0) {
+			toast.error('Please select at least one product');
+			return;
+		}
+		
+		const breakdownLabel = customLabel || template.name;
+
+		// Templates are region agnostic - use current region's products
+		const newLines: LineItem[] = [];
+		let mergedCount = 0;
+		for (const item of selectedItems) {
+			const matchedProduct = products.find(p => 
+				p.product.toLowerCase().includes(item.product.toLowerCase()) ||
+				item.product.toLowerCase().includes(p.product.toLowerCase())
+			);
+			
+			if (!matchedProduct) continue;
+
+			const existingLine = lines.find(l => l.product?.id === matchedProduct.id && !l.isAllotment);
+			if (existingLine) {
+				const existingBreakdown = existingLine.quantityBreakdown || [];
+				const newBl: QuantityLine = { id: crypto.randomUUID(), label: breakdownLabel, quantity: item.quantity };
+				const updatedBreakdown = existingBreakdown.length > 0
+					? [...existingBreakdown, newBl]
+					: [{ id: crypto.randomUUID(), label: 'base', quantity: existingLine.quantity }, newBl];
+				const newQty = updatedBreakdown.reduce((s, bl) => s + bl.quantity, 0);
+				lines = lines.map(l =>
+					l.id === existingLine.id ? { ...l, quantity: newQty, quantityBreakdown: updatedBreakdown } : l
+				);
+				mergedCount++;
+			} else {
+				const lineId = crypto.randomUUID();
+				const breakdown: QuantityLine[] = [{
+					id: crypto.randomUUID(),
+					label: breakdownLabel,
+					quantity: item.quantity
+				}];
+				newLines.push({
+					id: lineId,
+					product: matchedProduct,
+					quantity: item.quantity,
+					quantityBreakdown: breakdown
+				});
+				
+				const productAllotmentsRaw = allotments.filter(a => 
+					a.parent_product_id === matchedProduct.id
+				);
+				const seenAllotments = new Set<string>();
+				const productAllotments = productAllotmentsRaw.filter(a => {
+					const key = a.allotted_product;
+					if (seenAllotments.has(key)) return false;
+					seenAllotments.add(key);
+					return true;
+				});
+				
+				for (const allotment of productAllotments) {
+					const allottedProduct = products.find(p => 
+						p.id === allotment.allotted_product_id
+					) || products.find(p =>
+						p.product.toLowerCase().includes(allotment.allotted_product.toLowerCase())
+					);
+					
+					if (allottedProduct) {
+						const includedQty = allotment.quantity_per_parent * item.quantity;
+						newLines.push({
+							id: crypto.randomUUID(),
+							product: allottedProduct,
+							quantity: includedQty,
+							isAllotment: true,
+							parentLineId: lineId,
+							allotmentInfo: allotment,
+							includedQuantity: includedQty
+						});
+					}
+				}
+			}
+		}
+		
+		const addedCount = newLines.filter(l => !l.isAllotment).length;
+		if (newLines.length > 0 || mergedCount > 0) {
+			if (newLines.length > 0) {
+				const existingValidLines = lines.filter(l => l.product !== null);
+				lines = [...existingValidLines, ...newLines];
+			}
+			showDetailedQuantities = true;
+			toast.success(`Added ${addedCount + mergedCount} products from "${template.name}"`);
+		} else {
+			toast.error('Could not match any products from the template');
+		}
+		
+		// Collapse templates section after applying
+		showTemplates = false;
+	}
+
+	async function loadClonedQuote(cloneData: { name: string; description?: string | null; region?: string; items: { id?: string; product: string; quantity: number; negotiated_price?: number | null; allotments?: any[]; quantity_breakdown?: { label: string; quantity: number }[] }[] }) {
+		quoteName = cloneData.name ? `${cloneData.name} (Copy)` : '';
+		quoteDescription = cloneData.description || '';
+		showDescriptionEditor = !!cloneData.description;
+		
+		// Set region if different
+		if (cloneData.region && cloneData.region !== selectedRegion) {
+			selectedRegion = cloneData.region;
+			await loadProducts();
+		}
+		
+		// Map cloned items to lines, including restoring allotments
+		const newLines: LineItem[] = [];
+		for (const item of cloneData.items) {
+			let matchedProduct = item.id 
+				? products.find(p => p.id === item.id)
+				: null;
+			
+			// Fallback to name matching if ID not found
+			if (!matchedProduct) {
+				matchedProduct = products.find(p => p.product === item.product);
+			}
+			
+			if (matchedProduct) {
+				const lineId = crypto.randomUUID();
+				const breakdown: QuantityLine[] = (item.quantity_breakdown || []).map(bl => ({
+					id: crypto.randomUUID(), label: bl.label, quantity: bl.quantity
+				}));
+				newLines.push({
+					id: lineId,
+					product: matchedProduct,
+					quantity: item.quantity,
+					negotiatedPrice: item.negotiated_price ?? null,
+					quantityBreakdown: breakdown.length > 0 ? breakdown : undefined
+				});
+				
+				// Restore allotments for this item
+				if (item.allotments && item.allotments.length > 0) {
+					for (const savedAllotment of item.allotments) {
+						const allottedProduct = savedAllotment.id
+							? products.find(p => p.id === savedAllotment.id)
+							: products.find(p => p.product === savedAllotment.allotted_product);
+						
+						if (allottedProduct) {
+							const allotmentInfo = allotments.find(a => 
+								a.parent_product_id === matchedProduct!.id && 
+								a.allotted_product_id === allottedProduct.id
+							) || allotments.find(a =>
+								a.parent_product === matchedProduct!.product &&
+								a.allotted_product === allottedProduct.product
+							);
+							
+							newLines.push({
+								id: crypto.randomUUID(),
+								product: allottedProduct,
+								quantity: savedAllotment.quantity_included,
+								isAllotment: true,
+								parentLineId: lineId,
+								allotmentInfo: allotmentInfo || undefined,
+								includedQuantity: savedAllotment.quantity_included
+							});
+						}
+					}
+				}
+			}
+		}
+		
+		if (newLines.length > 0) {
+			lines = newLines;
+			if (lines.some(l => l.quantityBreakdown && l.quantityBreakdown.length > 0)) showDetailedQuantities = true;
+			toast.success('Quote cloned successfully! You can now edit it.');
+		}
+	}
+
+	async function loadEditQuote(editData: { quoteId: string; name: string; description?: string | null; region: string; editPassword: string | null; items: { id?: string; product: string; quantity: number; negotiated_price?: number | null; allotments?: any[]; quantity_breakdown?: { label: string; quantity: number }[] }[] }) {
+		// Store edit mode info
+		editingQuoteId = editData.quoteId;
+		editQuotePassword = editData.editPassword;
+		quoteName = editData.name || '';
+		quoteDescription = editData.description || '';
+		showDescriptionEditor = !!editData.description;
+		
+		// Change region if different
+		if (editData.region && editData.region !== selectedRegion) {
+			selectedRegion = editData.region;
+			await loadProducts();
+		}
+		
+		// Map items to lines, including restoring allotments
+		const newLines: LineItem[] = [];
+		for (const item of editData.items) {
+			let matchedProduct = item.id 
+				? products.find(p => p.id === item.id)
+				: null;
+			
+			// Fallback to name matching if ID not found
+			if (!matchedProduct) {
+				matchedProduct = products.find(p => p.product === item.product);
+			}
+			
+			if (matchedProduct) {
+				const lineId = crypto.randomUUID();
+				const breakdown: QuantityLine[] = (item.quantity_breakdown || []).map(bl => ({
+					id: crypto.randomUUID(), label: bl.label, quantity: bl.quantity
+				}));
+				newLines.push({
+					id: lineId,
+					product: matchedProduct,
+					quantity: item.quantity,
+					negotiatedPrice: item.negotiated_price ?? null,
+					quantityBreakdown: breakdown.length > 0 ? breakdown : undefined
+				});
+				
+				if (item.allotments && item.allotments.length > 0) {
+					for (const savedAllotment of item.allotments) {
+						const allottedProduct = savedAllotment.id
+							? products.find(p => p.id === savedAllotment.id)
+							: products.find(p => p.product === savedAllotment.allotted_product);
+						
+						if (allottedProduct) {
+							const allotmentInfo = allotments.find(a => 
+								a.parent_product_id === matchedProduct!.id && 
+								a.allotted_product_id === allottedProduct.id
+							) || allotments.find(a =>
+								a.parent_product === matchedProduct!.product &&
+								a.allotted_product === allottedProduct.product
+							);
+							
+							newLines.push({
+								id: crypto.randomUUID(),
+								product: allottedProduct,
+								quantity: savedAllotment.quantity_included,
+								isAllotment: true,
+								parentLineId: lineId,
+								allotmentInfo: allotmentInfo || undefined,
+								includedQuantity: savedAllotment.quantity_included
+							});
+						}
+					}
+				}
+			}
+		}
+		
+		if (newLines.length > 0) {
+			lines = newLines;
+			if (lines.some(l => l.quantityBreakdown && l.quantityBreakdown.length > 0)) showDetailedQuantities = true;
+			toast.success('Editing quote. Make your changes and save.');
+		}
+	}
+
+	async function loadEditFromQuoteId(quoteId: string, preVerifiedPassword?: string) {
+		// Fetch the quote from API
+		try {
+			const quote = await fetchQuote(quoteId);
+			
+			if (quote.is_protected) {
+				if (preVerifiedPassword) {
+					// Password already verified (e.g., from quote page redirect), use it directly
+					await loadQuoteIntoEditor(quote, preVerifiedPassword);
+				} else {
+					// Quote is protected, show password modal
+					pendingEditQuoteId = quoteId;
+					pendingEditQuote = quote;
+					editPasswordModalOpen = true;
+				}
+			} else {
+				// Not protected, load directly
+				await loadQuoteIntoEditor(quote, null);
+			}
+		} catch (e) {
+			console.error('Failed to fetch quote:', e);
+			toast.error('Quote not found or could not be loaded.');
+			goto('/', { replaceState: true });
+		}
+	}
+
+	async function loadQuoteIntoEditor(quote: any, password: string | null) {
+		editingQuoteId = quote.id;
+		editQuotePassword = password;
+		quoteName = quote.name || '';
+		quoteDescription = quote.description || '';
+		showDescriptionEditor = !!quote.description;
+		
+		// Set region
+		if (quote.region && quote.region !== selectedRegion) {
+			selectedRegion = quote.region;
+			await loadProducts();
+		}
+		
+		// Map items to lines, including restoring allotments
+		const newLines: LineItem[] = [];
+		for (const item of quote.items) {
+			let matchedProduct = item.id 
+				? products.find(p => p.id === item.id)
+				: null;
+			
+			if (!matchedProduct) {
+				matchedProduct = products.find(p => p.product === item.product);
+			}
+			
+			if (matchedProduct) {
+				const lineId = crypto.randomUUID();
+				const breakdown: QuantityLine[] = (item.quantity_breakdown || []).map((bl: any) => ({
+					id: crypto.randomUUID(), label: bl.label, quantity: bl.quantity
+				}));
+				newLines.push({
+					id: lineId,
+					product: matchedProduct,
+					quantity: item.quantity,
+					negotiatedPrice: item.negotiated_price ?? null,
+					quantityBreakdown: breakdown.length > 0 ? breakdown : undefined
+				});
+				
+				if (item.allotments && item.allotments.length > 0) {
+					for (const savedAllotment of item.allotments) {
+						const allottedProduct = savedAllotment.id
+							? products.find(p => p.id === savedAllotment.id)
+							: products.find(p => p.product === savedAllotment.allotted_product);
+						
+						if (allottedProduct) {
+							const allotmentInfo = allotments.find(a => 
+								a.parent_product_id === matchedProduct!.id && 
+								a.allotted_product_id === allottedProduct.id
+							) || allotments.find(a =>
+								a.parent_product === matchedProduct!.product &&
+								a.allotted_product === allottedProduct.product
+							);
+							
+							newLines.push({
+								id: crypto.randomUUID(),
+								product: allottedProduct,
+								quantity: savedAllotment.quantity_included,
+								isAllotment: true,
+								parentLineId: lineId,
+								allotmentInfo: allotmentInfo || undefined,
+								includedQuantity: savedAllotment.quantity_included
+							});
+						}
+					}
+				}
+			}
+		}
+		
+		if (newLines.length > 0) {
+			lines = newLines;
+			if (lines.some(l => l.quantityBreakdown && l.quantityBreakdown.length > 0)) showDetailedQuantities = true;
+			toast.success('Editing quote. Make your changes and save.');
+		}
+		
+		shareUrl = `${window.location.origin}/quote/${quote.id}`;
+	}
+
+	async function verifyAndLoadEditQuote() {
+		if (!pendingEditQuoteId || !pendingEditQuote) return;
+		
+		verifyingEditPassword = true;
+		editPasswordError = '';
+		
+		try {
+			const isValid = await verifyQuotePassword(pendingEditQuoteId, editPasswordInput);
+			
+			if (isValid) {
+				editPasswordModalOpen = false;
+				loadingQuote = true;
+				try {
+					await loadQuoteIntoEditor(pendingEditQuote, editPasswordInput);
+				} finally {
+					loadingQuote = false;
+				}
+				editPasswordInput = '';
+				pendingEditQuoteId = null;
+				pendingEditQuote = null;
+			} else {
+				editPasswordError = 'Incorrect password';
+			}
+		} catch (e) {
+			editPasswordError = 'Failed to verify password';
+		} finally {
+			verifyingEditPassword = false;
+		}
+	}
+
+	function cancelEditPasswordModal() {
+		editPasswordModalOpen = false;
+		editPasswordInput = '';
+		editPasswordError = '';
+		pendingEditQuoteId = null;
+		pendingEditQuote = null;
+		goto('/', { replaceState: true });
+	}
+
+	async function loadRegions() {
+		try {
+			regions = await fetchRegions();
+		} catch (e) {
+			console.error('Failed to load regions:', e);
+		}
+	}
+
+	async function loadProducts() {
+		loading = true;
+		try {
+			// Load products, metadata, and category order in parallel
+			const [productsData, metadataData, categoryOrderData] = await Promise.all([
+				fetchProducts(selectedRegion),
+				fetchMetadata(selectedRegion),
+				fetchCategoryOrder().catch(() => ({})) // Fallback to empty if categories API fails
+			]);
+			products = productsData;
+			metadata = metadataData;
+			categoryOrder = categoryOrderData;
+			
+			// Note: Sorting is handled by the reactive filteredProducts statement
+			if (products.length === 0) {
+				toast.error('No products found. Please wait for automatic sync or check backend connection.');
+			}
+		} catch (e) {
+			toast.error('Failed to load products. Make sure the backend is running.');
+		} finally {
+			loading = false;
+		}
+	}
+
+	async function handleSync() {
+		syncing = true;
+		try {
+			await syncPricing(selectedRegion);
+			await loadProducts();
+			toast.success('Pricing data synced successfully!');
+			
+			// Track pricing sync in RUM
+			trackPricingSync({
+				region: selectedRegion
+			});
+		} catch (e) {
+			toast.error('Failed to sync pricing data.');
+		} finally {
+			syncing = false;
+		}
+	}
+
+	async function handleRegionChange() {
+		// Save region preference to localStorage
+		localStorage.setItem('pricehound_region', selectedRegion);
+		
+		// Reset metadata to show loading state
+		metadata = null;
+		
+		// Store current line selections (product IDs and quantities)
+		const previousSelections = lines.map(line => ({
+			id: line.id,
+			productId: line.product?.id || null,
+			productName: line.product?.product || null,
+			quantity: line.quantity,
+			isAllotment: line.isAllotment,
+			parentLineId: line.parentLineId,
+			allotmentInfo: line.allotmentInfo,
+			includedQuantity: line.includedQuantity
+		}));
+		
+		// Load new region's products
+		await loadProducts();
+		
+		// Restore line selections by matching product IDs to new region's products
+		lines = previousSelections.map(selection => {
+			// Match by ID first (IDs are consistent across regions)
+			let matchedProduct = selection.productId 
+				? products.find(p => p.id === selection.productId) || null
+				: null;
+			
+			// Fallback to name matching
+			if (!matchedProduct && selection.productName) {
+				matchedProduct = products.find(p => p.product === selection.productName) || null;
+			}
+			
+			return {
+				id: selection.id,
+				product: matchedProduct,
+				quantity: selection.quantity,
+				isAllotment: selection.isAllotment,
+				parentLineId: selection.parentLineId,
+				allotmentInfo: selection.allotmentInfo,
+				includedQuantity: selection.includedQuantity
+			};
+		});
+	}
+
+	function addLine() {
+		lines = [...lines, { id: crypto.randomUUID(), product: null, quantity: 1 }];
+	}
+
+	function addItemsFromCalculator(items: { product: Product; quantity: number }[], customLabel?: string) {
+		const newLines: LineItem[] = [];
+		const calcLabel = customLabel || 'Logging Without Limits';
+		
+		for (const item of items) {
+			const existingLine = lines.find(l => l.product?.id === item.product.id);
+			if (existingLine) {
+				const existingBreakdown = existingLine.quantityBreakdown || [];
+				const newBl: QuantityLine = { id: crypto.randomUUID(), label: calcLabel, quantity: item.quantity };
+				const updatedBreakdown = existingBreakdown.length > 0
+					? [...existingBreakdown, newBl]
+					: [{ id: crypto.randomUUID(), label: 'base', quantity: existingLine.quantity }, newBl];
+				const newQty = updatedBreakdown.reduce((s, bl) => s + bl.quantity, 0);
+				lines = lines.map(l =>
+					l.id === existingLine.id
+						? { ...l, quantity: newQty, quantityBreakdown: updatedBreakdown }
+						: l
+				);
+			} else {
+				const breakdown: QuantityLine[] = [{
+					id: crypto.randomUUID(),
+					label: calcLabel,
+					quantity: item.quantity
+				}];
+				newLines.push({
+					id: crypto.randomUUID(),
+					product: item.product,
+					quantity: item.quantity,
+					quantityBreakdown: breakdown
+				});
+			}
+		}
+		
+		if (newLines.length > 0) {
+			lines = lines.filter(l => l.product !== null);
+			lines = [...lines, ...newLines];
+		}
+		
+		showDetailedQuantities = true;
+		showLogsCalculator = false;
+		toast.success(`Added ${items.length} item(s) to quote`);
+	}
+
+	function removeLine(id: string) {
+		// Remove the line and any associated allotment lines
+		lines = lines.filter((l) => l.id !== id && l.parentLineId !== id);
+		
+		// If all lines were removed, add an empty one
+		if (lines.length === 0) {
+			lines = [{ id: crypto.randomUUID(), product: null, quantity: 1 }];
+		}
+	}
+
+	function updateLine(id: string, product: Product | null, quantity: number, negotiatedPrice?: number | null) {
+		const existingLine = lines.find(l => l.id === id);
+		const previousProductId = existingLine?.product?.id;
+		
+		// Check if product changed (using ID for reliable comparison)
+		const productChanged = product?.id !== previousProductId;
+		
+		// Build the new lines array in one go to avoid reactivity issues
+		let newLines: LineItem[] = [];
+		
+		if (product && productChanged) {
+			// Product changed: update line, remove old allotments, add new allotments
+			// Reset negotiated price when product changes
+			
+			// 1. Keep all lines except: the current line and its old allotments
+			newLines = lines.filter(l => l.id !== id && l.parentLineId !== id);
+			
+			newLines.push({ ...existingLine!, product, quantity, negotiatedPrice: null, quantityBreakdown: undefined });
+			
+			// 3. Find and add new allotments for this product (match by product_id)
+			// Deduplicate by allotted_product to avoid duplicate entries
+			const productAllotmentsRaw = allotments.filter(a => 
+				a.parent_product_id === product.id
+			);
+			const seenAllotments = new Set<string>();
+			const productAllotments = productAllotmentsRaw.filter(a => {
+				const key = a.allotted_product;
+				if (seenAllotments.has(key)) return false;
+				seenAllotments.add(key);
+				return true;
+			});
+			
+			for (const allotment of productAllotments) {
+				// Match allotted product by ID first, then fallback to name
+				const allottedProduct = products.find(p => 
+					p.id === allotment.allotted_product_id
+				) || products.find(p =>
+					p.product.toLowerCase().includes(allotment.allotted_product.toLowerCase())
+				);
+				
+				if (allottedProduct) {
+					const includedQty = allotment.quantity_per_parent * quantity;
+					newLines.push({
+						id: crypto.randomUUID(),
+						product: allottedProduct,
+						quantity: includedQty,
+						isAllotment: true,
+						parentLineId: id,
+						allotmentInfo: allotment,
+						includedQuantity: includedQty
+					});
+				}
+			}
+		} else if (!productChanged && quantity !== existingLine?.quantity) {
+			// Only quantity changed: update line and recalculate allotment quantities
+			// Preserve negotiatedPrice
+			newLines = lines.map(l => {
+				if (l.id === id) {
+					return { ...l, product, quantity, negotiatedPrice: negotiatedPrice !== undefined ? negotiatedPrice : l.negotiatedPrice };
+				}
+				if (l.parentLineId === id && l.allotmentInfo) {
+					const newIncluded = l.allotmentInfo.quantity_per_parent * quantity;
+					return { ...l, includedQuantity: newIncluded };
+				}
+				return l;
+			});
+		} else {
+			newLines = lines.map((l) => (l.id === id ? { ...l, product, quantity, negotiatedPrice: negotiatedPrice !== undefined ? negotiatedPrice : l.negotiatedPrice } : l));
+		}
+		
+		// Single assignment to trigger reactivity once
+		lines = newLines;
+	}
+
+	function updateBreakdown(lineId: string, breakdown: { id: string; label: string; quantity: number }[]) {
+		lines = lines.map(l => {
+			if (l.id !== lineId) return l;
+			const newQuantity = breakdown.length > 0
+				? breakdown.reduce((s, bl) => s + bl.quantity, 0)
+				: l.quantity;
+			return { ...l, quantityBreakdown: breakdown.length > 0 ? breakdown : undefined, quantity: newQuantity };
+		});
+		// Auto-enable detailed view when a breakdown is created
+		if (breakdown.length > 0) showDetailedQuantities = true;
+		// Also update allotment quantities for the parent
+		const line = lines.find(l => l.id === lineId);
+		if (line && line.product) {
+			lines = lines.map(l => {
+				if (l.parentLineId === lineId && l.allotmentInfo) {
+					const newIncluded = l.allotmentInfo.quantity_per_parent * (line.quantity);
+					return { ...l, includedQuantity: newIncluded };
+				}
+				return l;
+			});
+		}
+	}
+
+	$: hasAnyBreakdown = lines.some(l => l.quantityBreakdown && l.quantityBreakdown.length > 0);
+
+	function openSaveModal() {
+		if (validLines.length === 0) {
+			toast.error('Please add at least one product to share');
+			return;
+		}
+		
+		// If editing an existing quote, save directly without modal
+		if (editingQuoteId) {
+			handleShare();
+			shareMenuOpen = false;
+			return;
+		}
+		
+		editPassword = '';
+		confirmPassword = '';
+		passwordError = '';
+		saveModalOpen = true;
+		shareMenuOpen = false;
+	}
+
+	async function handleShare() {
+		// Validate passwords match if provided (only for new quotes)
+		if (!editingQuoteId && editPassword && editPassword !== confirmPassword) {
+			passwordError = 'Passwords do not match';
+			return;
+		}
+
+		saving = true;
+		passwordError = '';
+
+		try {
+			// Build items with allotment info, product IDs, and negotiated prices
+			const items = validLines
+				.filter(l => !l.isAllotment) // Only parent products
+				.map((l) => {
+					// Find allotments for this line
+					const lineAllotments = lines
+						.filter(al => al.isAllotment && al.parentLineId === l.id)
+						.map(al => ({
+							id: al.product!.id,
+							allotted_product: al.product!.product,
+							quantity_included: al.includedQuantity || 0,
+							allotted_unit: al.allotmentInfo?.allotted_unit || 'units'
+						}));
+					
+				return {
+					id: l.product!.id,
+					product: l.product!.product,
+					quantity: l.quantity,
+					negotiated_price: l.negotiatedPrice ?? null,
+					allotments: lineAllotments,
+					quantity_breakdown: (l.quantityBreakdown || []).map(bl => ({ label: bl.label, quantity: bl.quantity }))
+				};
+				});
+
+			let quote;
+			if (editingQuoteId) {
+				// Update existing quote
+				quote = await updateQuote(editingQuoteId, quoteName || null, selectedRegion, 'annually', items, editQuotePassword, quoteDescription || null);
+				shareUrl = `${window.location.origin}/quote/${quote.id}`;
+				saveModalOpen = false;
+				toast.success('Quote updated successfully!');
+				// Keep edit mode active so user can continue making changes
+			} else {
+				// Create new quote
+				quote = await createQuote(quoteName || null, selectedRegion, 'annually', items, editPassword || null, quoteDescription || null);
+				shareUrl = `${window.location.origin}/quote/${quote.id}`;
+				saveModalOpen = false;
+				toast.success(quote.is_protected ? 'Quote saved with password protection!' : 'Quote saved!', {
+					description: 'Your public URL is ready to share'
+				});
+				
+				// Track quote creation in RUM
+				trackQuoteShared({
+					region: selectedRegion,
+					itemCount: items.length,
+					protected: !!editPassword
+				});
+			}
+		} catch (e: any) {
+			toast.error(e.message || 'Failed to save quote');
+		} finally {
+			saving = false;
+		}
+	}
+
+	function copyShareUrl() {
+		navigator.clipboard.writeText(shareUrl);
+		toast.success('URL copied to clipboard!');
+		shareMenuOpen = false;
+	}
+
+	function downloadPDF() {
+		// Create a printable version
+		const printContent = generatePrintContent();
+		const printWindow = window.open('', '_blank');
+		if (printWindow) {
+			printWindow.document.write(printContent);
+			printWindow.document.close();
+			printWindow.onload = () => {
+				printWindow.print();
+			};
+		}
+		shareMenuOpen = false;
+		
+		// Track PDF download in RUM
+		trackPdfDownloaded({
+			region: selectedRegion,
+			itemCount: validLines.length
+		});
+	}
+
+	function downloadCSV() {
+		const headers = ['Product', 'Billing Unit', 'Quantity', 'Label', 'Annual (Monthly)', 'Monthly (Monthly)', 'On-Demand (Monthly)', 'Annual (Yearly)', 'Monthly (Yearly)', 'On-Demand (Yearly)'];
+		
+		const rows: (string | number)[][] = [];
+		for (const line of validLines) {
+			const ap = parsePrice(line.product?.billed_annually);
+			const mp = parsePrice(line.product?.billed_month_to_month);
+			const op = parsePrice(line.product?.on_demand);
+			if (line.quantityBreakdown && line.quantityBreakdown.length > 0) {
+				rows.push([
+					`"${line.product?.product || ''}"`, `"${line.product?.billing_unit || ''}"`,
+					line.quantity, '"(total)"',
+					ap * line.quantity, mp * line.quantity, op * line.quantity,
+					ap * line.quantity * 12, mp * line.quantity * 12, op * line.quantity * 12
+				]);
+				for (const bl of line.quantityBreakdown) {
+					rows.push([
+						`"  ↳ ${line.product?.product || ''}"`, '""',
+						bl.quantity, `"${bl.label}"`,
+						ap * bl.quantity, mp * bl.quantity, op * bl.quantity,
+						ap * bl.quantity * 12, mp * bl.quantity * 12, op * bl.quantity * 12
+					]);
+				}
+			} else {
+				rows.push([
+					`"${line.product?.product || ''}"`, `"${line.product?.billing_unit || ''}"`,
+					line.quantity, '""',
+					ap * line.quantity, mp * line.quantity, op * line.quantity,
+					ap * line.quantity * 12, mp * line.quantity * 12, op * line.quantity * 12
+				]);
+			}
+		}
+
+		// Add totals row
+		rows.push([
+			'"TOTAL"',
+			'""',
+			'',
+			totals.annually,
+			totals.monthly,
+			totals.on_demand,
+			annualCosts.annually,
+			annualCosts.monthly,
+			annualCosts.on_demand
+		]);
+
+		const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+		
+		const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+		const link = document.createElement('a');
+		const url = URL.createObjectURL(blob);
+		link.setAttribute('href', url);
+		link.setAttribute('download', `datadog-quote${quoteName ? '-' + quoteName.replace(/\s+/g, '-') : ''}.csv`);
+		link.style.visibility = 'hidden';
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+		
+		shareMenuOpen = false;
+		toast.success('CSV exported successfully!');
+		
+		// Track CSV export in RUM
+		trackCsvExported({
+			region: selectedRegion,
+			itemCount: validLines.length
+		});
+	}
+
+	function generatePrintContent() {
+		const date = new Date().toLocaleDateString('en-US', { 
+			year: 'numeric', 
+			month: 'long', 
+			day: 'numeric' 
+		});
+		
+		// Filter out allotments - only show parent products
+		const parentLines = validLines.filter(l => !l.isAllotment);
+		
+		const rows = parentLines.map(line => {
+			// Find allotments for this line
+			const lineAllotments = lines.filter(l => l.isAllotment && l.parentLineId === line.id);
+			
+			// Calculate prices - use negotiatedPrice for annual if available
+			const publicAnnualPrice = parsePrice(line.product?.billed_annually);
+			const annualPrice = (line.negotiatedPrice && line.negotiatedPrice > 0) ? line.negotiatedPrice : publicAnnualPrice;
+			const monthlyPrice = parsePrice(line.product?.billed_month_to_month);
+			const onDemandPrice = parsePrice(line.product?.on_demand);
+			
+			const hasNegotiated = line.negotiatedPrice && line.negotiatedPrice > 0;
+			const annualColor = hasNegotiated ? '#d97706' : '#3ecfa8'; // Amber for negotiated, green for standard
+			
+			// Build allotments display
+			const allotmentsHtml = lineAllotments.length > 0 
+				? `<div style="margin-top: 4px; font-size: 11px; color: #888;">
+					${lineAllotments.map(a => `+${formatNumber(a.includedQuantity || 0)} ${escapeHtml(a.product?.product || '')}`).join(', ')}
+				   </div>`
+				: '';
+			
+			return `
+			<tr>
+				<td style="padding: 12px; border-bottom: 1px solid #e5e5e5;">
+					${escapeHtml(line.product?.product || '')}
+					${hasNegotiated ? '<span style="font-size: 10px; color: #d97706; margin-left: 8px;">(Negotiated)</span>' : ''}
+					${allotmentsHtml}
+				</td>
+				<td style="padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: center;">${formatNumber(line.quantity)}</td>
+				<td style="padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: right; color: ${annualColor};">${formatCurrency(annualPrice * line.quantity)}</td>
+				<td style="padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: right; color: #632ca6;">${formatCurrency(monthlyPrice * line.quantity)}</td>
+				<td style="padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: right; color: #ff6f00;">${formatCurrency(onDemandPrice * line.quantity)}</td>
+			</tr>
+		`}).join('');
+
+		return `
+			<!DOCTYPE html>
+			<html>
+			<head>
+				<title>PriceHound Quote${quoteName ? ` - ${quoteName}` : ''}</title>
+				<style>
+					body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; color: #333; }
+					h1 { color: #632ca6; margin-bottom: 8px; }
+					.date { color: #666; margin-bottom: 32px; }
+					table { width: 100%; border-collapse: collapse; margin-bottom: 32px; }
+					th { background: #f5f5f5; padding: 12px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+					.totals { display: flex; gap: 24px; margin-bottom: 32px; }
+					.total-card { flex: 1; padding: 20px; border-radius: 12px; }
+					.total-card.annual { background: rgba(62, 207, 168, 0.1); border: 1px solid rgba(62, 207, 168, 0.3); }
+					.total-card.monthly { background: rgba(99, 44, 166, 0.1); border: 1px solid rgba(99, 44, 166, 0.3); }
+					.total-card.ondemand { background: rgba(255, 111, 0, 0.1); border: 1px solid rgba(255, 111, 0, 0.3); }
+					.total-label { font-size: 14px; color: #666; margin-bottom: 8px; }
+					.total-value { font-size: 24px; font-weight: bold; }
+					.total-card.annual .total-value { color: #3ecfa8; }
+					.total-card.monthly .total-value { color: #632ca6; }
+					.total-card.ondemand .total-value { color: #ff6f00; }
+					.savings { background: linear-gradient(135deg, rgba(62, 207, 168, 0.1), rgba(99, 44, 166, 0.1)); padding: 20px; border-radius: 12px; }
+					.footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e5e5; color: #666; font-size: 12px; }
+					@media print { body { padding: 20px; } }
+				</style>
+			</head>
+			<body>
+				<h1>PriceHound Quote${quoteName ? `: ${escapeHtml(quoteName)}` : ''}</h1>
+				<p class="date">Generated on ${date}</p>
+				${quoteDescription ? `<p style="color: #666; margin-bottom: 24px; white-space: pre-wrap;">${escapeHtml(quoteDescription)}</p>` : ''}
+				
+				<table>
+					<thead>
+						<tr>
+							<th>Product</th>
+							<th style="text-align: center;">Qty</th>
+							<th style="text-align: right;">Annual</th>
+							<th style="text-align: right;">Monthly</th>
+							<th style="text-align: right;">On-Demand</th>
+						</tr>
+					</thead>
+					<tbody>
+						${rows}
+					</tbody>
+					<tfoot>
+						<tr style="font-weight: bold;">
+							<td style="padding: 12px;" colspan="2">Monthly Total</td>
+							<td style="padding: 12px; text-align: right; color: #3ecfa8;">${formatCurrency(totals.annually)}</td>
+							<td style="padding: 12px; text-align: right; color: #632ca6;">${formatCurrency(totals.monthly)}</td>
+							<td style="padding: 12px; text-align: right; color: #ff6f00;">${formatCurrency(totals.on_demand)}</td>
+						</tr>
+						<tr style="color: #666;">
+							<td style="padding: 12px;" colspan="2">Annual Cost (×12)</td>
+							<td style="padding: 12px; text-align: right;">${formatCurrency(annualCosts.annually)}</td>
+							<td style="padding: 12px; text-align: right;">${formatCurrency(annualCosts.monthly)}</td>
+							<td style="padding: 12px; text-align: right;">${formatCurrency(annualCosts.on_demand)}</td>
+						</tr>
+					</tfoot>
+				</table>
+
+				<div class="totals">
+					<div class="total-card annual">
+						<div class="total-label">Billed Annually</div>
+						<div class="total-value">${formatCurrency(totals.annually)}/mo</div>
+						<div style="color: #666; font-size: 14px;">${formatCurrency(annualCosts.annually)}/year</div>
+					</div>
+					<div class="total-card monthly">
+						<div class="total-label">Billed Monthly</div>
+						<div class="total-value">${formatCurrency(totals.monthly)}/mo</div>
+						<div style="color: #666; font-size: 14px;">${formatCurrency(annualCosts.monthly)}/year</div>
+					</div>
+					<div class="total-card ondemand">
+						<div class="total-label">On-Demand</div>
+						<div class="total-value">${formatCurrency(totals.on_demand)}/mo</div>
+						<div style="color: #666; font-size: 14px;">${formatCurrency(annualCosts.on_demand)}/year</div>
+					</div>
+				</div>
+
+				${savingsVsOnDemand > 0 ? `
+					<div class="savings">
+						<strong>Potential Annual Savings:</strong> ${formatCurrency(savingsVsOnDemand)} per year (${savingsPercentVsOnDemand.toFixed(1)}% savings) by choosing annual billing over on-demand.
+					</div>
+				` : ''}
+
+				<div class="footer">
+					<p>PriceHound Datadog Pricing Calcultator uses data sourced from datadoghq.com/pricing/list/ and others official pages</p>
+					${shareUrl ? `<p>Quote URL: ${shareUrl}</p>` : ''}
+				</div>
+			</body>
+			</html>
+		`;
+	}
+
+	function handleClickOutside(event: MouseEvent) {
+		const target = event.target as HTMLElement;
+		if (!target.closest('.share-menu-container')) {
+			shareMenuOpen = false;
+		}
+		if (!target.closest('.filter-menu-container')) {
+			filterMenuOpen = false;
+		}
+		if (!target.closest('.billing-menu-container')) {
+			billingMenuOpen = false;
+		}
+	}
+
+	function exportJSON() {
+		const exportData = {
+			name: quoteName || 'PriceHound Quote',
+			description: quoteDescription || null,
+			region: selectedRegion,
+			plan: selectedPlan,
+			created_at: new Date().toISOString(),
+			items: validLines
+				.filter(l => !l.isAllotment)
+				.map(line => {
+					const lineAllotments = lines
+						.filter(al => al.isAllotment && al.parentLineId === line.id)
+						.map(al => ({
+							id: al.product?.id || '',
+							product: al.product?.product || '',
+							quantity_included: al.includedQuantity || 0,
+							unit: al.allotmentInfo?.allotted_unit || 'units'
+						}));
+					
+				return {
+					id: line.product?.id || '',
+					product: line.product?.product || '',
+					billing_unit: line.product?.billing_unit || '',
+					quantity: line.quantity,
+					prices: {
+						annual: line.product?.billed_annually || '',
+						monthly: line.product?.billed_month_to_month || '',
+						on_demand: line.product?.on_demand || ''
+					},
+					allotments: lineAllotments,
+					quantity_breakdown: (line.quantityBreakdown || []).map(bl => ({ label: bl.label, quantity: bl.quantity }))
+				};
+				}),
+			totals: {
+				monthly: totals,
+				yearly: annualCosts
+			}
+		};
+
+		const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement('a');
+		link.href = url;
+		link.download = `pricehound-quote-${new Date().toISOString().split('T')[0]}.json`;
+		link.style.visibility = 'hidden';
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+		URL.revokeObjectURL(url);
+		
+		shareMenuOpen = false;
+		toast.success('JSON exported successfully!');
+		
+		// Track JSON export in RUM
+		trackJsonExported({
+			region: selectedRegion,
+			itemCount: validLines.filter(l => !l.isAllotment).length
+		});
+	}
+
+	function handleDragOver(event: DragEvent) {
+		event.preventDefault();
+		isDragging = true;
+	}
+
+	function handleDragLeave(event: DragEvent) {
+		event.preventDefault();
+		isDragging = false;
+	}
+
+	function handleDrop(event: DragEvent) {
+		event.preventDefault();
+		isDragging = false;
+		
+		const files = event.dataTransfer?.files;
+		if (files && files.length > 0) {
+			processImportFile(files[0]);
+		}
+	}
+
+	function handleFileSelect(event: Event) {
+		const input = event.target as HTMLInputElement;
+		if (input.files && input.files.length > 0) {
+			processImportFile(input.files[0]);
+		}
+	}
+
+	async function processImportFile(file: File) {
+		if (!file.name.endsWith('.json')) {
+			toast.error('Please select a JSON file');
+			return;
+		}
+
+		try {
+			const text = await file.text();
+			const data = JSON.parse(text);
+			
+			// Validate structure
+			if (!data.items || !Array.isArray(data.items)) {
+				toast.error('Invalid JSON format: missing items array');
+				return;
+			}
+
+			// Set quote name if present
+			if (data.name) {
+				quoteName = data.name;
+			}
+
+			// Set description if present
+			if (data.description) {
+				quoteDescription = data.description;
+				showDescriptionEditor = true;
+			}
+
+			// Set plan if present and valid
+			if (data.plan && ['Pro', 'Enterprise'].includes(data.plan)) {
+				selectedPlan = data.plan;
+			}
+
+			// Set region if present and valid
+			if (data.region && ['us', 'us1-fed', 'eu1', 'ap1', 'ap2'].includes(data.region)) {
+				if (data.region !== selectedRegion) {
+					selectedRegion = data.region;
+					await loadProducts();
+				}
+			}
+
+			// Make sure products are loaded
+			if (products.length === 0) {
+				await loadProducts();
+			}
+
+			// Also load allotments if not already loaded
+			if (allotments.length === 0) {
+				await loadAllotments();
+			}
+
+			// Clear existing lines
+			lines = [];
+
+			// Import items one by one and trigger allotment loading
+			for (const item of data.items) {
+				if (!item.product && !item.id) continue;
+				
+				// Find matching product - try by ID first, then by name
+				let matchingProduct = item.id 
+					? products.find(p => p.id === item.id)
+					: null;
+				
+				// Fallback to name matching if ID not found
+				if (!matchingProduct) {
+					matchingProduct = products.find(p => p.product === item.product);
+				}
+				
+				if (!matchingProduct) {
+					console.warn(`Product not found: ${item.product} (id: ${item.id})`);
+					continue;
+				}
+				
+				const lineId = crypto.randomUUID();
+				const importedBreakdown: QuantityLine[] = (item.quantity_breakdown || []).map((bl: any) => ({
+					id: crypto.randomUUID(), label: bl.label, quantity: bl.quantity
+				}));
+				const newLine: LineItem = {
+					id: lineId,
+					product: matchingProduct,
+					quantity: item.quantity || 1,
+					isAllotment: false,
+					quantityBreakdown: importedBreakdown.length > 0 ? importedBreakdown : undefined
+				};
+				
+				lines = [...lines, newLine];
+				
+				// Find and add allotments for this product (match by product_id)
+				// Deduplicate by allotted_product to avoid duplicate entries
+				const productAllotmentsRaw = allotments.filter(a => 
+					a.parent_product_id === matchingProduct.id
+				);
+				const seenAllotments = new Set<string>();
+				const productAllotments = productAllotmentsRaw.filter(a => {
+					const key = a.allotted_product;
+					if (seenAllotments.has(key)) return false;
+					seenAllotments.add(key);
+					return true;
+				});
+				
+				for (const allotment of productAllotments) {
+					// Match allotted product by ID first, then fallback to name
+					const allottedProduct = products.find(p => 
+						p.id === allotment.allotted_product_id
+					) || products.find(p =>
+						p.product.toLowerCase().includes(allotment.allotted_product.toLowerCase())
+					);
+					
+					if (allottedProduct) {
+						const includedQty = allotment.quantity_per_parent * (item.quantity || 1);
+						const allotmentLine: LineItem = {
+							id: crypto.randomUUID(),
+							product: allottedProduct,
+							quantity: includedQty,
+							isAllotment: true,
+							parentLineId: lineId,
+							allotmentInfo: allotment,
+							includedQuantity: includedQty
+						};
+						lines = [...lines, allotmentLine];
+					}
+				}
+			}
+
+			importModalOpen = false;
+			toast.success(`Imported ${data.items.length} products successfully!`);
+			
+			// Track JSON import in RUM
+			trackJsonImported({
+				region: selectedRegion,
+				itemCount: data.items.length
+			});
+		} catch (e) {
+			toast.error('Failed to parse JSON file');
+		}
+	}
+</script>
+
+<svelte:head>
+	<title>PriceHound - Datadog Usage Forecaster & Pricing Calculator</title>
+	<meta name="description" content="Free Datadog pricing calculator. Estimate your Datadog costs, compare Pro vs Enterprise plans, add allotments, and create shareable quotes for your team." />
+	<meta property="og:title" content="PriceHound - Datadog Usage Forecaster" />
+	<meta property="og:description" content="Free Datadog pricing calculator. Estimate costs, compare plans, and create shareable quotes." />
+	{@html `<script type="application/ld+json">
+	{
+		"@context": "https://schema.org",
+		"@type": "WebApplication",
+		"name": "PriceHound",
+		"description": "Free Datadog pricing calculator and usage forecaster. Estimate costs, compare plans, and create shareable quotes.",
+		"url": "https://pricehound.onrender.com",
+		"applicationCategory": "BusinessApplication",
+		"operatingSystem": "Web Browser",
+		"offers": {
+			"@type": "Offer",
+			"price": "0",
+			"priceCurrency": "USD"
+		},
+		"featureList": [
+			"Datadog pricing estimation",
+			"Pro vs Enterprise plan comparison",
+			"Allotment calculations",
+			"Shareable quote URLs",
+			"CSV/JSON export",
+			"Multi-region support"
+		]
+	}
+	</script>`}
+</svelte:head>
+
+<svelte:window on:click={handleClickOutside} />
+
+{#if loadingQuote}
+	<div transition:fade={{ duration: 200 }} class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+		<div class="flex flex-col items-center gap-4">
+			<svg class="h-12 w-12 animate-spin text-datadog-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<path d="M21 12a9 9 0 11-6.219-8.56" />
+			</svg>
+			<p class="text-sm font-medium text-muted-foreground">Loading quote...</p>
+		</div>
+	</div>
+{/if}
+
+<div class="container mx-auto max-w-7xl px-4 py-5">
+	<!-- Header -->
+	<header class="mb-5 relative">
+		<!-- Theme Toggle (top right) -->
+		<div class="absolute top-0 right-0">
+			<ModeToggle />
+		</div>
+		<!-- Title and Tagline (centered) -->
+		<div class="text-center mb-4">
+			<div class="mb-2 inline-flex items-center gap-3">
+				<a
+					href="/"
+					class="inline-flex shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+					aria-label="PriceHound home"
+				>
+					<img src="/pricehound-logo.png" alt="" class="h-[68px] w-[68px]" />
+				</a>
+				<h1 class="text-5xl font-bold tracking-tight">
+					<span class="text-datadog-purple">Price</span>Hound
+				</h1>
+			</div>
+			<p class="text-sm text-muted-foreground">
+				Get a sense of your Datadog costs before you commit.
+			</p>
+		</div>
+
+	</header>
+
+	<!-- Unified Toolbar -->
+	<div class="mb-4 rounded-xl border border-border bg-card/50 p-2.5">
+		<div class="flex flex-wrap items-center justify-between gap-3">
+			<!-- Left: Region & Info -->
+			<div class="flex items-center gap-3">
+				<!-- Region Selector -->
+				<div id="region-selector" class="flex items-center gap-2">
+					<svg class="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<circle cx="12" cy="12" r="10" />
+						<path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
+					</svg>
+					<select
+						bind:value={selectedRegion}
+						on:change={handleRegionChange}
+						class="h-8 rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-datadog-purple cursor-pointer"
+					>
+						{#each Object.entries(regions) as [id, region]}
+							<option value={id}>{regionFlags[id] || '🌍'} {region.name}</option>
+						{/each}
+					</select>
+				</div>
+
+				<!-- Separator -->
+				<div class="h-6 w-px bg-border"></div>
+
+				<!-- Pricing Info -->
+				<div class="flex items-center gap-2">
+					<div class="text-xs text-muted-foreground hidden sm:block">
+						{#if loading}
+							<span class="text-muted-foreground/50">Loading...</span>
+						{:else if products.length > 0}
+							<span>{products.length} products</span>
+							{#if lastSyncFormatted}
+								<span class="mx-1">·</span>
+								<span>Updated: {lastSyncFormatted}</span>
+							{/if}
+						{/if}
+					</div>
+				</div>
+			</div>
+
+			<!-- Right: Button Group -->
+			<div class="inline-flex items-center rounded-lg border border-input bg-background">
+				<!-- Import Button -->
+				<button
+					type="button"
+					on:click={() => importModalOpen = true}
+					class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-muted border-r border-input rounded-l-lg touch-manipulation"
+				>
+					<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 3v12" />
+					</svg>
+					<span class="hidden sm:inline pointer-events-none">Import JSON</span>
+				</button>
+
+				<!-- Share Button with Dropdown -->
+				<div id="share-button" class="share-menu-container relative">
+					<button
+						type="button"
+						on:click={() => shareMenuOpen = !shareMenuOpen}
+						disabled={validLines.length === 0}
+						title={validLines.length === 0 ? 'Add at least one product line to share or save' : 'Share, export, or save your quote'}
+						class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg touch-manipulation"
+					>
+						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" />
+						</svg>
+						<span class="hidden sm:inline pointer-events-none">Share & Save</span>
+						<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M6 9l6 6 6-6" />
+						</svg>
+					</button>
+
+					<!-- Dropdown Menu -->
+					{#if shareMenuOpen}
+						<div transition:fade={{ duration: 100 }} class="absolute right-0 top-full mt-2 w-56 rounded-xl border border-border bg-card p-2 shadow-2xl z-50">
+						<div class="flex flex-col">
+							<button
+								type="button"
+								class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-muted"
+								on:click={openSaveModal}
+								disabled={saving}
+							>
+								{#if saving}
+									<svg class="h-4 w-4 animate-spin text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M21 12a9 9 0 11-6.219-8.56" />
+									</svg>
+								{:else if editingQuoteId}
+									<svg class="h-4 w-4 text-datadog-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+										<polyline points="17 21 17 13 7 13 7 21" />
+										<polyline points="7 3 7 8 15 8" />
+									</svg>
+								{:else}
+									<svg class="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+										<path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+									</svg>
+								{/if}
+								<span>{saving ? 'Saving...' : editingQuoteId ? 'Save Changes' : 'Create Public URL'}</span>
+							</button>
+							{#if !editingQuoteId}
+								{@const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)}
+								<span class="px-3 pb-2 text-xs text-muted-foreground">
+									Avail. until {expiryDate.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: '2-digit' })}
+								</span>
+							{/if}
+						</div>
+							<button
+								type="button"
+								class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-muted"
+								on:click={downloadCSV}
+							>
+								<svg class="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+									<polyline points="14 2 14 8 20 8" />
+									<path d="M8 13h2M8 17h2M14 13h2M14 17h2" />
+								</svg>
+								<span>Export CSV</span>
+							</button>
+							<button
+								type="button"
+								class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-muted"
+								on:click={exportJSON}
+							>
+								<svg class="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+									<polyline points="14 2 14 8 20 8" />
+									<path d="M10 12l-2 2 2 2M14 12l2 2-2 2" />
+								</svg>
+								<span>Export JSON</span>
+							</button>
+							<button
+								type="button"
+								class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-muted"
+								on:click={downloadPDF}
+							>
+								<svg class="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+									<polyline points="14 2 14 8 20 8" />
+									<line x1="12" y1="18" x2="12" y2="12" />
+									<line x1="9" y1="15" x2="15" y2="15" />
+								</svg>
+								<span>Download PDF</span>
+							</button>
+						</div>
+					{/if}
+				</div>
+			</div>
+		</div>
+	</div>
+
+
+	<!-- Share URL Display (always visible in edit mode) -->
+	{#if shareUrl || editingQuoteId}
+		{@const displayUrl = shareUrl || (editingQuoteId ? `${window.location.origin}/quote/${editingQuoteId}` : '')}
+		{#if displayUrl}
+			<div transition:slide={{ duration: 200 }} class="mb-4 rounded-lg border border-border bg-muted/30 px-4 py-3">
+				<div class="flex items-center gap-3">
+					{#if editingQuoteId}
+						<span class="text-xs font-medium text-datadog-green bg-datadog-green/10 px-2 py-0.5 rounded">Editing</span>
+					{/if}
+					<span class="text-sm text-muted-foreground">Public URL <span class="text-xs opacity-70">(expires in 30 days)</span>:</span>
+					<a 
+						href={displayUrl} 
+						target="_blank"
+						class="flex-1 truncate font-mono text-sm text-datadog-purple hover:underline"
+					>
+						{displayUrl}
+					</a>
+					<button
+						type="button"
+						class="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+						on:click={() => { navigator.clipboard.writeText(displayUrl); toast.success('URL copied to clipboard!'); }}
+						title="Copy URL"
+					>
+						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<rect x="9" y="9" width="13" height="13" rx="2" />
+							<path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+						</svg>
+					</button>
+					{#if !editingQuoteId}
+						<button
+							type="button"
+							class="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+							on:click={() => shareUrl = ''}
+							title="Dismiss"
+						>
+							<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M18 6L6 18M6 6l12 12" />
+							</svg>
+						</button>
+					{/if}
+				</div>
+				{#if !editingQuoteId}
+					<p class="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
+						<svg class="h-3.5 w-3.5 text-amber-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+						</svg>
+						<span>Save this URL - there is no quote management. Bookmark it or keep it in your notes.</span>
+					</p>
+				{/if}
+			</div>
+		{/if}
+	{/if}
+
+	<GetStartedBanner
+		bind:stackFilter
+		filteredTemplates={filteredTemplates}
+		loadingTemplates={loadingTemplates}
+		loadOnExpand={loadGetStartedTemplatesIfNeeded}
+		on:logs={() => (showLogsCalculator = true)}
+		on:preview={(e) => (previewTemplate = e.detail)}
+	/>
+
+	<!-- Quote Lines -->
+	<Card class="mb-4 overflow-visible relative z-10">
+		<CardHeader>
+			<div class="flex flex-wrap items-start justify-between gap-4">
+				<div class="flex items-center gap-3">
+					<div class="flex h-9 w-9 items-center justify-center rounded-sm bg-muted shrink-0">
+						<svg class="h-5 w-5 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<circle cx="9" cy="21" r="1" />
+							<circle cx="20" cy="21" r="1" />
+							<path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6" />
+						</svg>
+					</div>
+					<div>
+						<div class="flex items-center gap-2">
+							{#if editingQuoteName}
+								<input
+									bind:value={quoteName}
+									placeholder="Enter quote name..."
+									class="text-lg font-semibold h-8 px-2 rounded border border-input bg-background focus:outline-none focus:ring-2 focus:ring-datadog-purple"
+									autofocus
+									on:blur={() => editingQuoteName = false}
+									on:keydown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') editingQuoteName = false; }}
+								/>
+							{:else}
+								<!-- svelte-ignore a11y-click-events-have-key-events -->
+								<!-- svelte-ignore a11y-no-static-element-interactions -->
+								<div 
+									class="group flex items-center gap-2 cursor-pointer"
+									on:click={() => editingQuoteName = true}
+								>
+									<CardTitle class="group-hover:text-datadog-purple transition-colors">
+										{quoteName || 'Name your quote here'}
+									</CardTitle>
+									<svg class="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+										<path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+									</svg>
+								</div>
+							{/if}
+							<!-- Description toggle button -->
+							<button
+								type="button"
+								class="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0 {quoteDescription || showDescriptionEditor ? 'text-foreground bg-muted' : ''}"
+								title="{quoteDescription ? 'Edit description' : 'Add description'}"
+								on:click={() => showDescriptionEditor = !showDescriptionEditor}
+							>
+								<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+									<polyline points="14 2 14 8 20 8" />
+									<line x1="16" y1="13" x2="8" y2="13" />
+									<line x1="16" y1="17" x2="8" y2="17" />
+								</svg>
+							</button>
+						</div>
+						<CardDescription>All products and related quantities</CardDescription>
+					</div>
+				</div>
+				
+				<!-- Plan & Billing Selectors Group -->
+				<!-- svelte-ignore a11y-click-events-have-key-events -->
+				<!-- svelte-ignore a11y-no-static-element-interactions -->
+				<div class="inline-flex items-center rounded-lg border border-input bg-background" on:click|stopPropagation>
+					<!-- Plan Selector (Left) -->
+					<div class="relative inline-grid grid-cols-2 p-1 border-r border-input bg-muted/50 rounded-md">
+						<!-- Sliding indicator -->
+						<div 
+							class="absolute inset-1 w-[calc(50%-4px)] bg-foreground rounded-md shadow-sm transition-all duration-300 ease-out"
+							style="left: {selectedPlan === 'Pro' ? '4px' : 'calc(50% + 0px)'};"
+						></div>
+						<button
+							type="button"
+							class="relative z-10 flex items-center justify-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors duration-300 {selectedPlan === 'Pro' ? 'text-background' : 'text-muted-foreground hover:text-foreground'}"
+							on:click={() => selectedPlan = 'Pro'}
+						>
+							Pro
+						</button>
+						<button
+							type="button"
+							class="relative z-10 flex items-center justify-center px-4 py-1.5 text-sm font-medium rounded-md transition-colors duration-300 {selectedPlan === 'Enterprise' ? 'text-background' : 'text-muted-foreground hover:text-foreground'}"
+							on:click={() => selectedPlan = 'Enterprise'}
+						>
+							Enterprise
+						</button>
+					</div>
+					
+					<!-- Billing Dropdown (Right) -->
+					<div class="relative billing-menu-container">
+						<button
+							type="button"
+							on:click={() => billingMenuOpen = !billingMenuOpen}
+							class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors hover:bg-muted rounded-r-lg"
+						>
+							<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+							</svg>
+							<span>Billing</span>
+							<div class="flex items-center gap-0.5">
+								{#if showAnnual}<span class="w-2 h-2 rounded-full bg-datadog-green"></span>{/if}
+								{#if showMonthly}<span class="w-2 h-2 rounded-full bg-datadog-blue"></span>{/if}
+								{#if showOnDemand}<span class="w-2 h-2 rounded-full bg-datadog-orange"></span>{/if}
+							</div>
+						</button>
+
+						{#if billingMenuOpen}
+							<div transition:fade={{ duration: 100 }} class="absolute right-0 top-full mt-2 w-48 rounded-xl border border-border bg-card p-2 shadow-2xl z-50">
+								<button
+									type="button"
+									class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-muted"
+									on:click={() => showAnnual = !showAnnual}
+								>
+									<span class="w-4 h-4 rounded border flex items-center justify-center {showAnnual ? 'bg-datadog-green border-datadog-green' : 'border-muted-foreground/30'}">
+										{#if showAnnual}
+											<svg class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+												<path d="M20 6L9 17l-5-5" />
+											</svg>
+										{/if}
+									</span>
+									<span class="text-datadog-green font-medium">Annually</span>
+								</button>
+								<button
+									type="button"
+									class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-muted"
+									on:click={() => showMonthly = !showMonthly}
+								>
+									<span class="w-4 h-4 rounded border flex items-center justify-center {showMonthly ? 'bg-datadog-blue border-datadog-blue' : 'border-muted-foreground/30'}">
+										{#if showMonthly}
+											<svg class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+												<path d="M20 6L9 17l-5-5" />
+											</svg>
+										{/if}
+									</span>
+									<span class="text-datadog-blue font-medium">Monthly</span>
+								</button>
+								<button
+									type="button"
+									class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-muted"
+									on:click={() => showOnDemand = !showOnDemand}
+								>
+									<span class="w-4 h-4 rounded border flex items-center justify-center {showOnDemand ? 'bg-datadog-orange border-datadog-orange' : 'border-muted-foreground/30'}">
+										{#if showOnDemand}
+											<svg class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+												<path d="M20 6L9 17l-5-5" />
+											</svg>
+										{/if}
+									</span>
+									<span class="text-datadog-orange font-medium">On-Demand</span>
+								</button>
+							</div>
+						{/if}
+					</div>
+
+					<!-- Quantity Detail Toggle -->
+					{#if hasAnyBreakdown}
+						<div class="h-5 w-px bg-border"></div>
+						<button
+							type="button"
+							class="inline-flex items-center gap-2 px-1 py-1 text-xs text-muted-foreground touch-manipulation"
+							on:click={() => showDetailedQuantities = !showDetailedQuantities}
+							title={showDetailedQuantities ? 'Group detailed quantities' : 'Show detailed quantity breakdowns'}
+						>
+							<span class="hidden sm:inline">Grouped</span>
+							<span
+								class="relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors {showDetailedQuantities ? 'bg-muted-foreground/30' : 'bg-datadog-purple'}"
+							>
+								<span
+									class="inline-block h-3 w-3 rounded-full bg-white shadow-sm transition-transform {showDetailedQuantities ? 'translate-x-0.5' : 'translate-x-3.5'}"
+								></span>
+							</span>
+						</button>
+					{/if}
+				</div>
+			</div>
+		</CardHeader>
+		
+		<!-- Collapsible description section - full width -->
+		{#if showDescriptionEditor}
+			<div class="px-4 py-3 border-t border-border bg-muted/30" transition:slide={{ duration: 200 }}>
+				<Textarea
+					bind:value={quoteDescription}
+					placeholder="Add a description for this quote (e.g., project name, purpose, notes...)"
+					class="w-full min-h-[120px] resize-y"
+					rows={5}
+				/>
+			</div>
+		{/if}
+		
+		<CardContent>
+			{#if loading}
+				<div class="flex items-center justify-center py-12">
+					<svg class="h-8 w-8 animate-spin text-datadog-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M21 12a9 9 0 11-6.219-8.56" />
+					</svg>
+				</div>
+			{:else}
+				<div class="space-y-2 overflow-visible">
+					<!-- Grouped lines by category -->
+					{#each groupedLines.sortedCategories as category (category)}
+						{@const categoryLines = groupedLines.groups[category]}
+						{#if categoryLines.length > 1}
+							<!-- Multiple products in same category: section header + lines -->
+							<div class="rounded-xl border border-border/50 bg-card/30 overflow-hidden mt-2">
+								<div
+									class="flex items-center border-b border-border/40 bg-muted/40 px-3 py-1.5 border-l-4 border-datadog-blue"
+								>
+									<span class="text-xs font-semibold uppercase tracking-wide text-foreground">{category}</span>
+								</div>
+								{#each categoryLines as line, index (line.id)}
+									{@const lineAllotments = lines.filter(l => l.isAllotment && l.parentLineId === line.id).map(l => ({
+										product: l.product,
+										includedQuantity: l.includedQuantity || 0,
+										allotmentInfo: l.allotmentInfo || null
+									}))}
+									<div
+										class={index > 0 ? 'border-t border-border/30' : ''}
+										in:fly={{ y: -20, duration: 200 }}
+										out:fade={{ duration: 150 }}
+									>
+										<QuoteLine
+											products={filteredProducts}
+											{index}
+											{showAnnual}
+											{showMonthly}
+											{showOnDemand}
+											selectedProduct={line.product}
+											quantity={line.quantity}
+											isAllotment={false}
+											includedQuantity={0}
+											allotmentInfo={null}
+											totalAllottedForProduct={getTotalAllottedForProduct(line.product?.product)}
+											{lineAllotments}
+											hideCategory={true}
+											isGrouped={true}
+											negotiatedPrice={line.negotiatedPrice}
+											quantityBreakdown={line.quantityBreakdown || []}
+											showBreakdown={showDetailedQuantities}
+											on:update={(e) => updateLine(line.id, e.detail.product, e.detail.quantity, e.detail.negotiatedPrice)}
+											on:updateBreakdown={(e) => updateBreakdown(line.id, e.detail.breakdown)}
+											on:showDetail={() => showDetailedQuantities = true}
+											on:remove={() => removeLine(line.id)}
+										/>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<!-- Single product in category: show normally with category label -->
+							{#each categoryLines as line, index (line.id)}
+								{@const lineAllotments = lines.filter(l => l.isAllotment && l.parentLineId === line.id).map(l => ({
+									product: l.product,
+									includedQuantity: l.includedQuantity || 0,
+									allotmentInfo: l.allotmentInfo || null
+								}))}
+								<div
+									in:fly={{ y: -20, duration: 200 }}
+									out:fade={{ duration: 150 }}
+									animate:flip={{ duration: 200 }}
+								>
+									<QuoteLine
+										products={filteredProducts}
+										{index}
+										{showAnnual}
+										{showMonthly}
+										{showOnDemand}
+										selectedProduct={line.product}
+										quantity={line.quantity}
+										isAllotment={false}
+										includedQuantity={0}
+										allotmentInfo={null}
+										totalAllottedForProduct={getTotalAllottedForProduct(line.product?.product)}
+										{lineAllotments}
+										hideCategory={false}
+										negotiatedPrice={line.negotiatedPrice}
+										quantityBreakdown={line.quantityBreakdown || []}
+										showBreakdown={showDetailedQuantities}
+										on:update={(e) => updateLine(line.id, e.detail.product, e.detail.quantity, e.detail.negotiatedPrice)}
+										on:updateBreakdown={(e) => updateBreakdown(line.id, e.detail.breakdown)}
+										on:showDetail={() => showDetailedQuantities = true}
+										on:remove={() => removeLine(line.id)}
+									/>
+								</div>
+							{/each}
+						{/if}
+					{/each}
+
+					<!-- Uncategorized lines (no product selected yet) - at the bottom -->
+					{#each groupedLines.uncategorizedLines as line, index (line.id)}
+						{@const lineAllotments = lines.filter(l => l.isAllotment && l.parentLineId === line.id).map(l => ({
+							product: l.product,
+							includedQuantity: l.includedQuantity || 0,
+							allotmentInfo: l.allotmentInfo || null
+						}))}
+						<div
+							in:fly={{ y: 20, duration: 200 }}
+							out:fade={{ duration: 150 }}
+							animate:flip={{ duration: 200 }}
+						>
+							<QuoteLine
+								products={filteredProducts}
+								{index}
+								{showAnnual}
+								{showMonthly}
+								{showOnDemand}
+								selectedProduct={line.product}
+								quantity={line.quantity}
+								isAllotment={false}
+								includedQuantity={0}
+								allotmentInfo={null}
+								totalAllottedForProduct={getTotalAllottedForProduct(line.product?.product)}
+								{lineAllotments}
+								searchId={index === 0 ? 'product-search' : undefined}
+								negotiatedPrice={line.negotiatedPrice}
+								quantityBreakdown={line.quantityBreakdown || []}
+								showBreakdown={showDetailedQuantities}
+								on:update={(e) => updateLine(line.id, e.detail.product, e.detail.quantity, e.detail.negotiatedPrice)}
+								on:updateBreakdown={(e) => updateBreakdown(line.id, e.detail.breakdown)}
+								on:showDetail={() => showDetailedQuantities = true}
+								on:remove={() => removeLine(line.id)}
+							/>
+						</div>
+					{/each}
+				</div>
+
+				<div class="mt-3">
+					<button
+						id="action-buttons"
+						type="button"
+						class="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-sm border border-border transition-colors hover:bg-muted"
+						on:click={addLine}
+					>
+						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+							<path d="M12 5v14M5 12h14" />
+						</svg>
+						Add Product
+					</button>
+				</div>
+
+			{/if}
+		</CardContent>
+	</Card>
+
+	<!-- Summary Section -->
+	{#if validLines.length > 0}
+		<div bind:this={summaryElement}>
+		<Card class="mb-4 relative z-0">
+			<CardHeader>
+				<div class="flex items-center gap-3">
+					<div class="flex h-9 w-9 items-center justify-center rounded-sm bg-muted">
+						<svg class="h-5 w-5 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+						</svg>
+					</div>
+					<div>
+						<CardTitle>Pricing Summary</CardTitle>
+						<CardDescription>Compare costs across all billing options</CardDescription>
+					</div>
+				</div>
+			</CardHeader>
+			<CardContent>
+				<!-- Totals Grid -->
+				<div class="grid gap-3 mb-4" style="grid-template-columns: repeat({[showAnnual, showMonthly, showOnDemand].filter(Boolean).length}, 1fr);">
+					{#if showAnnual}
+						<!-- Annual -->
+						<div class="relative rounded-sm border border-datadog-green/50 bg-datadog-green/5 p-4">
+							{#if bestValueOption?.key === 'annual' && dynamicSavings > 0}
+								<div class="absolute -top-2 right-2 rounded-sm bg-datadog-green px-2 py-0.5 text-[10px] font-bold text-white">
+									Best Value
+								</div>
+							{/if}
+							<div class="text-xs font-medium text-datadog-green mb-1">Billed Annually</div>
+							<div class="text-xl font-bold text-datadog-green mb-0.5">
+								{formatCurrency(annualCosts.annually)}
+								<span class="text-xs font-normal text-muted-foreground">/year</span>
+							</div>
+							<div class="text-xs text-muted-foreground mb-2">
+								{formatCurrency(totals.annually)}/month
+							</div>
+							{#if bestValueOption?.key === 'annual' && dynamicSavings > 0}
+								<div class="flex items-center gap-1 text-xs font-medium text-datadog-green">
+									<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M12 5v14M5 12l7 7 7-7" />
+									</svg>
+									Save {formatCurrency(dynamicSavings)}/yr
+								</div>
+							{:else if bestValueOption && bestValueOption.key !== 'annual'}
+								<div class="flex items-center gap-1 text-xs text-muted-foreground">
+									<svg class="h-3 w-3 text-datadog-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M12 19V5M5 12l7-7 7 7" />
+									</svg>
+									+{((annualCosts.annually - bestValueOption.cost) / bestValueOption.cost * 100).toFixed(0)}% vs {bestValueLabel}
+								</div>
+							{/if}
+						</div>
+					{/if}
+
+					{#if showMonthly}
+						<!-- Monthly -->
+						<div class="relative rounded-sm border border-datadog-blue/30 bg-datadog-blue/5 p-4">
+							{#if bestValueOption?.key === 'monthly' && dynamicSavings > 0}
+								<div class="absolute -top-2 right-2 rounded-sm bg-datadog-blue px-2 py-0.5 text-[10px] font-bold text-white">
+									Best Value
+								</div>
+							{/if}
+							<div class="text-xs font-medium text-datadog-blue mb-1">Billed Monthly</div>
+							<div class="text-xl font-bold text-datadog-blue mb-0.5">
+								{formatCurrency(annualCosts.monthly)}
+								<span class="text-xs font-normal text-muted-foreground">/year</span>
+							</div>
+							<div class="text-xs text-muted-foreground mb-2">
+								{formatCurrency(totals.monthly)}/month
+							</div>
+							{#if bestValueOption?.key === 'monthly' && dynamicSavings > 0}
+								<div class="flex items-center gap-1 text-xs font-medium text-datadog-blue">
+									<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M12 5v14M5 12l7 7 7-7" />
+									</svg>
+									Save {formatCurrency(dynamicSavings)}/yr
+								</div>
+							{:else if bestValueOption && bestValueOption.key !== 'monthly'}
+								<div class="flex items-center gap-1 text-xs text-muted-foreground">
+									<svg class="h-3 w-3 text-datadog-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M12 19V5M5 12l7-7 7 7" />
+									</svg>
+									+{((annualCosts.monthly - bestValueOption.cost) / bestValueOption.cost * 100).toFixed(0)}% vs {bestValueLabel}
+								</div>
+							{/if}
+						</div>
+					{/if}
+
+					{#if showOnDemand}
+						<!-- On-Demand -->
+						<div class="relative rounded-sm border border-datadog-orange/30 bg-datadog-orange/5 p-4">
+							{#if bestValueOption?.key === 'ondemand' && dynamicSavings > 0}
+								<div class="absolute -top-2 right-2 rounded-sm bg-datadog-orange px-2 py-0.5 text-[10px] font-bold text-white">
+									Best Value
+								</div>
+							{/if}
+							<div class="text-xs font-medium text-datadog-orange mb-1">On-Demand</div>
+							<div class="text-xl font-bold text-datadog-orange mb-0.5">
+								{formatCurrency(annualCosts.on_demand)}
+								<span class="text-xs font-normal text-muted-foreground">/year</span>
+							</div>
+							<div class="text-xs text-muted-foreground mb-2">
+								{formatCurrency(totals.on_demand)}/month
+							</div>
+							{#if bestValueOption?.key === 'ondemand' && dynamicSavings > 0}
+								<div class="flex items-center gap-1 text-xs font-medium text-datadog-orange">
+									<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M12 5v14M5 12l7 7 7-7" />
+									</svg>
+									Save {formatCurrency(dynamicSavings)}/yr
+								</div>
+							{:else if bestValueOption && bestValueOption.key !== 'ondemand'}
+								<div class="flex items-center gap-1 text-xs text-muted-foreground">
+									<svg class="h-3 w-3 text-destructive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<path d="M12 19V5M5 12l7-7 7 7" />
+									</svg>
+									+{((annualCosts.on_demand - bestValueOption.cost) / bestValueOption.cost * 100).toFixed(0)}% vs {bestValueLabel}
+								</div>
+							{/if}
+						</div>
+					{/if}
+				</div>
+
+				<!-- Cost Distribution Chart (min-height reduces CLS when chart mounts) -->
+				<div class="mt-4 min-h-[200px] pt-4 border-t border-border">
+					<h4 class="text-xs font-semibold text-foreground mb-2 tracking-wide uppercase">Cost distribution</h4>
+					<CostDistributionChart 
+						{lines} 
+						billingType={showAnnual ? 'annually' : showMonthly ? 'monthly' : 'on_demand'} 
+					/>
+				</div>
+
+			</CardContent>
+		</Card>
+		</div>
+	{/if}
+
+	<!-- Footer -->
+	<footer class="mt-6 text-center text-xs text-muted-foreground">
+		<p>
+			PriceHound uses data sourced from
+			<a href="https://www.datadoghq.com/pricing/list/" target="_blank" rel="noopener noreferrer" class="text-datadog-purple hover:underline">
+				Datadog Pricing
+			</a>
+			<span class="mx-2">·</span>
+			<a href="/faq" class="text-datadog-purple hover:underline">FAQ</a>
+			<span class="mx-2">·</span>
+			<a href="/changes" class="text-datadog-purple hover:underline">Price Changes</a>
+			<span class="mx-2">·</span>
+			<span class="text-muted-foreground/60">v{APP_VERSION}</span>
+		</p>
+	</footer>
+
+	<!-- Guided Tour -->
+	<GuidedTour />
+</div>
+
+<!-- Sticky Footer Summary -->
+{#if validLines.length > 0 && !summaryVisible}
+	{@const productCount = validLines.filter(l => !l.isAllotment).length}
+	<div 
+		transition:fly={{ y: 50, duration: 200 }}
+		class="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-sm shadow-lg"
+	>
+		<div class="max-w-4xl mx-auto px-4 py-3">
+			<div class="flex items-center justify-between gap-4">
+				<!-- Cost info - side by side -->
+				<div class="flex items-center gap-3">
+					<div class="text-lg font-bold text-datadog-green">
+						{formatCurrency(annualCosts.annually)}
+						<span class="text-xs font-normal text-muted-foreground">/yr</span>
+					</div>
+					<span class="text-muted-foreground">·</span>
+					<div class="text-sm text-muted-foreground">
+						{productCount} {productCount === 1 ? 'product' : 'products'}
+					</div>
+				</div>
+				
+				<!-- Action button -->
+				<Button 
+					size="sm" 
+					variant="outline"
+					on:click={() => summaryElement?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+				>
+					View Summary
+					<svg class="h-4 w-4 ml-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M12 5v14M5 12l7 7 7-7" />
+					</svg>
+				</Button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Import Modal -->
+{#if importModalOpen}
+	<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+	<div 
+		transition:fade={{ duration: 150 }}
+		class="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+		on:click|self={() => importModalOpen = false}
+		on:keydown={(e) => e.key === 'Escape' && (importModalOpen = false)}
+		role="dialog"
+		aria-modal="true"
+		tabindex="-1"
+	>
+		<div transition:fade={{ duration: 150, delay: 50 }} class="relative w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-2xl">
+			<!-- Close Button -->
+			<button
+				type="button"
+				class="absolute right-4 top-4 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+				on:click={() => importModalOpen = false}
+			>
+				<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M18 6L6 18M6 6l12 12" />
+				</svg>
+			</button>
+
+			<h2 class="mb-2 text-xl font-semibold">Import Quote</h2>
+			<p class="mb-6 text-sm text-muted-foreground">
+				Drop a JSON file or click to select one
+			</p>
+
+			<!-- Drop Zone -->
+			<div
+				class="relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-12 transition-colors {isDragging ? 'border-datadog-purple bg-datadog-purple/10' : 'border-border hover:border-muted-foreground'}"
+				on:dragover={handleDragOver}
+				on:dragleave={handleDragLeave}
+				on:drop={handleDrop}
+				role="button"
+				tabindex="0"
+			>
+				<input
+					type="file"
+					accept=".json"
+					class="absolute inset-0 cursor-pointer opacity-0"
+					on:change={handleFileSelect}
+				/>
+				
+				<div class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
+					<svg class="h-8 w-8 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+						<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+						<polyline points="14 2 14 8 20 8" />
+						<path d="M10 12l-2 2 2 2M14 12l2 2-2 2" />
+					</svg>
+				</div>
+				
+				<p class="text-center text-sm">
+					<span class="font-medium text-datadog-purple">Click to upload</span>
+					<span class="text-muted-foreground"> or drag and drop</span>
+				</p>
+				<p class="mt-1 text-xs text-muted-foreground">JSON files only</p>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Log Index Estimator modal -->
+{#if showLogsCalculator}
+	<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+	<div 
+		in:fade={{ duration: 150 }}
+		out:fade={{ duration: 100 }}
+		class="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+		on:click|self={() => showLogsCalculator = false}
+		on:keydown={(e) => e.key === 'Escape' && (showLogsCalculator = false)}
+		role="dialog"
+		aria-modal="true"
+		tabindex="-1"
+	>
+		<div 
+			in:fly={{ y: 30, duration: 250, delay: 50 }}
+			out:fly={{ y: -20, duration: 150 }}
+			class="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl border border-border bg-card shadow-2xl"
+		>
+			<!-- Close Button -->
+			<button
+				type="button"
+				class="absolute right-4 top-4 z-10 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+				on:click={() => showLogsCalculator = false}
+			>
+				<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M18 6L6 18M6 6l12 12" />
+				</svg>
+			</button>
+
+			<LogsIndexingCalculator 
+				{products} 
+				onAddToQuote={(items, label) => {
+					addItemsFromCalculator(items, label);
+					showLogsCalculator = false;
+				}}
+			/>
+		</div>
+	</div>
+{/if}
+
+<!-- Template Preview Modal -->
+{#if previewTemplate}
+	<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+	<div 
+		in:fade={{ duration: 150 }}
+		out:fade={{ duration: 100 }}
+		class="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+		on:click|self={() => previewTemplate = null}
+		on:keydown={(e) => e.key === 'Escape' && (previewTemplate = null)}
+		role="dialog"
+		aria-modal="true"
+		tabindex="-1"
+	>
+		<div 
+			in:fly={{ y: 30, duration: 250, delay: 50 }}
+			out:fly={{ y: -20, duration: 150 }}
+			class="relative w-full max-w-xl max-h-[80vh] overflow-hidden rounded-lg border border-border bg-card shadow-2xl flex flex-col"
+		>
+			<!-- Header -->
+			<div class="p-6 border-b border-border">
+				<button
+					type="button"
+					class="absolute right-4 top-4 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+					on:click={() => previewTemplate = null}
+				>
+					<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M18 6L6 18M6 6l12 12" />
+					</svg>
+				</button>
+				<div class="flex items-center gap-3">
+					<div class="flex h-9 w-9 items-center justify-center rounded-sm {previewTemplate.type === 'addon' ? 'bg-muted' : 'bg-datadog-purple/10'}">
+						{#if previewTemplate.type === 'addon'}
+							<svg class="h-5 w-5 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M19.439 7.85c-.049.322.059.648.289.878l1.568 1.568c.47.47.706 1.087.706 1.704s-.235 1.233-.706 1.704l-1.611 1.611a.98.98 0 0 1-.837.276c-.47-.07-.802-.48-.968-.925a2.501 2.501 0 1 0-3.214 3.214c.446.166.855.497.925.968a.979.979 0 0 1-.276.837l-1.61 1.61a2.404 2.404 0 0 1-1.705.707 2.402 2.402 0 0 1-1.704-.706l-1.568-1.568a1.026 1.026 0 0 0-.877-.29c-.493.074-.84.504-1.02.968a2.5 2.5 0 1 1-3.237-3.237c.464-.18.894-.527.967-1.02a1.026 1.026 0 0 0-.289-.877l-1.568-1.568A2.402 2.402 0 0 1 1.998 12c0-.617.236-1.234.706-1.704L4.23 8.77c.24-.24.581-.353.917-.303.515.077.877.528 1.073 1.01a2.5 2.5 0 1 0 3.259-3.259c-.482-.196-.933-.558-1.01-1.073-.05-.336.062-.676.303-.917l1.525-1.525A2.402 2.402 0 0 1 12 1.998c.617 0 1.234.236 1.704.706l1.568 1.568c.23.23.556.338.877.29.493-.074.84-.504 1.02-.968a2.5 2.5 0 1 1 3.237 3.237c-.464.18-.894.527-.967 1.02Z" />
+							</svg>
+						{:else}
+							<svg class="h-5 w-5 text-datadog-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M12 2L2 7l10 5 10-5-10-5z" />
+								<path d="M2 17l10 5 10-5" />
+								<path d="M2 12l10 5 10-5" />
+							</svg>
+						{/if}
+					</div>
+					<div>
+						<div class="flex items-center gap-2">
+							<h2 class="text-lg font-semibold">{previewTemplate.name}</h2>
+							{#if previewTemplate.type === 'addon'}
+								<span class="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">Add-on</span>
+							{/if}
+						</div>
+						<p class="text-sm text-muted-foreground">{previewTemplate.items.length} products included</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- Description -->
+			<div class="px-6 py-4 border-b border-border bg-muted/30">
+				<p class="text-sm text-muted-foreground">{previewTemplate.description}</p>
+				{#if previewTemplate.type === 'addon'}
+					<p class="mt-2 text-xs text-muted-foreground/70 italic">This add-on can be combined with any package</p>
+				{/if}
+			</div>
+
+			<!-- Product List -->
+			<div class="flex-1 overflow-y-auto p-6">
+				<div class="flex items-center justify-between mb-3">
+					<div class="flex items-center gap-2">
+						<h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Products</h3>
+						<span class="text-[10px] text-muted-foreground/70">
+							(prices for {showAnnual ? 'annual' : showMonthly ? 'monthly' : 'on-demand'} billing)
+						</span>
+					</div>
+					<label class="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors">
+						<input 
+							type="checkbox" 
+							checked={selectedTemplateItems.size === previewTemplate.items.length}
+							on:change={toggleAllTemplateItems}
+							class="h-3.5 w-3.5 rounded border-border accent-foreground"
+						/>
+						Keep all
+					</label>
+				</div>
+				<ul class="divide-y divide-border/50">
+					{#each previewTemplate.items as item, index}
+						{@const matchedProduct = products.find(p => 
+							p.product.toLowerCase().includes(item.product.toLowerCase()) ||
+							item.product.toLowerCase().includes(p.product.toLowerCase())
+						)}
+						{@const isSelected = selectedTemplateItems.has(index)}
+						{@const productDesc = getProductDescription(matchedProduct?.id)}
+						{@const priceField = showAnnual ? matchedProduct?.billed_annually : showMonthly ? matchedProduct?.billed_month_to_month : matchedProduct?.on_demand}
+						{@const unitPrice = priceField ? parseFloat(priceField.replace(/[$,]/g, '')) : 0}
+						{@const lineTotal = unitPrice * item.quantity}
+						{@const billingUnit = matchedProduct?.billing_unit || ''}
+						{@const multiplierMatch = billingUnit.match(/per\s+([\d,]+(?:\.\d+)?)\s*([KMB]?)\s/i) || billingUnit.match(/per\s+(million)\s/i) || billingUnit.match(/\((\d+)\s*([KMGTB]?B)\)/i)}
+						{@const multiplier = multiplierMatch ? 
+							(multiplierMatch[1]?.toLowerCase() === 'million' ? 1000000 :
+							parseFloat(multiplierMatch[1].replace(/,/g, '')) * 
+							(multiplierMatch[2]?.toUpperCase() === 'K' ? 1000 : 
+							 multiplierMatch[2]?.toUpperCase() === 'M' ? 1000000 : 
+							 multiplierMatch[2]?.toUpperCase() === 'B' ? 1000000000 :
+							 multiplierMatch[2]?.toUpperCase() === 'GB' ? 1 :
+							 multiplierMatch[2]?.toUpperCase() === 'TB' ? 1 : 1)) : 1}
+						{@const totalVolume = item.quantity * multiplier}
+						{@const parenMatch = billingUnit.match(/\((\d+)\s*([KMGTB]?B)\)/i)}
+						{@const unitFromParen = parenMatch ? parenMatch[2].toUpperCase() : null}
+						{@const unitName = unitFromParen || billingUnit.replace(/per\s+[\d,]+\s*[KMB]?\s*/i, '').replace(/per\s+million\s*/i, '').replace(/,?\s*per month.*$/i, '').replace(/\([^)]*\)/g, '').trim()}
+						<li class="flex items-center gap-3 py-2 transition-colors {isSelected ? '' : 'opacity-40'}">
+							<input 
+								type="checkbox" 
+								checked={isSelected}
+								on:change={() => toggleTemplateItem(index)}
+								class="h-4 w-4 rounded border-border accent-foreground shrink-0"
+							/>
+							<span class="text-xs flex-1 flex items-center gap-1.5 {isSelected ? '' : 'line-through text-muted-foreground'}">
+								{item.product}
+								{#if productDesc}
+									<span class="group relative inline-flex">
+										<svg class="h-3.5 w-3.5 text-muted-foreground/60 hover:text-muted-foreground transition-colors" viewBox="0 0 24 24" fill="currentColor">
+											<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+										</svg>
+										<span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs text-background bg-foreground rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none w-64 text-center z-50 after:content-[''] after:absolute after:top-full after:left-1/2 after:-translate-x-1/2 after:border-4 after:border-transparent after:border-t-foreground">
+											{productDesc}
+										</span>
+									</span>
+								{/if}
+							</span>
+							<span class="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
+								× {item.quantity.toLocaleString()}
+								{#if multiplier > 1 || unitFromParen}
+									<span class="group/calc relative inline-flex">
+										<svg class="h-3.5 w-3.5 text-muted-foreground/70 hover:text-muted-foreground transition-colors" viewBox="0 0 24 24" fill="currentColor">
+											<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+										</svg>
+										<span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs text-background bg-foreground rounded-md shadow-lg opacity-0 group-hover/calc:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 after:content-[''] after:absolute after:top-full after:left-1/2 after:-translate-x-1/2 after:border-4 after:border-transparent after:border-t-foreground">
+											= {totalVolume.toLocaleString()} {unitName}
+										</span>
+									</span>
+								{/if}
+							</span>
+							<span class="text-xs font-mono shrink-0 w-20 text-right {isSelected ? '' : 'text-muted-foreground'}">
+								{#if lineTotal > 0}
+									${lineTotal.toLocaleString()}
+								{:else}
+									—
+								{/if}
+							</span>
+						</li>
+					{/each}
+				</ul>
+				
+				<!-- Total -->
+				{#if previewTemplate}
+					{@const templateTotal = previewTemplate.items.reduce((sum, item, index) => {
+						if (!selectedTemplateItems.has(index)) return sum;
+						const matched = products.find(p => 
+							p.product.toLowerCase().includes(item.product.toLowerCase()) ||
+							item.product.toLowerCase().includes(p.product.toLowerCase())
+						);
+						const priceStr = showAnnual ? matched?.billed_annually : showMonthly ? matched?.billed_month_to_month : matched?.on_demand;
+						const price = priceStr ? parseFloat(priceStr.replace(/[$,]/g, '')) : 0;
+						return sum + (price * item.quantity);
+					}, 0)}
+					<div class="mt-3 pt-3 border-t border-border/50 flex justify-end">
+						<div class="text-right">
+							<span class="text-xs text-muted-foreground">Total</span>
+							<span class="text-sm font-mono font-bold ml-2">${templateTotal.toLocaleString()}</span>
+							<span class="text-xs text-muted-foreground">/mo</span>
+						</div>
+					</div>
+				{/if}
+			</div>
+
+			<!-- Footer -->
+			<div class="p-4 border-t border-border bg-muted/30 space-y-3">
+				<input
+					type="text"
+					bind:value={templateCustomLabel}
+					on:input={() => { templateCustomLabel = templateCustomLabel.replace(/[<>"'`;]/g, ''); }}
+					placeholder="Label (e.g. staging environment)"
+					maxlength="50"
+					class="w-full h-9 rounded-md border border-border bg-background px-3 text-xs placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-ring"
+				/>
+				<div class="flex gap-3">
+					<button
+						type="button"
+						class="flex-1 px-4 py-2.5 text-sm font-medium rounded-sm border border-border hover:bg-background transition-colors"
+						on:click={() => { previewTemplate = null; templateCustomLabel = ''; }}
+					>
+						Cancel
+					</button>
+					<button
+						type="button"
+						class="flex-1 px-4 py-2.5 text-sm font-medium rounded-sm bg-foreground text-background hover:bg-foreground/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+						disabled={selectedTemplateItems.size === 0}
+						on:click={() => { if (previewTemplate) applyTemplate(previewTemplate, templateCustomLabel.trim() || undefined); previewTemplate = null; templateCustomLabel = ''; }}
+					>
+						Add {selectedTemplateItems.size} to Quote
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Save Quote Modal -->
+{#if saveModalOpen}
+	<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+	<div 
+		transition:fade={{ duration: 150 }}
+		class="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+		on:click|self={() => saveModalOpen = false}
+		on:keydown={(e) => e.key === 'Escape' && (saveModalOpen = false)}
+		role="dialog"
+		aria-modal="true"
+		tabindex="-1"
+	>
+		<div transition:fade={{ duration: 150, delay: 50 }} class="relative w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl">
+			<!-- Close Button -->
+			<button
+				type="button"
+				class="absolute right-4 top-4 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+				on:click={() => saveModalOpen = false}
+			>
+				<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M18 6L6 18M6 6l12 12" />
+				</svg>
+			</button>
+
+			<div class="flex items-center gap-3 mb-6">
+				<div class="flex h-9 w-9 items-center justify-center rounded-sm bg-muted">
+					<svg class="h-5 w-5 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+						<path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+					</svg>
+				</div>
+				<div>
+					<h2 class="text-xl font-semibold">Share Quote</h2>
+					<p class="text-sm text-muted-foreground">Create a public URL for this quote</p>
+				</div>
+			</div>
+
+			<!-- Quote Name -->
+			<div class="mb-4">
+				<label for="save-quote-name" class="mb-2 block text-sm font-medium">Quote Name</label>
+				<Input 
+					id="save-quote-name"
+					bind:value={quoteName} 
+					placeholder="My Datadog Quote" 
+				/>
+			</div>
+
+			<!-- Password Protection Section -->
+			<div class="rounded-xl border border-border bg-muted/30 p-4 mb-6">
+				<div class="flex items-center gap-2 mb-3">
+					<svg class="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+						<path d="M7 11V7a5 5 0 0110 0v4" />
+					</svg>
+					<span class="text-sm font-medium">Edit Protection (Optional)</span>
+				</div>
+				<p class="text-xs text-muted-foreground mb-3">
+					Set a password to prevent others from editing this quote. Anyone can still view it.
+				</p>
+				
+				<div class="space-y-3">
+					<div>
+						<label for="edit-password" class="mb-1.5 block text-xs text-muted-foreground">Password</label>
+						<Input 
+							id="edit-password"
+							type="password"
+							bind:value={editPassword} 
+							placeholder="Leave empty for no protection"
+						/>
+					</div>
+					
+					{#if editPassword}
+						<div>
+							<label for="confirm-password" class="mb-1.5 block text-xs text-muted-foreground">Confirm Password</label>
+							<Input 
+								id="confirm-password"
+								type="password"
+								bind:value={confirmPassword} 
+								placeholder="Confirm password"
+							/>
+						</div>
+					{/if}
+				</div>
+				
+				{#if passwordError}
+					<p class="mt-2 text-sm text-destructive">{passwordError}</p>
+				{/if}
+			</div>
+
+			<!-- Actions -->
+			<div class="flex gap-3">
+				<Button 
+					variant="outline" 
+					class="flex-1"
+					on:click={() => saveModalOpen = false}
+				>
+					Cancel
+				</Button>
+				<Button 
+					class="flex-1 bg-datadog-purple hover:bg-datadog-purple/90"
+					on:click={handleShare}
+					disabled={saving || (editPassword !== '' && editPassword !== confirmPassword)}
+				>
+					{#if saving}
+						<svg class="mr-2 h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M21 12a9 9 0 11-6.219-8.56" />
+						</svg>
+						Creating...
+					{:else}
+						<svg class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+							<path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+						</svg>
+						{editPassword ? 'Create Protected URL' : 'Create Public URL'}
+					{/if}
+				</Button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Edit Password Modal (for loading from bookmarked URL) -->
+{#if editPasswordModalOpen}
+	<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+	<div 
+		transition:fade={{ duration: 150 }}
+		class="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+		on:click|self={cancelEditPasswordModal}
+		on:keydown={(e) => e.key === 'Escape' && cancelEditPasswordModal()}
+		role="dialog"
+		aria-modal="true"
+		tabindex="-1"
+	>
+		<div transition:fade={{ duration: 150, delay: 50 }} class="relative w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl">
+			<!-- Close Button -->
+			<button
+				type="button"
+				class="absolute right-4 top-4 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+				on:click={cancelEditPasswordModal}
+			>
+				<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M18 6L6 18M6 6l12 12" />
+				</svg>
+			</button>
+
+			<div class="flex items-center gap-3 mb-6">
+				<div class="flex h-9 w-9 items-center justify-center rounded-sm bg-muted">
+					<svg class="h-5 w-5 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+						<path d="M7 11V7a5 5 0 0110 0v4" />
+					</svg>
+				</div>
+				<div>
+					<h2 class="text-xl font-semibold">Protected Quote</h2>
+					<p class="text-sm text-muted-foreground">Enter password to edit</p>
+				</div>
+			</div>
+
+			{#if pendingEditQuote}
+				<div class="mb-4 rounded-lg border border-border bg-muted/30 p-3">
+					<p class="text-sm font-medium">{pendingEditQuote.name || 'Untitled Quote'}</p>
+					<p class="text-xs text-muted-foreground">{pendingEditQuote.items?.length || 0} items</p>
+				</div>
+			{/if}
+
+			<form on:submit|preventDefault={verifyAndLoadEditQuote} class="space-y-4">
+				<div class="space-y-2">
+					<label for="editPasswordInput" class="text-sm font-medium">Password</label>
+					<Input 
+						id="editPasswordInput"
+						type="password" 
+						bind:value={editPasswordInput}
+						placeholder="Enter quote password"
+						class="font-mono"
+						autofocus
+					/>
+					{#if editPasswordError}
+						<p class="text-sm text-destructive">{editPasswordError}</p>
+					{/if}
+				</div>
+
+				<div class="flex gap-3">
+					<Button 
+						type="button"
+						variant="outline" 
+						class="flex-1"
+						on:click={cancelEditPasswordModal}
+					>
+						Cancel
+					</Button>
+					<Button 
+						type="submit"
+						class="flex-1 bg-datadog-purple hover:bg-datadog-purple/90"
+						disabled={verifyingEditPassword || !editPasswordInput}
+					>
+						{#if verifyingEditPassword}
+							<svg class="mr-2 h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M21 12a9 9 0 11-6.219-8.56" />
+							</svg>
+							Verifying...
+						{:else}
+							<svg class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4" />
+								<polyline points="10 17 15 12 10 7" />
+								<line x1="15" y1="12" x2="3" y2="12" />
+							</svg>
+							Unlock & Edit
+						{/if}
+					</Button>
+				</div>
+			</form>
+
+			<p class="mt-4 text-center text-xs text-muted-foreground">
+				Or <a href="/quote/{pendingEditQuoteId}" class="text-datadog-purple hover:underline">view without editing</a>
+			</p>
+		</div>
+	</div>
+{/if}
+
+<style>
+	@keyframes fadeIn {
+		from {
+			opacity: 0;
+			transform: translateX(-10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateX(0);
+		}
+	}
+</style>

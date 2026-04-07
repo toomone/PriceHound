@@ -1,0 +1,4 @@
+# This directory stores Redis backups
+# Backup files are ignored by git (see .gitignore)
+# They are stored as GitHub Actions artifacts
+

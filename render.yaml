@@ -1,0 +1,59 @@
+# Render Blueprint for PriceHound
+# https://render.com/docs/infrastructure-as-code
+
+services:
+  # Backend API (Python/FastAPI)
+  - type: web
+    name: pricehound-api
+    env: python
+    plan: free
+    region: frankfurt
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.0"
+      - key: STORAGE_TYPE
+        value: redis
+      - key: REDIS_URL
+        fromService:
+          name: pricehound-redis
+          type: redis
+          property: connectionString
+    healthCheckPath: /api/health
+    autoDeploy: true
+
+  # Redis Cache
+  - type: redis
+    name: pricehound-redis
+    plan: free
+    region: frankfurt
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []  # Allow all connections (internal only)
+
+  # Frontend (Static Site)
+  - type: web
+    name: pricehound
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/build
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=3600
+    routes:
+      # Proxy API requests to backend
+      - type: rewrite
+        source: /api/*
+        destination: https://pricehound-api.onrender.com/api/*
+      # SPA fallback: SvelteKit emits a single index.html shell (see adapter-static fallback)
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: PUBLIC_DD_ENV
+        value: prod
+    autoDeploy: true
+
