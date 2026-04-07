@@ -40,7 +40,6 @@
 	export let showBreakdown: boolean = false;
 	
 	let showNegotiatedInput = negotiatedPrice !== null && negotiatedPrice > 0;
-	$: if (negotiatedPrice === null || negotiatedPrice === undefined) showNegotiatedInput = false;
 
 	$: hasBreakdown = quantityBreakdown.length > 0;
 	$: breakdownSum = quantityBreakdown.reduce((s, bl) => s + bl.quantity, 0);
@@ -137,7 +136,13 @@
 		showNegotiatedInput = !showNegotiatedInput;
 		if (!showNegotiatedInput) {
 			negotiatedPrice = null;
+			negotiatedPriceText = '';
 			dispatch('update', { product: selectedProduct, quantity, negotiatedPrice: null });
+		} else if (negotiatedPriceText) {
+			handleNegotiatedPriceInput();
+			if (negotiatedPrice != null) {
+				dispatch('update', { product: selectedProduct, quantity, negotiatedPrice });
+			}
 		}
 	}
 
