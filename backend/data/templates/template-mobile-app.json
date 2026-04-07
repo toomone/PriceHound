@@ -1,0 +1,16 @@
+{
+  "id": "mobile-app",
+  "name": "Mobile App",
+  "description": "Full mobile observability: RUM for iOS/Android, Crash Reporting, APM for backend APIs, and Synthetic tests for critical flows",
+  "items": [
+    {"product": "Real User Monitoring (RUM) - Measure", "quantity": 500},
+    {"product": "Session Replay (Add-On for RUM and Prodct Analytics)", "quantity": 50},
+    {"product": "APM Pro (APM and Data Streams Monitoring)", "quantity": 3},
+    {"product": "Logs - Ingestion", "quantity": 20},
+    {"product": "Logs - Indexed Log Events", "quantity": 5},
+    {"product": "Synthetic API Tests", "quantity": 10},
+    {"product": "Error Tracking (50-100K)", "quantity": 1}
+  ],
+  "created_at": "2025-01-01T00:00:00.000000"
+}
+

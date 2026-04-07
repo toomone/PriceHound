@@ -1,0 +1,16 @@
+{
+  "id": "devops-starter",
+  "name": "DevOps Starter",
+  "description": "Essential DevOps toolkit: Infrastructure monitoring, CI/CD Visibility for pipelines, Synthetic tests for uptime, and basic logging",
+  "items": [
+    {"product": "Infrastructure Pro", "quantity": 10},
+    {"product": "Pipeline Visibility", "quantity": 10},
+    {"product": "Test Optimization", "quantity": 10},
+    {"product": "Synthetic API Tests", "quantity": 15},
+    {"product": "Synthetic Browser Tests", "quantity": 5},
+    {"product": "Logs - Ingestion", "quantity": 30},
+    {"product": "Logs - Indexed Log Events", "quantity": 10}
+  ],
+  "created_at": "2025-01-01T00:00:00.000000"
+}
+
